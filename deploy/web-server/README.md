@@ -1,0 +1,22 @@
+# 独立 Web 服务器部署说明
+
+Web 服务器仅运行轻量 Node 22 SSR 前端（`web/`），无数据库、无 Java 进程，通过 HTTPS 调用微信云托管后端的公开 JSON API（`/apis/api.wanwan.run/v1alpha1`）。
+
+## 运行步骤（Node 22+）
+1. 在服务器上拉取仓库，进入 `web/`：
+   ```bash
+   cd web
+   pnpm install --frozen-lockfile || pnpm install
+   pnpm build
+   ```
+2. 复制 `deploy/web-server/.env.example` 为 `.env` 并填写：
+   - `BACKEND_API_BASE`：微信云托管后端公网 HTTPS 地址 + `/apis/api.wanwan.run/v1alpha1`
+   - `SITE_ORIGIN`：Web 已备案 HTTPS 域名（用于 `sitemap.xml`）
+   - `CONTACT_EMAIL` 与 `ICP_NUMBER`：真实可用邮箱与 ICP 备案号
+3. 启动服务（可用 systemd / pm2 守护）：
+   ```bash
+   set -a && source ../deploy/web-server/.env && set +a
+   node dist/server.js
+   ```
+4. 配置 Nginx 反向代理本机 `127.0.0.1:3000` 并开启 HTTPS（参考 `deploy/web-server/nginx.conf`）。
+5. 在微信云托管后端环境变量 `WANWAN_CORS_ALLOWED_ORIGINS` 中加入本 Web 域名（仅在需要浏览器端跨域请求时放行）。

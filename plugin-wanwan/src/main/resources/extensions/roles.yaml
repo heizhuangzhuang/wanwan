@@ -12,7 +12,7 @@ metadata:
     rbac.authorization.halo.run/display-name: "公开资料读取"
 rules:
   - apiGroups: [ "api.wanwan.run" ]
-    resources: [ "stages", "resources", "topics", "search" ]
+    resources: [ "stages", "resources", "topics", "posts", "search" ]
     verbs: [ "get", "list" ]
 ---
 apiVersion: v1alpha1

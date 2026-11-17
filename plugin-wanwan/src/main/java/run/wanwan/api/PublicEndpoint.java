@@ -38,6 +38,11 @@ public class PublicEndpoint implements CustomEndpoint {
                     Dtos.Page.class))
             .GET("topics/{name}", req -> okOrNotFound(
                 queryService.getTopic(req.pathVariable("name"))))
+            .GET("posts", req -> ServerResponse.ok()
+                .body(queryService.listPosts(intParam(req, "page", 1), intParam(req, "size", 20)),
+                    Dtos.Page.class))
+            .GET("posts/{name}", req -> okOrNotFound(
+                queryService.getPost(req.pathVariable("name"))))
             .GET("search", this::search)
             .build();
     }

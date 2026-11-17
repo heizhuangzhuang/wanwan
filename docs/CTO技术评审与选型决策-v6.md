@@ -178,6 +178,9 @@ wanwan/
 
 ## 9. 确认与实施状态（2026-11-17）
 
-1. **ADR-001~004 已确认并落地**至 `docs/adr/`。
-2. 工程骨架已按本评审建立：`plugin-wanwan/`（模型、公开 API、内存搜索、主题路由与 Console UI）、`theme-wanwan/`（Thymeleaf 主题）、`miniprogram/`（Phase 2 原生小程序骨架）、`deploy/`（Docker Compose + Nginx + 备份脚本）、`.github/workflows/ci.yml`。
-3. 待办：P0 资质验证（ICP 备案、个人主体小程序类目与外链能力确认，及兜底方案 A/B 选择）与服务器实际部署验收。
+1. **ADR-001~005 已确认并落地**至 `docs/adr/`。其中 [ADR-005](./adr/ADR-005-前后端分离与微信云托管部署.md) 根据最新部署要求，将架构调整为：
+   - **后端**：部署于微信云托管（Halo 2.27.3 + `plugin-wanwan` + 云托管 MySQL + CFS 挂载），不改 Halo 核心源码，新增原创导读接口与 CORS 白名单；
+   - **Web**：独立部署于 Web 服务器（`web/`，Node 22 + TypeScript 轻量 SSR），通过 HTTPS + CORS 白名单消费后端公开 JSON API（已撤除原 `theme-wanwan/`）；
+   - **小程序**：Phase 2 改用 `wx.cloud.callContainer` 直连云托管服务，保留 `wx.request` 调试回退。
+2. 工程骨架已建立：`plugin-wanwan/`、`web/`、`miniprogram/`、`deploy/cloudrun/`、`deploy/web-server/`、`.github/workflows/ci.yml`。
+3. 待办：P0 资质验证（ICP 备案、个人主体小程序类目与外链能力确认，及兜底方案 A/B 选择）、云托管与 Web 服务器实际部署验收。

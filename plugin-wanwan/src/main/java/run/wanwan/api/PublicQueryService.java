@@ -2,12 +2,15 @@ package run.wanwan.api;
 
 import static run.halo.app.extension.index.query.Queries.equal;
 
+import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import run.halo.app.content.PostContentService;
+import run.halo.app.core.extension.content.Post;
 import run.halo.app.extension.ListOptions;
 import run.halo.app.extension.PageRequestImpl;
 import run.halo.app.extension.ReactiveExtensionClient;
@@ -19,7 +22,7 @@ import run.wanwan.model.Visibility;
 import run.wanwan.search.SearchIndex;
 
 /**
- * 公开读取服务。Web 主题与小程序接口共用，保证双端可见性规则一致。
+ * 公开读取服务。独立 Web 前端与小程序共用，保证双端可见性规则一致。
  */
 @Component
 @RequiredArgsConstructor
@@ -33,7 +36,12 @@ public class PublicQueryService {
     public static final String IDX_PRIORITY = "spec.priority";
     public static final String IDX_TOPIC_PUBLIC = "spec.public";
 
+    private static final Comparator<Post> POST_ORDER = Comparator
+        .comparing((Post p) -> p.getSpec().getPublishTime(), Comparator.nullsLast(Comparator.reverseOrder()))
+        .thenComparing(p -> p.getMetadata().getName());
+
     private final ReactiveExtensionClient client;
+    private final PostContentService postContentService;
     private final SearchIndex searchIndex;
 
     public Mono<Dtos.Page<Dtos.ResourceView>> listResources(Stage stage, MaterialType type,
@@ -95,6 +103,28 @@ public class PublicQueryService {
                     .map(items -> new Dtos.TopicView(topic.getMetadata().getName(),
                         topic.getSpec().getTitle(), topic.getSpec().getIntro(), items));
             });
+    }
+
+    /** 本站原创导读列表：仅返回已发布且公开的文章。 */
+    public Mono<Dtos.Page<Dtos.PostSummary>> listPosts(int page, int size) {
+        int p = normalizePage(page);
+        int s = normalizeSize(size);
+        return client.list(Post.class, Visibility::isPublicPost, POST_ORDER)
+            .collectList()
+            .map(all -> {
+                int from = Math.min((p - 1) * s, all.size());
+                int to = Math.min(from + s, all.size());
+                var items = all.subList(from, to).stream().map(Dtos.PostSummary::of).toList();
+                return new Dtos.Page<>(p, s, all.size(), items);
+            });
+    }
+
+    /** 本站原创导读详情：只读 releaseSnapshot，绝不泄露未发布草稿正文。 */
+    public Mono<Dtos.PostView> getPost(String name) {
+        return client.fetch(Post.class, name)
+            .filter(Visibility::isPublicPost)
+            .flatMap(post -> postContentService.getReleaseContent(name)
+                .map(cw -> Dtos.PostView.of(post, cw.getContent())));
     }
 
     public Mono<Dtos.Page<Dtos.ResourceView>> search(String keyword, Stage stage, MaterialType type,

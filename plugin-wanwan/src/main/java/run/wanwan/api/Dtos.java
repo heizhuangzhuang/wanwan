@@ -1,7 +1,9 @@
 package run.wanwan.api;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+import run.halo.app.core.extension.content.Post;
 import run.wanwan.model.Enums.AccessCondition;
 import run.wanwan.model.Enums.EntryType;
 import run.wanwan.model.Enums.Language;
@@ -90,6 +92,33 @@ public final class Dtos {
     }
 
     public record TopicView(String name, String title, String intro, List<ResourceView> resources) {
+    }
+
+    /** 本站原创导读摘要（来自 Halo 已发布 Post，仅白名单公开字段）。 */
+    public record PostSummary(String name, String title, String excerpt, Instant publishTime) {
+        public static PostSummary of(Post post) {
+            String excerpt = post.getStatus() != null ? post.getStatus().getExcerpt() : null;
+            return new PostSummary(
+                post.getMetadata().getName(),
+                post.getSpec().getTitle(),
+                excerpt,
+                post.getSpec().getPublishTime()
+            );
+        }
+    }
+
+    /** 本站原创导读详情（仅返回已发布快照正文）。 */
+    public record PostView(String name, String title, String excerpt, Instant publishTime, String content) {
+        public static PostView of(Post post, String content) {
+            String excerpt = post.getStatus() != null ? post.getStatus().getExcerpt() : null;
+            return new PostView(
+                post.getMetadata().getName(),
+                post.getSpec().getTitle(),
+                excerpt,
+                post.getSpec().getPublishTime(),
+                content
+            );
+        }
     }
 
     public record Page<T>(int page, int size, long total, List<T> items) {

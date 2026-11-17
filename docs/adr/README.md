@@ -5,8 +5,9 @@
 | 编号 | 决策 | 状态 |
 | --- | --- | --- |
 | [ADR-001](./ADR-001-资料卡使用插件自定义模型.md) | 资料卡用插件自定义 Extension `ResourceCard`，原创导读用 Halo Post | 已采纳 |
-| [ADR-002](./ADR-002-技术栈与版本锁定.md) | Halo 2.27.3 / Java 21 / MySQL 8 / Thymeleaf 主题 / 原生小程序 / Docker Compose | 已采纳 |
+| [ADR-002](./ADR-002-技术栈与版本锁定.md) | Halo 2.27.3 / Java 21 / MySQL 8 / Thymeleaf 主题 / 原生小程序 / Docker Compose（Web 与部署部分由 ADR-005 取代） | 已由 ADR-005 部分取代 |
 | [ADR-003](./ADR-003-站内搜索.md) | 插件内存倒排索引（中文 bigram），返回前核验主数据 | 已采纳 |
-| [ADR-004](./ADR-004-公开接口与微信渠道.md) | 统一公开 API；小程序 Phase 2 且先验资质；公众号仅手动分发 | 已采纳（小程序兜底方案 A/B 待定） |
+| [ADR-004](./ADR-004-公开接口与微信渠道.md) | 统一公开 API；小程序 Phase 2 且先验资质；公众号仅手动分发（小程序接入方式由 ADR-005 更新） | 已由 ADR-005 部分取代 |
+| [ADR-005](./ADR-005-前后端分离与微信云托管部署.md) | 后端微信云托管 + CORS 白名单 + `web/` 独立 Node SSR + `callContainer` | 已采纳 |
 
 新增决策按 `ADR-NNN-标题.md` 递增，不修改已采纳 ADR 的结论，变更时新建 ADR 并标注"取代"。

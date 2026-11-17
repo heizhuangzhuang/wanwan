@@ -9,20 +9,20 @@
 | 目录 / 文档 | 内容 |
 | --- | --- |
 | [CTO 技术评审与选型决策 v6](docs/CTO技术评审与选型决策-v6.md) | 架构确认、小程序与公众号策略、实施路线 |
-| [架构决策记录 (ADR)](docs/adr/README.md) | ADR-001~004：自定义模型、版本锁定、搜索与公开 API |
+| [架构决策记录 (ADR)](docs/adr/README.md) | ADR-001~005：自定义模型、版本锁定、搜索、微信渠道与云托管前后端分离 |
 | [项目计划书](docs/项目计划书.md) | 定位、范围、个人运营与分阶段交付（v5.0 需求基线） |
 | [产品需求与内容规范](docs/产品需求与内容规范.md) | 资料卡、阶段栏目、录入、搜索与验收 |
 | [技术架构与实施方案](docs/技术架构与实施方案.md) | Halo / Spring Boot、Web、微信原生小程序、接口与维护 |
 | [个人运营与版权边界](docs/个人运营与版权边界.md) | 来源使用、链接与短介绍、投诉和待核实事项 |
 | [文档总目录与决策记录](docs/项目文档总目录与决策记录.md) | 原始材料、历史版本、替代关系及依据 |
-| `plugin-wanwan/` | Halo 2.27.3 业务插件（Extension 模型、公开 API、内存搜索、Console UI） |
-| `theme-wanwan/` | Halo Thymeleaf Web 主题（移动优先、无默认外图） |
-| `miniprogram/` | 微信原生小程序骨架（Phase 2，待 P0 资质核验后提审） |
-| `deploy/` | Docker Compose（Nginx + Halo 2.27.3 + MySQL 8.0）与备份脚本 |
+| `plugin-wanwan/` | Halo 2.27.3 业务插件（Extension 模型、公开 API、CORS 白名单、内存搜索、Console UI） |
+| `web/` | 独立 Web 前端（Node 22 + TypeScript 轻量 SSR，调用后端公开 JSON API） |
+| `miniprogram/` | 微信原生小程序骨架（Phase 2，`wx.cloud.callContainer` 接入微信云托管） |
+| `deploy/` | `cloudrun/`（微信云托管构建）、`web-server/`（独立 Web 部署）与本地联调 `docker-compose.yml` |
 
 ## 当前范围
 
-- Halo 2.27.3 社区版作为 Spring Boot 内容后台；资料卡通过插件自定义 Extension `ResourceCard` 管理，Web 使用自研 Thymeleaf 主题，原生小程序（Phase 2）读取同一套公开接口 `/apis/api.wanwan.run/v1alpha1`。
+- Halo 2.27.3 社区版运行于微信云托管（不修改 Halo 核心源码）；资料卡通过插件 `plugin-wanwan` 自定义 Extension `ResourceCard` 管理，Web（`web/` 轻量 SSR）部署在独立服务器通过 HTTPS + CORS 白名单读取公开 API，原生小程序（Phase 2）通过 `wx.cloud.callContainer` 读取同一套公开接口 `/apis/api.wanwan.run/v1alpha1`。
 - 微信公众号作为手动运营分发渠道，首版不做服务端开发。
 - 首版由运营者逐篇手动精选录入；不自动采集全文，不默认复制配图或论文摘要。
 - 搜索由插件内存倒排索引提供，只覆盖已发布的题录、本站介绍和允许公开的原创内容。
@@ -31,7 +31,7 @@
 
 ## 真实状态
 
-更新：2026-11-17。已完成 v6 技术选型评审、ADR 归档与首版工程骨架搭建（插件、Web 主题、小程序骨架、Docker 部署配置与 CI）；尚未完成云端实际部署、真实资料录入、ICP 备案与微信小程序个人主体资质验证。此前本地暂停的 OpenIsle 代码不包含在仓库中。
+更新：2026-11-17。已完成前后端分离架构确认（ADR-005）与首版工程骨架搭建（插件、独立 Web SSR、小程序骨架、微信云托管与 Web 部署配置、CI）；尚未完成云端实际部署、真实资料录入、ICP 备案与微信小程序个人主体资质验证。此前本地暂停的 OpenIsle 代码不包含在仓库中。
 
 运营者没有医疗专业背景或执业资格。备案归属、小程序类目及原文打开能力、资料权利、专业内容条件仍需根据实际业务核实。不能将个人编辑视为专业医学审核，也不以腾讯托管、免责声明或链接模式宣称已满足全部条件。
 

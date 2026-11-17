@@ -8,9 +8,14 @@ import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import run.halo.app.content.ContentWrapper;
+import run.halo.app.content.PostContentService;
+import run.halo.app.core.extension.content.Post;
 import run.halo.app.extension.ListResult;
 import run.halo.app.extension.Metadata;
 import run.halo.app.extension.ReactiveExtensionClient;
@@ -53,10 +58,30 @@ class PublicQueryServiceTest {
         return t;
     }
 
+    static Post post(String name, boolean published, Post.VisibleEnum visible, boolean deleted) {
+        var p = new Post();
+        var m = new Metadata();
+        m.setName(name);
+        m.setLabels(Map.of(Post.PUBLISHED_LABEL, String.valueOf(published)));
+        p.setMetadata(m);
+        p.setSpec(new Post.PostSpec());
+        p.getSpec().setTitle("Post " + name);
+        p.getSpec().setVisible(visible);
+        p.getSpec().setDeleted(deleted);
+        p.getSpec().setPublishTime(Instant.parse("2026-11-17T00:00:00Z"));
+        p.getStatusOrDefault().setExcerpt("Excerpt " + name);
+        return p;
+    }
+
+    static PublicQueryService service(ReactiveExtensionClient client, PostContentService posts,
+                                      SearchIndex index) {
+        return new PublicQueryService(client, posts, index);
+    }
+
     @Test
     void draftWithdrawnAndDeletingCardsAreHiddenFromDetail() {
         var client = mock(ReactiveExtensionClient.class);
-        var service = new PublicQueryService(client, new SearchIndex());
+        var service = service(client, mock(PostContentService.class), new SearchIndex());
 
         var deleting = card("del", PublishState.PUBLISHED, LinkStatus.OK);
         deleting.getMetadata().setDeletionTimestamp(Instant.now());
@@ -79,7 +104,7 @@ class PublicQueryServiceTest {
     @Test
     void retractedCardDetailDowngradesEntryToCitationOnly() {
         var client = mock(ReactiveExtensionClient.class);
-        var service = new PublicQueryService(client, new SearchIndex());
+        var service = service(client, mock(PostContentService.class), new SearchIndex());
 
         when(client.fetch(ResourceCard.class, "ret"))
             .thenReturn(Mono.just(card("ret", PublishState.PUBLISHED, LinkStatus.SOURCE_RETRACTED)));
@@ -93,7 +118,7 @@ class PublicQueryServiceTest {
     @Test
     void topicFiltersOutNonListedCardsAndPreservesOrder() {
         var client = mock(ReactiveExtensionClient.class);
-        var service = new PublicQueryService(client, new SearchIndex());
+        var service = service(client, mock(PostContentService.class), new SearchIndex());
 
         when(client.fetch(Topic.class, "t1"))
             .thenReturn(Mono.just(topic("t1", PublishState.PUBLISHED, List.of("r2", "draft", "r1", "ret"))));
@@ -125,7 +150,7 @@ class PublicQueryServiceTest {
         when(client.fetch(ResourceCard.class, "r1")).thenReturn(Mono.just(r1));
         when(client.fetch(ResourceCard.class, "r2")).thenReturn(Mono.just(r2Withdrawn));
 
-        var service = new PublicQueryService(client, index);
+        var service = service(client, mock(PostContentService.class), index);
         var result = service.search("Title", null, null, 1, 20).block();
         assertThat(result).isNotNull();
         assertThat(result.items()).extracting(Dtos.ResourceView::name).containsExactly("r1");
@@ -134,7 +159,7 @@ class PublicQueryServiceTest {
     @Test
     void listResourcesDefensivelyFiltersStaleIndexItems() {
         var client = mock(ReactiveExtensionClient.class);
-        var service = new PublicQueryService(client, new SearchIndex());
+        var service = service(client, mock(PostContentService.class), new SearchIndex());
         var pub = card("pub", PublishState.PUBLISHED, LinkStatus.OK);
         var draft = card("draft", PublishState.DRAFT, LinkStatus.OK);
         when(client.listBy(eq(ResourceCard.class), any(), any()))
@@ -143,5 +168,34 @@ class PublicQueryServiceTest {
         var page = service.listResources(null, null, null, 1, 20).block();
         assertThat(page).isNotNull();
         assertThat(page.items()).extracting(Dtos.ResourceView::name).containsExactly("pub");
+    }
+
+    @Test
+    void onlyPublishedPublicPostsAreVisibleAndUseReleaseContent() {
+        var client = mock(ReactiveExtensionClient.class);
+        var postContent = mock(PostContentService.class);
+        var service = service(client, postContent, new SearchIndex());
+
+        var pub = post("guide-1", true, Post.VisibleEnum.PUBLIC, false);
+        var priv = post("guide-priv", true, Post.VisibleEnum.PRIVATE, false);
+        var draft = post("guide-draft", false, Post.VisibleEnum.PUBLIC, false);
+        var deleted = post("guide-del", true, Post.VisibleEnum.PUBLIC, true);
+
+        when(client.fetch(Post.class, "guide-1")).thenReturn(Mono.just(pub));
+        when(client.fetch(Post.class, "guide-priv")).thenReturn(Mono.just(priv));
+        when(client.fetch(Post.class, "guide-draft")).thenReturn(Mono.just(draft));
+        when(client.fetch(Post.class, "guide-del")).thenReturn(Mono.just(deleted));
+        when(postContent.getReleaseContent("guide-1"))
+            .thenReturn(Mono.just(ContentWrapper.builder().content("<p>已发布正文</p>").build()));
+        when(client.list(eq(Post.class), any(), any())).thenReturn(Flux.just(pub));
+
+        assertThat(service.getPost("guide-priv").blockOptional()).isEmpty();
+        assertThat(service.getPost("guide-draft").blockOptional()).isEmpty();
+        assertThat(service.getPost("guide-del").blockOptional()).isEmpty();
+        var view = service.getPost("guide-1").block();
+        assertThat(view).isNotNull();
+        assertThat(view.content()).isEqualTo("<p>已发布正文</p>");
+        assertThat(service.listPosts(1, 20).block().items())
+            .extracting(Dtos.PostSummary::name).containsExactly("guide-1");
     }
 }

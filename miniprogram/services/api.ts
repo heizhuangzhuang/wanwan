@@ -56,17 +56,60 @@ export interface PageResult<T> {
   items: T[]
 }
 
-function getBaseUrl(): string {
-  const app = getApp<{ globalData: { apiBase: string } }>()
-  return app.globalData.apiBase
+const API_PREFIX = '/apis/api.wanwan.run/v1alpha1'
+
+interface AppGlobal {
+  globalData: {
+    useCloudContainer: boolean
+    cloudEnv: string
+    cloudService: string
+    apiBase: string
+  }
 }
 
-function request<T>(path: string, data?: Record<string, string | number>): Promise<T> {
+function buildQuery(params?: Record<string, string | number | undefined>): string {
+  if (!params) return ''
+  const parts: string[] = []
+  for (const key of Object.keys(params)) {
+    const val = params[key]
+    if (val !== undefined && val !== '') {
+      parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(val))}`)
+    }
+  }
+  return parts.length ? `?${parts.join('&')}` : ''
+}
+
+function request<T>(path: string, data?: Record<string, string | number | undefined>): Promise<T> {
+  const { globalData } = getApp<AppGlobal>()
+  const qs = buildQuery(data)
+
+  if (globalData.useCloudContainer && wx.cloud) {
+    return new Promise((resolve, reject) => {
+      wx.cloud!.callContainer({
+        config: globalData.cloudEnv ? { env: globalData.cloudEnv } : undefined,
+        path: `${API_PREFIX}${path}${qs}`,
+        method: 'GET',
+        header: {
+          'X-WX-SERVICE': globalData.cloudService,
+        },
+        success(res) {
+          if (res.statusCode >= 200 && res.statusCode < 300) {
+            resolve(res.data as T)
+          } else {
+            reject(new Error(`CloudRun HTTP ${res.statusCode}`))
+          }
+        },
+        fail(err) {
+          reject(err)
+        },
+      })
+    })
+  }
+
   return new Promise((resolve, reject) => {
     wx.request({
-      url: `${getBaseUrl()}${path}`,
+      url: `${globalData.apiBase}${path}${qs}`,
       method: 'GET',
-      data,
       success(res) {
         if (res.statusCode >= 200 && res.statusCode < 300) {
           resolve(res.data as T)

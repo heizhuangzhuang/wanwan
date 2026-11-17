@@ -11,13 +11,25 @@ declare namespace WechatMiniprogram {
   }
 }
 
-declare function App<T>(options: T & ThisType<T>): void
+declare function App<T>(options: T & { onLaunch?(): void } & ThisType<T>): void
 declare function getApp<T = Record<string, unknown>>(): T
 declare function Page<T extends { data?: Record<string, unknown> }>(
   options: T & ThisType<T & { setData(data: Partial<T['data']>): void }>,
 ): void
 
 declare const wx: {
+  cloud?: {
+    init(options?: { env?: string; traceUser?: boolean }): void
+    callContainer(options: {
+      config?: { env?: string }
+      path: string
+      method?: string
+      header?: Record<string, string>
+      data?: unknown
+      success?: (res: { statusCode: number; data: unknown }) => void
+      fail?: (err: unknown) => void
+    }): void
+  }
   request(options: {
     url: string
     method?: string
