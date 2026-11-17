@@ -1,0 +1,18 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/stage/stage",
+    "pages/detail/detail",
+    "pages/topics/topics",
+    "pages/search/search",
+    "pages/about/about"
+  ],
+  "window": {
+    "navigationBarTitleText": "弯弯知识导航",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#fafaf8"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

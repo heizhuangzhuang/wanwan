@@ -1,0 +1,57 @@
+# 弯弯部署（ADR-002）：Nginx + Halo 2.27.3 + MySQL 8.0
+# 使用：cp .env.example .env && 编辑 && docker compose up -d
+services:
+  halo:
+    image: halohub/halo:2.27.3
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./data/halo:/root/.halo2
+    expose:
+      - "8090"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/actuator/health/readiness"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    environment:
+      - JVM_OPTS=-Xmx1024m -Xms512m
+    command:
+      - --spring.r2dbc.url=r2dbc:pool:mysql://mysql:3306/${MYSQL_DATABASE}
+      - --spring.r2dbc.username=root
+      - --spring.r2dbc.password=${MYSQL_ROOT_PASSWORD}
+      - --spring.sql.init.platform=mysql
+      - --halo.external-url=${HALO_EXTERNAL_URL}
+
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_general_ci
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      - halo
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certs:/etc/nginx/certs:ro

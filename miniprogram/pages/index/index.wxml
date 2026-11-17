@@ -1,0 +1,27 @@
+<view class="container">
+  <view class="notice">
+    弯弯知识导航：按阶段整理的可核对公开资料目录。不提供医学诊断或在线诊疗建议。
+  </view>
+
+  <view style="display: flex; gap: 16rpx; margin-bottom: 24rpx;">
+    <button class="btn" style="flex: 1;" bindtap="goSearch">站内搜索</button>
+    <button class="btn" style="flex: 1; background: #ffffff; color: #0f766e; border: 1rpx solid #0f766e;" bindtap="goTopics">精选专题</button>
+  </view>
+
+  <view wx:if="{{loading}}" class="muted">加载中...</view>
+  <view wx:elif="{{error}}" class="card">
+    <view>{{error}}</view>
+    <button class="btn" style="margin-top: 16rpx;" bindtap="loadStages">重试</button>
+  </view>
+
+  <view wx:else>
+    <view wx:for="{{stages}}" wx:key="key" class="card" data-key="{{item.key}}" data-label="{{item.label}}" bindtap="goStage">
+      <view class="muted">阶段 {{item.order + 1}}</view>
+      <view style="font-size: 32rpx; font-weight: 600;">{{item.label}}</view>
+    </view>
+  </view>
+
+  <view style="text-align: center; margin-top: 24rpx;" bindtap="goAbout">
+    <text class="muted">关于本站、版权与勘误联系方式</text>
+  </view>
+</view>

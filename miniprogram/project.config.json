@@ -1,0 +1,15 @@
+{
+  "description": "弯弯知识导航微信小程序（Phase 2）",
+  "compileType": "miniprogram",
+  "miniprogramRoot": "./",
+  "setting": {
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "urlCheck": true,
+    "useCompilerPlugins": ["typescript"]
+  },
+  "appid": "touristappid",
+  "projectname": "wanwan-miniprogram"
+}

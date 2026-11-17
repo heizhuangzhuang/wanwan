@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="https://www.thymeleaf.org"
+      th:replace="~{modules/layout :: html(title=${post.spec.title}, content=~{::section})}">
+<body>
+  <section>
+    <p><a th:href="@{/}">← 返回首页</a></p>
+    <article class="card">
+      <div class="meta-row" style="margin-bottom: 6px;">
+        <span class="badge">本站原创导读</span>
+        <span th:if="${post.spec.publishTime != null}"
+              th:text="'发布日期：' + ${#dates.format(post.spec.publishTime, 'yyyy-MM-dd')}"></span>
+      </div>
+      <h1 th:text="${post.spec.title}"></h1>
+      <div class="notice-bar">本文为本站原创导读或使用说明，不替代门诊沟通与专业医学意见。</div>
+      <div th:utext="${post.content.content}"></div>
+    </article>
+  </section>
+</body>
+</html>

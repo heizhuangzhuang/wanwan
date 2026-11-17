@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="https://www.thymeleaf.org"
+      th:replace="~{modules/layout :: html(title=${title}, content=~{::section})}">
+<body>
+  <section>
+    <h1>按阶段浏览</h1>
+    <p class="notice-bar">阶段只是阅读资料的组织方式，不代表对任何家庭规定检查或治疗路线。</p>
+    <div class="stage-grid">
+      <a class="stage-card" th:each="s : ${stages}" th:href="@{/stages/{key}(key=${s.key})}">
+        <div class="stage-order" th:text="'阶段 ' + (${s.order} + 1)"></div>
+        <div class="stage-name" th:text="${s.label}"></div>
+      </a>
+    </div>
+  </section>
+</body>
+</html>

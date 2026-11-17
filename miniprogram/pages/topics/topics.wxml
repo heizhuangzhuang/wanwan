@@ -1,0 +1,12 @@
+<view class="container">
+  <view wx:if="{{loading}}" class="muted">加载中...</view>
+  <view wx:elif="{{error}}" class="card">{{error}}</view>
+  <view wx:elif="{{!topics.length}}" class="card muted">暂无已发布专题。</view>
+  <view wx:else>
+    <view wx:for="{{topics}}" wx:key="name" class="card">
+      <view style="font-weight: 600; font-size: 30rpx;">{{item.title}}</view>
+      <view style="font-size: 26rpx; margin: 8rpx 0;">{{item.intro}}</view>
+      <view class="muted">含 {{item.resourceCount}} 条资料</view>
+    </view>
+  </view>
+</view>

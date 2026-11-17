@@ -1,0 +1,147 @@
+package run.wanwan.api;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Set;
+import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Mono;
+import run.halo.app.extension.ListResult;
+import run.halo.app.extension.Metadata;
+import run.halo.app.extension.ReactiveExtensionClient;
+import run.wanwan.model.Enums.EntryType;
+import run.wanwan.model.Enums.LinkStatus;
+import run.wanwan.model.Enums.MaterialType;
+import run.wanwan.model.Enums.PublishState;
+import run.wanwan.model.ResourceCard;
+import run.wanwan.model.Stage;
+import run.wanwan.model.Topic;
+import run.wanwan.search.SearchIndex;
+
+class PublicQueryServiceTest {
+
+    static ResourceCard card(String name, PublishState state, LinkStatus linkStatus) {
+        var c = new ResourceCard();
+        var m = new Metadata();
+        m.setName(name);
+        c.setMetadata(m);
+        c.getSpec().setOriginalTitle("Title " + name);
+        c.getSpec().setIntro("Intro " + name);
+        c.getSpec().setUrl("https://example.com/" + name);
+        c.getSpec().setEntryType(EntryType.WEB);
+        c.getSpec().setState(state);
+        c.getSpec().setLinkStatus(linkStatus);
+        c.getSpec().setStages(Set.of(Stage.JUST_FOUND));
+        c.getSpec().setMaterialType(MaterialType.INSTITUTION);
+        return c;
+    }
+
+    static Topic topic(String name, PublishState state, List<String> resourceNames) {
+        var t = new Topic();
+        var m = new Metadata();
+        m.setName(name);
+        t.setMetadata(m);
+        t.getSpec().setTitle("Topic " + name);
+        t.getSpec().setIntro("Topic intro");
+        t.getSpec().setState(state);
+        t.getSpec().setResourceNames(resourceNames);
+        return t;
+    }
+
+    @Test
+    void draftWithdrawnAndDeletingCardsAreHiddenFromDetail() {
+        var client = mock(ReactiveExtensionClient.class);
+        var service = new PublicQueryService(client, new SearchIndex());
+
+        var deleting = card("del", PublishState.PUBLISHED, LinkStatus.OK);
+        deleting.getMetadata().setDeletionTimestamp(Instant.now());
+
+        when(client.fetch(ResourceCard.class, "draft"))
+            .thenReturn(Mono.just(card("draft", PublishState.DRAFT, LinkStatus.OK)));
+        when(client.fetch(ResourceCard.class, "withdrawn"))
+            .thenReturn(Mono.just(card("withdrawn", PublishState.WITHDRAWN, LinkStatus.OK)));
+        when(client.fetch(ResourceCard.class, "del"))
+            .thenReturn(Mono.just(deleting));
+        when(client.fetch(ResourceCard.class, "pub"))
+            .thenReturn(Mono.just(card("pub", PublishState.PUBLISHED, LinkStatus.OK)));
+
+        assertThat(service.getResource("draft").blockOptional()).isEmpty();
+        assertThat(service.getResource("withdrawn").blockOptional()).isEmpty();
+        assertThat(service.getResource("del").blockOptional()).isEmpty();
+        assertThat(service.getResource("pub").blockOptional()).isPresent();
+    }
+
+    @Test
+    void retractedCardDetailDowngradesEntryToCitationOnly() {
+        var client = mock(ReactiveExtensionClient.class);
+        var service = new PublicQueryService(client, new SearchIndex());
+
+        when(client.fetch(ResourceCard.class, "ret"))
+            .thenReturn(Mono.just(card("ret", PublishState.PUBLISHED, LinkStatus.SOURCE_RETRACTED)));
+
+        var view = service.getResource("ret").block();
+        assertThat(view).isNotNull();
+        assertThat(view.entry().type()).isEqualTo(EntryType.CITATION_ONLY);
+        assertThat(view.entry().url()).isNull();
+    }
+
+    @Test
+    void topicFiltersOutNonListedCardsAndPreservesOrder() {
+        var client = mock(ReactiveExtensionClient.class);
+        var service = new PublicQueryService(client, new SearchIndex());
+
+        when(client.fetch(Topic.class, "t1"))
+            .thenReturn(Mono.just(topic("t1", PublishState.PUBLISHED, List.of("r2", "draft", "r1", "ret"))));
+        when(client.fetch(ResourceCard.class, "r2"))
+            .thenReturn(Mono.just(card("r2", PublishState.PUBLISHED, LinkStatus.OK)));
+        when(client.fetch(ResourceCard.class, "draft"))
+            .thenReturn(Mono.just(card("draft", PublishState.DRAFT, LinkStatus.OK)));
+        when(client.fetch(ResourceCard.class, "r1"))
+            .thenReturn(Mono.just(card("r1", PublishState.PUBLISHED, LinkStatus.OK)));
+        when(client.fetch(ResourceCard.class, "ret"))
+            .thenReturn(Mono.just(card("ret", PublishState.PUBLISHED, LinkStatus.SOURCE_RETRACTED)));
+
+        var view = service.getTopic("t1").block();
+        assertThat(view).isNotNull();
+        assertThat(view.resources()).extracting(Dtos.ResourceView::name).containsExactly("r2", "r1");
+    }
+
+    @Test
+    void searchDoubleChecksPrimaryDataBeforeReturning() {
+        var client = mock(ReactiveExtensionClient.class);
+        var index = new SearchIndex();
+        var r1 = card("r1", PublishState.PUBLISHED, LinkStatus.OK);
+        var r2 = card("r2", PublishState.PUBLISHED, LinkStatus.OK);
+        index.upsert(r1);
+        index.upsert(r2);
+
+        // 模拟 r2 在主数据中已被撤回，但索引尚未刷新
+        var r2Withdrawn = card("r2", PublishState.WITHDRAWN, LinkStatus.OK);
+        when(client.fetch(ResourceCard.class, "r1")).thenReturn(Mono.just(r1));
+        when(client.fetch(ResourceCard.class, "r2")).thenReturn(Mono.just(r2Withdrawn));
+
+        var service = new PublicQueryService(client, index);
+        var result = service.search("Title", null, null, 1, 20).block();
+        assertThat(result).isNotNull();
+        assertThat(result.items()).extracting(Dtos.ResourceView::name).containsExactly("r1");
+    }
+
+    @Test
+    void listResourcesDefensivelyFiltersStaleIndexItems() {
+        var client = mock(ReactiveExtensionClient.class);
+        var service = new PublicQueryService(client, new SearchIndex());
+        var pub = card("pub", PublishState.PUBLISHED, LinkStatus.OK);
+        var draft = card("draft", PublishState.DRAFT, LinkStatus.OK);
+        when(client.listBy(eq(ResourceCard.class), any(), any()))
+            .thenReturn(Mono.just(new ListResult<>(1, 20, 2, List.of(pub, draft))));
+
+        var page = service.listResources(null, null, null, 1, 20).block();
+        assertThat(page).isNotNull();
+        assertThat(page.items()).extracting(Dtos.ResourceView::name).containsExactly("pub");
+    }
+}

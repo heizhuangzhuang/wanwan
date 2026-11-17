@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="https://www.thymeleaf.org" th:fragment="html(title, content)">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title th:text="${title != null ? title + ' - ' + site.title : site.title}">弯弯知识导航</title>
+  <link rel="stylesheet" th:href="${#theme.assets('css/style.css')}" />
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <a class="brand" th:href="@{/}" th:text="${site.title}">弯弯知识导航</a>
+      <nav class="nav" aria-label="主导航">
+        <a th:href="@{/}">首页</a>
+        <a th:href="@{/stages}">按阶段</a>
+        <a th:href="@{/topics}">专题</a>
+        <a th:href="@{/resources}">资料库</a>
+        <a th:href="@{/search}">搜索</a>
+        <a th:href="@{/about}">关于与规则</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <th:block th:replace="${content}" />
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <p th:text="${theme.config.basic?.maintenance_status ?: '个人整理维护中；本站点仅提供公开资料导航与出处，不提供医疗诊断或个体建议。'}"></p>
+      <p>
+        <a th:href="@{/about}">收录说明、版权勘误与隐私说明</a>
+        <span th:if="${theme.config.basic?.contact_email != null and !#strings.isEmpty(theme.config.basic.contact_email)}">
+          · 联系邮箱：<span th:text="${theme.config.basic.contact_email}"></span>
+        </span>
+        <span th:if="${theme.config.basic?.icp_number != null and !#strings.isEmpty(theme.config.basic.icp_number)}">
+          · <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer"
+               th:text="${theme.config.basic.icp_number}"></a>
+        </span>
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

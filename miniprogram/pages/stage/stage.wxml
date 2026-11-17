@@ -1,0 +1,12 @@
+<view class="container">
+  <view wx:if="{{loading}}" class="muted">加载中...</view>
+  <view wx:elif="{{error}}" class="card">{{error}}</view>
+  <view wx:elif="{{!items.length}}" class="card muted">该阶段暂未收录公开资料。</view>
+  <view wx:else>
+    <view wx:for="{{items}}" wx:key="name" class="card" data-name="{{item.name}}" bindtap="openDetail">
+      <view style="font-weight: 600; font-size: 30rpx; margin-bottom: 8rpx;">{{item.title}}</view>
+      <view style="font-size: 26rpx; margin-bottom: 10rpx;">{{item.intro}}</view>
+      <view class="muted">来源：{{item.sourceName}} · 核对：{{item.lastVerifiedDate || '未记录'}}</view>
+    </view>
+  </view>
+</view>

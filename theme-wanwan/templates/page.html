@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="https://www.thymeleaf.org"
+      th:replace="~{modules/layout :: html(title=${singlePage.spec.title}, content=~{::section})}">
+<body>
+  <section>
+    <article class="card">
+      <h1 th:text="${singlePage.spec.title}"></h1>
+      <div th:utext="${singlePage.content.content}"></div>
+    </article>
+  </section>
+</body>
+</html>

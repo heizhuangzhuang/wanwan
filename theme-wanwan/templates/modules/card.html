@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="https://www.thymeleaf.org">
+<body>
+  <article class="card" th:fragment="card(r)">
+    <div class="meta-row" style="margin-bottom: 6px;">
+      <span class="badge" th:switch="${r.materialType?.name()}">
+        <span th:case="'INSTITUTION'">机构资料</span>
+        <span th:case="'PAPER'">论文题录</span>
+        <span th:case="'FAMILY_STORY'">家庭经历</span>
+        <span th:case="'ORIGINAL'">本站原创</span>
+        <span th:case="*">资料</span>
+      </span>
+      <span class="badge" th:switch="${r.access?.name()}">
+        <span th:case="'OPEN'">公开可读</span>
+        <span th:case="'LOGIN_REQUIRED'">需要登录</span>
+        <span th:case="'MAY_BE_PAID'">可能付费</span>
+        <span th:case="*">访问条件未确认</span>
+      </span>
+      <span th:if="${r.language?.name() == 'OTHER'}" class="badge">外文资料</span>
+    </div>
+
+    <h3 class="card-title">
+      <a th:href="@{/resources/{name}(name=${r.name})}" th:text="${r.title}">资料标题</a>
+    </h3>
+    <p class="card-orig-title"
+       th:if="${r.originalTitle != null and r.originalTitle != r.title}"
+       th:text="'原标题：' + ${r.originalTitle}"></p>
+
+    <p class="card-intro">
+      <span class="badge">本站介绍</span>
+      <span th:text="${r.intro}"></span>
+    </p>
+
+    <div class="meta-row">
+      <span>来源：<strong th:text="${r.sourceName}"></strong></span>
+      <span th:if="${r.author != null and !#strings.isEmpty(r.author)}"
+            th:text="'作者/机构：' + ${r.author}"></span>
+      <span th:text="'原文日期：' + (${r.publishedDate != null and !#strings.isEmpty(r.publishedDate)} ? ${r.publishedDate} : '未注明')"></span>
+      <span th:if="${r.lastVerifiedDate != null and !#strings.isEmpty(r.lastVerifiedDate)}"
+            th:text="'核对日期：' + ${r.lastVerifiedDate}"></span>
+    </div>
+  </article>
+</body>
+</html>

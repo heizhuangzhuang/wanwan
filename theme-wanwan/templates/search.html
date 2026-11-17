@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="https://www.thymeleaf.org"
+      th:replace="~{modules/layout :: html(title=${title}, content=~{::section})}">
+<body>
+  <section>
+    <h1>站内搜索</h1>
+    <p class="meta-row">仅搜索本站已发布资料卡的题录、本站介绍、来源与标签，不联网抓取原文，也不使用 AI 生成回答。</p>
+
+    <form class="search-form" th:action="@{/search}" method="get">
+      <input class="search-input" type="search" name="keyword" maxlength="100"
+             th:value="${keyword}" placeholder="输入关键词（最多 100 字符）..." aria-label="搜索关键词" />
+      <button class="btn" type="submit">搜索</button>
+    </form>
+
+    <div class="warn-bar" th:if="${tooLong}">
+      关键词超过 100 个字符限制，请缩短后重试。
+    </div>
+
+    <div class="warn-bar" th:if="${!tooLong and !#strings.isEmpty(keyword) and results.items.isEmpty()}">
+      没有找到匹配「<span th:text="${keyword}"></span>」的已公开资料。您可以尝试更换关键词，或<a th:href="@{/stages}">按阶段浏览</a>。
+    </div>
+
+    <div class="card-list" th:if="${!results.items.isEmpty()}">
+      <p class="meta-row" th:text="'共找到 ' + ${results.total} + ' 条匹配资料'"></p>
+      <th:block th:each="r : ${results.items}">
+        <th:block th:replace="~{modules/card :: card(r=${r})}" />
+      </th:block>
+    </div>
+  </section>
+</body>
+</html>

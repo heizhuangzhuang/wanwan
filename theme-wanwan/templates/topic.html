@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="https://www.thymeleaf.org"
+      th:replace="~{modules/layout :: html(title=${topic.title}, content=~{::section})}">
+<body>
+  <section>
+    <p><a th:href="@{/topics}">← 返回专题列表</a></p>
+    <h1 th:text="${topic.title}"></h1>
+    <div class="notice-bar" th:text="${topic.intro}"></div>
+
+    <div class="warn-bar" th:if="${topic.resources.isEmpty()}">
+      该专题下暂无可公开资料。
+    </div>
+    <div class="card-list" th:if="${!topic.resources.isEmpty()}">
+      <th:block th:each="r : ${topic.resources}">
+        <th:block th:replace="~{modules/card :: card(r=${r})}" />
+      </th:block>
+    </div>
+  </section>
+</body>
+</html>

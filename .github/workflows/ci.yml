@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  plugin-build-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugin-wanwan
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: plugin-wanwan/ui/pnpm-lock.yaml
+
+      - name: Lint and build Console UI
+        working-directory: plugin-wanwan/ui
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm lint
+          pnpm build
+
+      - name: Build and test Halo plugin
+        uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew test build --no-daemon
+
+  theme-package-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify theme manifest and package
+        run: |
+          test -f theme-wanwan/theme.yaml
+          test -f theme-wanwan/settings.yaml
+          test -f theme-wanwan/templates/index.html
+          mkdir -p dist
+          zip -r dist/theme-wanwan.zip theme-wanwan -x '*.DS_Store'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: theme-wanwan
+          path: dist/theme-wanwan.zip

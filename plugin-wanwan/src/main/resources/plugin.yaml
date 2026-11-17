@@ -1,0 +1,18 @@
+apiVersion: plugin.halo.run/v1alpha1
+kind: Plugin
+metadata:
+  name: wanwan
+spec:
+  enabled: true
+  requires: ">=2.27.0"
+  author:
+    name: 弯弯 Wanwan
+    website: https://github.com/heizhuangzhuang/wanwan
+  logo: logo.png
+  homepage: https://github.com/heizhuangzhuang/wanwan
+  repo: https://github.com/heizhuangzhuang/wanwan
+  displayName: "弯弯知识导航"
+  description: "资料卡、专题与双端公开接口（Web 主题 / 微信小程序）"
+  license:
+    - name: "GPL-3.0"
+      url: "https://www.gnu.org/licenses/gpl-3.0.html"
