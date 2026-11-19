@@ -21,6 +21,7 @@ declare function Page<T extends { data?: Record<string, unknown> }>(
 ): void
 
 declare const wx: {
+  getAccountInfoSync(): { miniProgram: { envVersion: string } }
   cloud?: {
     init(options?: { env?: string; traceUser?: boolean }): void
     callContainer(options: {

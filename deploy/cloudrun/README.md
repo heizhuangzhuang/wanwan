@@ -16,3 +16,10 @@
    - `WANWAN_CORS_ALLOWED_ORIGINS` 在浏览器需要跨域调用时填写允许的来源，多个来源用逗号分隔。Web SSR 通过服务器间 HTTPS 请求读取接口
 5. **安全边界**：
    - 开启公网域名给 Web 侧使用时，应在网关/访问规则中仅允许公开只读接口（`/apis/api.wanwan.run/v1alpha1/**`）；`/console` 管理后台不要暴露给无限制公网入口。
+
+
+## 上传本地构建包
+
+如果已构建插件 JAR，可使用控制台的「本地代码上传」构建服务版本。上传包根目录应包含 `Dockerfile`、`entrypoint.sh` 和 `plugin-wanwan-*.jar`。Dockerfile 基于 `halohub/halo:2.27.3`，复制已构建的插件和入口脚本，监听 `80`。代码压缩包由云端构建为镜像。MySQL 凭据和环境变量在控制台配置。
+
+发布后检查 `/actuator/health/readiness` 与 `GET /apis/api.wanwan.run/v1alpha1/stages`，再用实际云环境 ID 和服务名联调小程序。升级已有服务时先确认 MySQL、持久化目录和当前可回滚版本。

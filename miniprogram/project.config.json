@@ -8,9 +8,34 @@
     "postcss": true,
     "minified": true,
     "urlCheck": true,
-    "useCompilerPlugins": ["typescript"]
+    "useCompilerPlugins": [
+      "typescript"
+    ]
   },
-  "packOptions": { "ignore": [{ "type": "folder", "value": "test" }] },
+  "packOptions": {
+    "ignore": [
+      {
+        "type": "folder",
+        "value": "test"
+      }
+    ]
+  },
   "appid": "touristappid",
-  "projectname": "wanwan-miniprogram"
+  "projectname": "wanwan-miniprogram",
+  "condition": {
+    "miniprogram": {
+      "list": [
+        {
+          "name": "公众号专题入口（本地演示）",
+          "pathName": "pages/reading/reading",
+          "query": "kind=topic&name=demo-start"
+        },
+        {
+          "name": "公众号导读入口（本地演示）",
+          "pathName": "pages/reading/reading",
+          "query": "kind=guide&name=demo-guide"
+        }
+      ]
+    }
+  }
 }

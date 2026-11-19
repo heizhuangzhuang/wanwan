@@ -47,3 +47,6 @@ page {
 .filter { display: block; padding: 16rpx; background: white; border: 1rpx solid #e5e7eb; border-radius: 12rpx; }
 .field { min-width: 0; background: white; border-radius: 12rpx; border: 1rpx solid #e5e7eb; padding: 12rpx 16rpx; }
 .article-body { display: block; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.home-intro { background: #f0fdfa; border-color: #cdebe4; padding: 32rpx 24rpx; }
+.home-intro .title { font-size: 38rpx; }

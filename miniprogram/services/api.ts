@@ -1,3 +1,6 @@
+import { demoResponse } from './demo'
+import type { IAppOption } from '../app'
+
 export type EntryType = 'WEB' | 'MP_ARTICLE' | 'MINIPROGRAM' | 'CITATION_ONLY'
 
 export interface StageView {
@@ -75,15 +78,6 @@ export interface PageResult<T> {
 
 const API_PREFIX = '/apis/api.wanwan.run/v1alpha1'
 
-interface AppGlobal {
-  globalData: {
-    useCloudContainer: boolean
-    cloudEnv: string
-    cloudService: string
-    apiBase: string
-  }
-}
-
 function buildQuery(params?: Record<string, string | number | undefined>): string {
   if (!params) return ''
   const parts: string[] = []
@@ -97,10 +91,16 @@ function buildQuery(params?: Record<string, string | number | undefined>): strin
 }
 
 function request<T>(path: string, data?: Record<string, string | number | undefined>): Promise<T> {
-  const { globalData } = getApp<AppGlobal>()
+  const { globalData } = getApp<IAppOption>()
+  if (globalData.demoMode) {
+    const response = demoResponse(path, data)
+    return response === undefined ? Promise.reject(new HttpError(404)) : Promise.resolve(response as T)
+  }
   const qs = buildQuery(data)
 
-  if (globalData.useCloudContainer && !wx.cloud) return Promise.reject(new Error('微信云能力不可用'))
+  if (globalData.useCloudContainer && (!wx.cloud || !globalData.cloudEnv)) {
+    return Promise.reject(new Error('微信云环境未配置或不可用'))
+  }
 
   if (globalData.useCloudContainer && wx.cloud) {
     return new Promise((resolve, reject) => {

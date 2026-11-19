@@ -1,3 +1,4 @@
+import type { IAppOption } from '../../app'
 import { wanwanApi, type StageView } from '../../services/api'
 
 Page({
@@ -5,8 +6,10 @@ Page({
     stages: [] as StageView[],
     loading: true,
     error: '',
+    demoMode: false,
   },
   onLoad() {
+    this.setData({ demoMode: getApp<IAppOption>().globalData.demoMode })
     this.loadStages()
   },
   async loadStages() {

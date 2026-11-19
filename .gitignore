@@ -4,3 +4,5 @@
 deploy/data/
 deploy/backups/
 deploy/certs/
+
+miniprogram/project.private.config.json

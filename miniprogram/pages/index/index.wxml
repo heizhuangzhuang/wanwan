@@ -1,14 +1,14 @@
 <view class="container">
-  <view class="notice">
-    弯弯知识导航：按阶段整理的可核对公开资料目录。不提供医学诊断或在线诊疗建议。
+  <view class="card home-intro">
+    <view class="title">从你关心的阶段开始</view>
+    <view class="description muted">查找足内翻相关公开资料，了解出处与阅读条件。</view>
+    <view class="actions">
+      <button class="btn" bindtap="goSearch">搜索资料</button>
+      <button class="btn secondary" bindtap="goTopics">精选专题</button>
+    </view>
+    <button class="btn secondary" bindtap="goGuides">原创导读</button>
   </view>
-
-  <view style="display: flex; gap: 16rpx; margin-bottom: 24rpx;">
-    <button class="btn" style="flex: 1;" bindtap="goSearch">站内搜索</button>
-    <button class="btn" style="flex: 1; background: #ffffff; color: #0f766e; border: 1rpx solid #0f766e;" bindtap="goTopics">精选专题</button>
-  </view>
-
-  <button class="btn secondary" style="margin-bottom: 24rpx;" bindtap="goGuides">阅读原创导读</button>
+  <view wx:if="{{demoMode}}" class="notice">本地演示 · 页面展示的是示例资料。</view>
 
   <view wx:if="{{loading}}" class="muted">加载中...</view>
   <view wx:elif="{{error}}" class="card">
@@ -18,7 +18,7 @@
 
   <view wx:else>
     <view wx:for="{{stages}}" wx:key="key" class="card" data-key="{{item.key}}" data-label="{{item.label}}" bindtap="goStage">
-      <view style="font-size: 32rpx; font-weight: 600;">{{item.label}}</view>
+      <view class="title">{{item.label}}</view>
     </view>
   </view>
 
