@@ -8,7 +8,8 @@
    - 最小实例数必须设为 **1**（禁止缩容到 0，防止 Halo 启动与内存搜索索引重建超时）。
    - 建议规格：1C2G 或 2C4G（`JVM_OPTS=-Xmx1024m -Xms512m`）。
 3. **存储与数据库**：
-   - 关联微信云托管 MySQL 8.0（自动注入 `MYSQL_ADDRESS`、`MYSQL_USERNAME`、`MYSQL_PASSWORD`）。
+   - 发布前先关联微信云托管 MySQL 8.0，确认目标版本获得 `MYSQL_ADDRESS`、`MYSQL_USERNAME`、`MYSQL_PASSWORD`。入口脚本在缺少任一参数时会停止启动。
+   - 已运行的实例若尚未使用 MySQL，先核实数据所在位置并备份，确认迁移后的数据再切换流量。
    - 挂载 **CFS 文件存储** 到 `/root/.halo2`，保存 Halo 配置与原创附件。
 4. **环境变量**：
    - `MYSQL_DATABASE=halo`
@@ -24,4 +25,4 @@
 
 如果已构建插件 JAR，可使用控制台的「本地代码上传」构建服务版本。上传包根目录应包含 `Dockerfile`、`entrypoint.sh` 和 `plugin-wanwan-*.jar`。Dockerfile 基于 `halohub/halo:2.27.3`，复制已构建的插件和入口脚本，监听 `80`。代码压缩包由云端构建为镜像。MySQL 凭据和环境变量在控制台配置。
 
-发布后检查 `/actuator/health/readiness` 与 `GET /apis/api.wanwan.run/v1alpha1/stages`，再用实际云环境 ID 和服务名联调小程序。升级已有服务时先确认 MySQL、持久化目录和当前可回滚版本。
+发布后检查 `/actuator/health/readiness`，并用 MySQL 查询或连接记录核实新版本实际连到目标库。在 Halo 后台确认「弯弯知识导航」插件已启用，匿名 `GET /apis/api.wanwan.run/v1alpha1/stages` 应返回 `200 application/json` 和阶段数组。随后联调 Web 和小程序。升级已有服务时先确认 MySQL、持久化目录和当前可回滚版本。

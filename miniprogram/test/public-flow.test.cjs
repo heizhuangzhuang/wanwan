@@ -47,6 +47,31 @@ const item = name => ({ name, title: name, originalTitle: name, sourceName: '资
   citationUrl: 'https://example.test/origin', entry: { type: 'CITATION_ONLY' } })
 const settle = () => new Promise(resolve => setImmediate(resolve))
 
+test('真实 AppID 连接弯弯云托管，游客继续使用本地联调地址', async () => {
+  const path = join(compiled, 'app.js')
+  function launch(appId, envVersion) {
+    let app
+    const calls = []
+    global.App = options => { app = options }
+    global.wx = {
+      getAccountInfoSync: () => ({ miniProgram: { appId, envVersion } }),
+      cloud: { init: options => calls.push(options) },
+    }
+    delete require.cache[require.resolve(path)]
+    require(path)
+    app.onLaunch()
+    return { config: app.globalData, calls }
+  }
+  const cloud = launch('wx1234567890abcdef', 'develop')
+  assert.deepEqual(cloud.calls, [{ env: 'prod-d8goya17ka2d1a272', traceUser: false }])
+  assert.equal(cloud.config.cloudService, 'wanwan')
+  assert.equal(cloud.config.useCloudContainer, true)
+  const guest = launch('touristappid', 'develop')
+  assert.deepEqual(guest.calls, [])
+  assert.equal(guest.config.useCloudContainer, false)
+  assert.match(guest.config.apiBase, /^http:\/\/127\.0\.0\.1:18090\//)
+})
+
 test('公众号专题入口按编辑顺序显示，返回前台后撤回内容不可见', async () => {
   let status = 200
   const { page, requests, navigations } = openPage('reading', (url, req) => {
