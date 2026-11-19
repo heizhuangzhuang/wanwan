@@ -5,7 +5,7 @@ FROM eclipse-temurin:21-jdk AS plugin-builder
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates && \
     curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt-get install -y --no-install-recommends nodejs && \
-    npm install -g pnpm@9 && \
+    npm install -g pnpm@9.15.9 && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src/plugin-wanwan
