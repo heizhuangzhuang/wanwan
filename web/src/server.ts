@@ -48,6 +48,6 @@ const server = createServer(async (req, res) => {
   }
 })
 
-server.listen(config.port, () => {
-  console.log(`wanwan-web listening on :${config.port}, backend=${config.backendApiBase}`)
+server.listen(config.port, config.host, () => {
+  console.log(`wanwan-web listening on ${config.host || '*'}:${config.port}, backend ${config.backendApiBase ? 'configured' : 'pending'}`)
 })

@@ -93,8 +93,13 @@ export interface BackendClient {
 }
 
 export function createBackendClient(apiBase: string, timeoutMs = 5000): BackendClient {
+  function backendUrl(path: string): URL {
+    if (!apiBase) throw new Error('BACKEND_API_BASE is not configured')
+    return new URL(`${apiBase}${path}`)
+  }
+
   async function getJson<T>(path: string, query?: Record<string, string | number | undefined>): Promise<T> {
-    const url = new URL(`${apiBase}${path}`)
+    const url = backendUrl(path)
     if (query) {
       for (const [k, v] of Object.entries(query)) {
         if (v !== undefined && v !== '') url.searchParams.set(k, String(v))
@@ -112,7 +117,7 @@ export function createBackendClient(apiBase: string, timeoutMs = 5000): BackendC
   }
 
   async function getJsonOrNull<T>(path: string): Promise<T | null> {
-    const res = await fetch(`${apiBase}${path}`, {
+    const res = await fetch(backendUrl(path), {
       method: 'GET',
       headers: { Accept: 'application/json' },
       signal: AbortSignal.timeout(timeoutMs),

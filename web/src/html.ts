@@ -110,15 +110,15 @@ export function renderLayout(config: WebConfig, title: string | null, bodyHtml: 
 <body>
   <header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="/">${escapeHtml(config.siteTitle)}</a>
+      <a class="brand" href="${config.siteBasePath}/">${escapeHtml(config.siteTitle)}</a>
       <nav class="nav" aria-label="主导航">
-        <a href="/">首页</a>
-        <a href="/stages">按阶段</a>
-        <a href="/topics">专题</a>
-        <a href="/resources">资料库</a>
-        <a href="/posts">原创导读</a>
-        <a href="/search">搜索</a>
-        <a href="/about">关于与规则</a>
+        <a href="${config.siteBasePath}/">首页</a>
+        <a href="${config.siteBasePath}/stages">按阶段</a>
+        <a href="${config.siteBasePath}/topics">专题</a>
+        <a href="${config.siteBasePath}/resources">资料库</a>
+        <a href="${config.siteBasePath}/posts">原创导读</a>
+        <a href="${config.siteBasePath}/search">搜索</a>
+        <a href="${config.siteBasePath}/about">关于与规则</a>
       </nav>
     </div>
   </header>
@@ -126,14 +126,14 @@ export function renderLayout(config: WebConfig, title: string | null, bodyHtml: 
   <footer class="site-footer">
     <div class="container">
       <p>${escapeHtml(config.maintenanceStatus)}</p>
-      <p><a href="/about">收录说明、版权勘误与隐私说明</a>${contact}${icp}</p>
+      <p><a href="${config.siteBasePath}/about">收录说明、版权勘误与隐私说明</a>${contact}${icp}</p>
     </div>
   </footer>
 </body>
 </html>`
 }
 
-export function renderCard(r: ResourceView): string {
+export function renderCard(r: ResourceView, config: WebConfig): string {
   const orig =
     r.originalTitle && r.originalTitle !== r.title
       ? `<p class="card-orig-title">原标题：${escapeHtml(r.originalTitle)}</p>`
@@ -149,7 +149,7 @@ export function renderCard(r: ResourceView): string {
     <span class="badge">${accessLabel(r.access)}</span>
     ${langBadge}
   </div>
-  <h3 class="card-title"><a href="/resources/${encodeURIComponent(r.name)}">${escapeHtml(r.title)}</a></h3>
+  <h3 class="card-title"><a href="${config.siteBasePath}/resources/${encodeURIComponent(r.name)}">${escapeHtml(r.title)}</a></h3>
   ${orig}
   <p class="card-intro"><span class="badge">本站介绍</span> ${escapeHtml(r.intro)}</p>
   <div class="meta-row">

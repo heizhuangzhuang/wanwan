@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import type { BackendClient, ResourceView } from '../dist/api.js'
+import { createBackendClient, type BackendClient, type ResourceView } from '../dist/api.js'
 import { loadConfig } from '../dist/config.js'
 import { escapeHtml, safeHttpUrl, sanitizePostHtml } from '../dist/html.js'
 import { handleRequest } from '../dist/views.js'
@@ -86,6 +86,35 @@ describe('web security & SSR', () => {
     assert.equal(res.status, 200)
     assert.ok(res.body.includes('原文已被原站撤回或下线'))
     assert.ok(!res.body.includes('前往原站阅读'))
+  })
+
+  it('keeps routes, navigation, forms and sitemap inside the configured path', async () => {
+    const subpathConfig = loadConfig({ SITE_ORIGIN: 'https://wanwan.run', SITE_BASE_PATH: '/wanwan/' })
+    const client = mockClient()
+
+    const home = await handleRequest('/wanwan/', client, subpathConfig)
+    assert.equal(home.status, 200)
+    assert.match(home.body, /href="\/wanwan\/resources\/r1"/)
+    assert.match(home.body, /action="\/wanwan\/search"/)
+    assert.doesNotMatch(home.body, /(?:href|action)="\/(?!wanwan\/)/)
+
+    const detail = await handleRequest('/wanwan/resources/r1', client, subpathConfig)
+    assert.equal(detail.status, 200)
+    assert.match(detail.body, /href="\/wanwan\/resources"/)
+    assert.match(detail.body, /href="https:\/\/example\.org\/doc"/)
+    assert.equal((await handleRequest('/wanwans/resources/r1', client, subpathConfig)).status, 404)
+
+    const sitemap = await handleRequest('/wanwan/sitemap.xml', client, subpathConfig)
+    assert.match(sitemap.body, /<loc>https:\/\/wanwan\.run\/wanwan\/resources\/r1<\/loc>/)
+  })
+
+  it('serves the homepage while the deployment awaits a backend', async () => {
+    const pendingConfig = loadConfig({ BACKEND_API_BASE: '', SITE_BASE_PATH: '/wanwan' })
+    const client = createBackendClient(pendingConfig.backendApiBase)
+    const home = await handleRequest('/wanwan/', client, pendingConfig)
+    assert.equal(home.status, 200)
+    assert.match(home.body, /资料库正在准备中/)
+    await assert.rejects(handleRequest('/wanwan/resources', client, pendingConfig), /BACKEND_API_BASE/)
   })
 
   it('generates sitemap with only public entries', async () => {
