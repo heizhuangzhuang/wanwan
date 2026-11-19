@@ -1,0 +1,15 @@
+**
+!Dockerfile
+!deploy/
+!deploy/cloudrun/
+!deploy/cloudrun/entrypoint.sh
+!plugin-wanwan/
+!plugin-wanwan/**
+plugin-wanwan/**/.gradle
+plugin-wanwan/**/.gradle/**
+plugin-wanwan/**/build
+plugin-wanwan/**/build/**
+plugin-wanwan/**/node_modules
+plugin-wanwan/**/node_modules/**
+**/.env
+**/.env.*

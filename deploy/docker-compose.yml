@@ -22,7 +22,7 @@ services:
   backend:
     build:
       context: ..
-      dockerfile: deploy/cloudrun/Dockerfile
+      dockerfile: Dockerfile
     restart: unless-stopped
     depends_on:
       mysql:
