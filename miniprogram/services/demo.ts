@@ -25,7 +25,7 @@ const resources = [
 ]
 
 const topic: TopicView = {
-  name: 'demo-start', title: '开始使用弯弯', intro: '从公众号文章打开的专题示例。',
+  name: 'demo-start', title: '开始使用小脚丫步步指南', intro: '从公众号文章打开的专题示例。',
   resources: [resources[0], resources[2]],
 }
 

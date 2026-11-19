@@ -1,10 +1,10 @@
-# 弯弯微信小程序
+# 小脚丫步步指南微信小程序
 
 微信原生小程序使用 TypeScript，复用 Halo 公开 API。读者可按阶段、类型和标签查找资料，按阶段和类型筛选搜索结果，浏览有序专题及本站原创导读。详情重新进入前台时检查内容是否仍可访问。
 
 ## 微信开发者工具与后端接入
 
-在微信开发者工具中导入本目录。[project.config.json](./project.config.json) 中的 `touristappid` 用于本地开发。云端联调时，在开发者工具中换成已绑定 `prod-d8goya17ka2d1a272` 的真实小程序 AppID。 [app.ts](./app.ts) 已配置环境 ID 和服务名 `wanwan`，对外联系邮箱由运营者填写。
+在微信开发者工具中导入本目录。[project.config.json](./project.config.json) 中的 `touristappid` 用于本地开发。云端联调时，在开发者工具中换成已绑定 `prod-d8goya17ka2d1a272` 的真实小程序 AppID。 [app.ts](./app.ts) 已配置环境 ID 和服务名 `xiaojiaoya`，对外联系邮箱由运营者填写。
 
 使用真实 AppID 时，小程序通过 `wx.cloud.callContainer` 请求微信云托管，服务名通过 `X-WX-SERVICE` 传递。游客 AppID 使用 `apiBase` 做本地 HTTP 联调，默认端口为 `18090`。如使用本地 Compose，将端口改为 `8090`。清空 `apiBase` 可在游客模式下浏览演示资料。 [部署架构](../docs/adr/ADR-005-前后端分离与微信云托管部署.md)
 

@@ -1,7 +1,12 @@
 <view class="container">
   <view class="card home-intro">
-    <view class="title">从你关心的阶段开始</view>
-    <view class="description muted">查找足内翻相关公开资料，了解出处与阅读条件。</view>
+    <view class="brand-header">
+      <image class="brand-logo" src="/assets/logo.png" mode="aspectFit" />
+      <view class="brand-meta">
+        <view class="title">从你关心的阶段开始</view>
+        <view class="description muted">查找足内翻相关公开资料，了解出处与阅读条件。</view>
+      </view>
+    </view>
     <view class="actions">
       <button class="btn" bindtap="goSearch">搜索资料</button>
       <button class="btn secondary" bindtap="goTopics">精选专题</button>

@@ -63,7 +63,9 @@ a:hover{text-decoration:underline}
 .container{max-width:var(--max-w);margin:0 auto;padding:0 16px}
 .site-header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 0}
 .header-inner{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
-.brand{font-size:1.15rem;font-weight:700;color:var(--text)}
+.brand{display:inline-flex;align-items:center;gap:8px;font-size:1.15rem;font-weight:700;color:var(--text)}
+.brand:hover{text-decoration:none;color:var(--accent)}
+.brand-logo{width:32px;height:32px;border-radius:8px;border:1px solid #ccfbf1;flex-shrink:0}
 .nav{display:flex;flex-wrap:wrap;gap:14px;font-size:.92rem}
 .nav a{color:var(--text)}
 .notice-bar{background:var(--accent-soft);border:1px solid #ccfbf1;border-radius:8px;padding:12px 14px;font-size:.88rem;color:#134e4a;margin:16px 0}
@@ -105,12 +107,14 @@ export function renderLayout(config: WebConfig, title: string | null, bodyHtml: 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${fullTitle}</title>
+  <link rel="icon" type="image/png" href="${config.siteBasePath}/assets/logo.png" />
+  <link rel="apple-touch-icon" href="${config.siteBasePath}/assets/logo.png" />
   <style>${CSS}</style>
 </head>
 <body>
   <header class="site-header">
     <div class="container header-inner">
-      <a class="brand" href="${config.siteBasePath}/">${escapeHtml(config.siteTitle)}</a>
+      <a class="brand" href="${config.siteBasePath}/"><img class="brand-logo" src="${config.siteBasePath}/assets/logo.png" alt="" width="32" height="32" /><span>${escapeHtml(config.siteTitle)}</span></a>
       <nav class="nav" aria-label="主导航">
         <a href="${config.siteBasePath}/">首页</a>
         <a href="${config.siteBasePath}/stages">按阶段</a>

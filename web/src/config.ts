@@ -23,7 +23,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): WebConfig {
     port: Number(env.PORT) || 3000,
     host: env.HOST || undefined,
     backendApiBase: backend,
-    siteTitle: env.SITE_TITLE || '弯弯知识导航',
+    siteTitle: env.SITE_TITLE || '小脚丫步步指南',
     siteOrigin: origin,
     siteBasePath,
     contactEmail: env.CONTACT_EMAIL || '',

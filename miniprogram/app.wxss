@@ -50,3 +50,6 @@ page {
 
 .home-intro { background: #f0fdfa; border-color: #cdebe4; padding: 32rpx 24rpx; }
 .home-intro .title { font-size: 38rpx; }
+.brand-header { display: flex; align-items: center; gap: 20rpx; margin-bottom: 16rpx; }
+.brand-logo { width: 96rpx; height: 96rpx; border-radius: 20rpx; flex-shrink: 0; border: 1rpx solid #ccfbf1; }
+.brand-meta { flex: 1; min-width: 0; }

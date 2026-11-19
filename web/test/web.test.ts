@@ -120,7 +120,45 @@ describe('web security & SSR', () => {
   it('generates sitemap with only public entries', async () => {
     const res = await handleRequest('/sitemap.xml', mockClient(), config)
     assert.equal(res.status, 200)
+    assert.ok(typeof res.body === 'string')
     assert.ok(res.body.includes('https://wanwan.run/resources/r1'))
     assert.ok(res.body.includes('https://wanwan.run/posts/p1'))
+  })
+
+  it('uses updated brand title and serves logo PNG asset', async () => {
+    assert.equal(config.siteTitle, '小脚丫步步指南')
+    const home = await handleRequest('/', mockClient(), config)
+    assert.equal(home.status, 200)
+    assert.ok(typeof home.body === 'string')
+    assert.ok(home.body.includes('<title>小脚丫步步指南</title>'))
+    assert.ok(home.body.includes('href="/assets/logo.png"'))
+    assert.ok(home.body.includes('src="/assets/logo.png"'))
+
+    const logo = await handleRequest('/assets/logo.png', mockClient(), config)
+    assert.equal(logo.status, 200)
+    assert.equal(logo.contentType, 'image/png')
+    assert.ok(Buffer.isBuffer(logo.body))
+    assert.deepEqual(logo.body.subarray(0, 4), Buffer.from([0x89, 0x50, 0x4e, 0x47]))
+  })
+
+  it('supports SITE_BASE_PATH subpath and pending backend mode', async () => {
+    const subConfig = loadConfig({
+      SITE_BASE_PATH: '/wanwan',
+      SITE_ORIGIN: 'http://81.71.123.100',
+      BACKEND_API_BASE: '',
+    })
+    const home = await handleRequest('/wanwan/', mockClient(), subConfig)
+    assert.equal(home.status, 200)
+    assert.ok(typeof home.body === 'string')
+    assert.ok(home.body.includes('资料库正在准备中'))
+    assert.ok(home.body.includes('href="/wanwan/about"'))
+    assert.ok(home.body.includes('src="/wanwan/assets/logo.png"'))
+
+    const subLogo = await handleRequest('/wanwan/assets/logo.png', mockClient(), subConfig)
+    assert.equal(subLogo.status, 200)
+    assert.equal(subLogo.contentType, 'image/png')
+
+    const outside = await handleRequest('/other', mockClient(), subConfig)
+    assert.equal(outside.status, 404)
   })
 })

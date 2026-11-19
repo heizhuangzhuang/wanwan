@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import type { BackendClient, ResourceView } from './api.js'
 import type { WebConfig } from './config.js'
 import {
@@ -10,10 +11,13 @@ import {
   sanitizePostHtml,
 } from './html.js'
 
+const LOGO_PNG = readFileSync(new URL('../public/logo.png', import.meta.url))
+
 export interface RouteResponse {
   status: number
   contentType: string
-  body: string
+  body: string | Buffer
+  cacheControl?: string
 }
 
 const TYPES = [
@@ -95,7 +99,7 @@ export async function handleRequest(
 ): Promise<RouteResponse> {
   const url = new URL(rawUrl, 'http://localhost')
   const basePath = config.siteBasePath
-  if (url.pathname !== basePath && !url.pathname.startsWith(`${basePath}/`)) {
+  if (basePath && url.pathname !== basePath && !url.pathname.startsWith(`${basePath}/`)) {
     return notFoundResponse(config)
   }
   const path = url.pathname.slice(basePath.length).replace(/\/+$/, '') || '/'
@@ -104,6 +108,15 @@ export async function handleRequest(
 
   if (path === '/healthz') {
     return { status: 200, contentType: 'text/plain; charset=utf-8', body: 'ok' }
+  }
+
+  if (path === '/assets/logo.png' || path === '/favicon.ico') {
+    return {
+      status: 200,
+      contentType: 'image/png',
+      body: LOGO_PNG,
+      cacheControl: 'public, max-age=86400',
+    }
   }
 
   if (path === '/robots.txt') {

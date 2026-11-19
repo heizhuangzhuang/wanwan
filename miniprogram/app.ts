@@ -17,7 +17,7 @@ App<IAppOption>({
   globalData: {
     useCloudContainer: true,
     cloudEnv: 'prod-d8goya17ka2d1a272',
-    cloudService: 'wanwan',
+    cloudService: 'xiaojiaoya',
     apiBase: 'http://127.0.0.1:18090/apis/api.wanwan.run/v1alpha1',
     contactEmail: '',
     demoMode: false,
