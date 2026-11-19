@@ -63,7 +63,7 @@ test('真实 AppID 连接弯弯云托管，游客继续使用本地联调地址'
     return { config: app.globalData, calls }
   }
   const cloud = launch('wx1234567890abcdef', 'develop')
-  assert.deepEqual(cloud.calls, [{ env: 'prod-d8goya17ka2d1a272', traceUser: false }])
+  assert.deepEqual(cloud.calls, [{ env: 'prod-d1gm7gr9e711335be', traceUser: false }])
   assert.equal(cloud.config.cloudService, 'xiaojiaoya')
   assert.equal(cloud.config.useCloudContainer, true)
   const guest = launch('touristappid', 'develop')
