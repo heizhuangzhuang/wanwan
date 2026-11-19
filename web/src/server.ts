@@ -18,7 +18,7 @@ const server = createServer(async (req, res) => {
     const result = await handleRequest(req.url || '/', client, config)
     res.writeHead(result.status, {
       'Content-Type': result.contentType,
-      'Cache-Control': 'no-store',
+      'Cache-Control': result.cacheControl ?? 'no-store',
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
     })
@@ -48,6 +48,8 @@ const server = createServer(async (req, res) => {
   }
 })
 
-server.listen(config.port, () => {
-  console.log(`wanwan-web listening on :${config.port}, backend=${config.backendApiBase}`)
+server.listen(config.port, config.host, () => {
+  console.log(
+    `wanwan-web listening on ${config.host || '*'}:${config.port}, backend ${config.backendApiBase ? 'configured' : 'pending'}`,
+  )
 })

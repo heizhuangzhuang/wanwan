@@ -149,7 +149,7 @@ test('本地演示专题无需访问云服务，正式环境缺配置时返回�
   const demo = openPage('reading', () => assert.fail('示例数据无需网络'), { demoMode: true })
   demo.page.onLoad({ kind: 'topic', name: 'demo-start' })
   await demo.page.load()
-  assert.equal(demo.page.data.title, '开始使用弯弯')
+  assert.equal(demo.page.data.title, '开始使用小脚丫步步指南')
   assert.deepEqual(demo.page.data.items.map(resource => resource.name), ['demo-discovery', 'demo-cast'])
   const production = openPage('reading', () => assert.fail('缺少云环境不发起请求'), { useCloudContainer: true })
   production.page.onLoad({ kind: 'topic', name: 'demo-start' })

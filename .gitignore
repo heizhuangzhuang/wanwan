@@ -6,3 +6,5 @@ deploy/backups/
 deploy/certs/
 
 miniprogram/project.private.config.json
+
+deploy/cloudrun/dist/
