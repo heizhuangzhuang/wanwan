@@ -1,6 +1,9 @@
 <view class="container">
   <view wx:if="{{loading}}" class="muted">加载中...</view>
-  <view wx:elif="{{error}}" class="card">{{error}}</view>
+  <view wx:elif="{{error}}" class="card">
+    <view>{{error}}</view>
+    <button wx:if="{{retryable}}" class="btn" bindtap="loadDetail">重试</button>
+  </view>
   <view wx:elif="{{resource}}" class="card">
     <view style="font-size: 34rpx; font-weight: 700; margin-bottom: 10rpx;">{{resource.title}}</view>
     <view wx:if="{{resource.originalTitle !== resource.title}}" class="muted" style="margin-bottom: 12rpx;">
@@ -10,6 +13,7 @@
     <view class="notice">本站介绍：{{resource.intro}}</view>
 
     <view class="muted" style="margin-bottom: 16rpx;">
+      <view>{{resource.materialLabel}} · {{resource.accessLabel}}</view>
       <view>来源：{{resource.sourceName}}</view>
       <view wx:if="{{resource.author}}">作者/机构：{{resource.author}}</view>
       <view>原文日期：{{resource.publishedDate || '未注明'}}</view>
@@ -18,20 +22,14 @@
       <view wx:if="{{resource.pmid}}">PMID：{{resource.pmid}}</view>
     </view>
 
-    <view wx:if="{{resource.linkStatus === 'SOURCE_RETRACTED'}}" class="muted">
-      原文已撤回，已暂停推荐。
-    </view>
-    <view wx:elif="{{resource.entry.type === 'MP_ARTICLE'}}">
-      <button class="btn" bindtap="openOfficialAccountArticle">打开公众号原文</button>
-    </view>
-    <view wx:elif="{{resource.entry.type === 'MINIPROGRAM'}}">
-      <button class="btn" bindtap="openOtherMiniProgram">打开来源小程序</button>
-    </view>
-    <view wx:elif="{{resource.citationUrl}}">
-      <view class="muted" style="margin-bottom: 12rpx; word-break: break-all;">
-        受限于个人小程序外部网页能力，请复制链接并在系统浏览器中查看原站：{{resource.citationUrl}}
-      </view>
-      <button class="btn" bindtap="copyCitation">复制出处链接</button>
+    <view wx:if="{{resource.linkStatus === 'SOURCE_RETRACTED'}}" class="notice">原文已撤回，以下仅保留出处。</view>
+    <view wx:elif="{{resource.linkStatus !== 'OK'}}" class="notice">原文入口待核对，可以查看并复制题录。</view>
+    <view wx:elif="{{!allowArticle && !allowMiniProgram}}" class="muted description">复制出处后可查找原文。</view>
+    <view wx:if="{{entryError}}" class="notice">{{entryError}}</view>
+    <view class="actions">
+      <button wx:if="{{allowArticle}}" class="btn" bindtap="openOfficialAccountArticle">打开公众号原文</button>
+      <button wx:if="{{allowMiniProgram}}" class="btn" bindtap="openOtherMiniProgram">打开来源小程序</button>
+      <button class="btn secondary" bindtap="copyCitation">复制出处</button>
     </view>
   </view>
 </view>

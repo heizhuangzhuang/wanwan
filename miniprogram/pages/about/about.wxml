@@ -11,6 +11,10 @@
 
   <view class="card">
     <view style="font-weight: 700; font-size: 30rpx; margin-bottom: 10rpx;">版权、勘误与反馈</view>
-    <view style="font-size: 26rpx;">{{contactHint}}</view>
+    <view wx:if="{{contactEmail}}">
+      <view class="description">{{contactEmail}}</view>
+      <button class="btn secondary" bindtap="copyEmail">复制邮箱</button>
+    </view>
+    <view wx:else class="muted">请从网站「关于与规则」页查看联系方式。</view>
   </view>
 </view>

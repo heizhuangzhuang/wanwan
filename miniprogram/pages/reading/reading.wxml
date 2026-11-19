@@ -1,0 +1,24 @@
+<import src="../../templates/public.wxml" />
+<view class="container">
+  <view wx:if="{{loading}}" class="muted">加载中…</view>
+  <view wx:elif="{{error}}" class="card">
+    <view>{{error}}</view>
+    <view class="actions">
+      <button wx:if="{{retryable}}" class="btn" bindtap="load">重试</button>
+      <button class="btn secondary" bindtap="backToIndex">查看全部资料</button>
+    </view>
+  </view>
+  <block wx:else>
+    <view class="card">
+      <view class="title">{{title}}</view>
+      <view wx:if="{{intro}}" class="description">{{intro}}</view>
+      <view wx:if="{{date}}" class="muted">发布于 {{date}}</view>
+      <text wx:if="{{kind === 'guide'}}" class="article-body description" selectable>{{body || '暂无可显示的文字正文。'}}</text>
+    </view>
+    <block wx:if="{{kind === 'topic'}}">
+      <template wx:if="{{items.length}}" is="resourceCards" data="{{items}}" />
+      <view wx:else class="card muted">该专题暂无公开资料。</view>
+    </block>
+    <button class="btn secondary" bindtap="backToIndex">查看全部资料</button>
+  </block>
+</view>

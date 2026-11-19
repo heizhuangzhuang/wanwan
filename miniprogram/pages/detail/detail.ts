@@ -1,59 +1,70 @@
-import { wanwanApi, type ResourceView } from '../../services/api'
+import { HttpError, wanwanApi } from '../../services/api'
+import { decodeOption, resourceLabel } from '../../services/reading'
 
 Page({
   data: {
-    resource: null as ResourceView | null,
-    loading: true,
-    error: '',
+    name: '', resource: null as ReturnType<typeof resourceLabel> | null,
+    loading: true, error: '', retryable: false, entryError: '',
+    allowArticle: false, allowMiniProgram: false,
   },
   onLoad(options: Record<string, string | undefined>) {
-    const name = options.name ? decodeURIComponent(options.name) : ''
+    this.setData({ name: decodeOption(options.name) })
+  },
+  onShow() { void this.loadDetail() },
+  async loadDetail() {
+    const { name } = this.data
+    this.setData({ loading: true, error: '', retryable: false, entryError: '', resource: null })
     if (!name) {
-      this.setData({ loading: false, error: '参数缺失' })
+      this.setData({ loading: false, error: '入口缺少有效的资料标识。' })
       return
     }
-    this.loadDetail(name)
-  },
-  async loadDetail(name: string) {
-    this.setData({ loading: true, error: '' })
     try {
       const resource = await wanwanApi.getResource(name)
-      this.setData({ resource, loading: false })
-    } catch {
-      this.setData({ loading: false, error: '该资料未找到或已下线。' })
+      const verified = resource.linkStatus === 'OK'
+      this.setData({
+        resource: resourceLabel(resource),
+        allowArticle: verified && resource.entry.type === 'MP_ARTICLE' && !!resource.entry.url
+          && typeof wx.openOfficialAccountArticle === 'function',
+        allowMiniProgram: verified && resource.entry.type === 'MINIPROGRAM' && !!resource.entry.appId,
+      })
+    } catch (error) {
+      const unavailable = error instanceof HttpError && error.statusCode === 404
+      this.setData({
+        error: unavailable ? '该资料不可访问或已下线。' : '暂时无法读取资料，请重试。',
+        retryable: !unavailable,
+      })
+    } finally {
+      this.setData({ loading: false })
     }
   },
   copyCitation() {
-    const r = this.data.resource
-    if (!r?.citationUrl) return
+    const resource = this.data.resource
+    if (!resource) return
+    const citation = [resource.originalTitle, resource.author, resource.sourceName, resource.publishedDate,
+      resource.doi && `DOI ${resource.doi}`, resource.pmid && `PMID ${resource.pmid}`,
+      resource.linkStatus === 'OK' ? resource.citationUrl : null,
+    ].filter(Boolean).join('\n')
     wx.setClipboardData({
-      data: r.citationUrl,
-      success() {
-        wx.showToast({ title: '已复制出处链接，请在浏览器打开', icon: 'none' })
-      },
+      data: citation,
+      success: () => wx.showToast({ title: '已复制出处', icon: 'none' }),
+      fail: () => wx.showToast({ title: '未能复制，请稍后重试', icon: 'none' }),
     })
   },
   openOfficialAccountArticle() {
     const url = this.data.resource?.entry.url
-    if (!url) return
-    const openFn = (wx as unknown as { openOfficialAccountArticle?: (o: { url: string; fail?: () => void }) => void })
-      .openOfficialAccountArticle
-    if (typeof openFn === 'function') {
-      openFn({
-        url,
-        fail: () => this.copyCitation(),
-      })
-    } else {
-      this.copyCitation()
-    }
+    if (!this.data.allowArticle || !url) return
+    wx.openOfficialAccountArticle?.({
+      url,
+      fail: () => this.setData({ entryError: '当前无法打开公众号文章，可以复制出处。' }),
+    })
   },
   openOtherMiniProgram() {
     const entry = this.data.resource?.entry
-    if (!entry?.appId) return
+    if (!this.data.allowMiniProgram || !entry?.appId) return
     wx.navigateToMiniProgram({
       appId: entry.appId,
       path: entry.path ?? undefined,
-      fail: () => wx.showToast({ title: '暂无法跳转该小程序', icon: 'none' }),
+      fail: () => this.setData({ entryError: '当前无法打开来源小程序，可以复制出处。' }),
     })
   },
 })

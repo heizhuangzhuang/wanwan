@@ -28,6 +28,9 @@ Page({
   goTopics() {
     wx.navigateTo({ url: '/pages/topics/topics' })
   },
+  goGuides() {
+    wx.navigateTo({ url: '/pages/topics/topics?kind=guide' })
+  },
   goAbout() {
     wx.navigateTo({ url: '/pages/about/about' })
   },

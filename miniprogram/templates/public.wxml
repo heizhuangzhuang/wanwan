@@ -1,0 +1,15 @@
+<template name="resourceCards">
+  <view wx:for="{{items}}" wx:key="name" class="card" data-name="{{item.name}}" bindtap="openDetail">
+    <view class="title">{{item.title}}</view>
+    <view class="description">{{item.intro}}</view>
+    <view class="muted">{{item.materialLabel}} · {{item.sourceName}}</view>
+  </view>
+</template>
+
+<template name="pagination">
+  <view wx:if="{{page > 1 || hasNext}}" class="pagination">
+    <button class="btn secondary" disabled="{{loading || page <= 1}}" bindtap="previousPage">上一页</button>
+    <text class="muted">第 {{page}} 页</text>
+    <button class="btn secondary" disabled="{{loading || !hasNext}}" bindtap="nextPage">下一页</button>
+  </view>
+</template>

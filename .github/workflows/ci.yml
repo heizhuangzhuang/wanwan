@@ -61,6 +61,5 @@ jobs:
           pnpm typecheck
           pnpm test
 
-      - name: Typecheck Mini Program
-        working-directory: miniprogram
-        run: ../web/node_modules/.bin/tsc --noEmit
+      - name: Typecheck and test Mini Program public flows
+        run: node --test miniprogram/test/public-flow.test.cjs

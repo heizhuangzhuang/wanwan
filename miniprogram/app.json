@@ -4,6 +4,7 @@
     "pages/stage/stage",
     "pages/detail/detail",
     "pages/topics/topics",
+    "pages/reading/reading",
     "pages/search/search",
     "pages/about/about"
   ],

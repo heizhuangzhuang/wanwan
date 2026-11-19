@@ -16,7 +16,7 @@
 
 - `plugin-wanwan/` 是 Halo 2.27.3 业务插件，包含资料卡和专题后台、公开 API 与搜索。
 - `web/` 是独立 Node 22 SSR 前端，调用公开 API，通过 Nginx 提供 Web 访问。
-- `miniprogram/` 是微信原生小程序二期骨架，生产接入计划使用 `wx.cloud.callContainer`。
+- `miniprogram/` 是微信原生小程序，已接入公开资料、专题详情、原创导读、筛选分页与公众号文章落地路径。生产接入使用 `wx.cloud.callContainer`。
 - `deploy/` 包含本地 Compose、微信云托管后端镜像和独立 Web 部署模板。
 
 ## 当前进度

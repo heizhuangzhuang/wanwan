@@ -1,12 +1,21 @@
+<import src="../../templates/public.wxml" />
 <view class="container">
-  <view wx:if="{{loading}}" class="muted">加载中...</view>
-  <view wx:elif="{{error}}" class="card">{{error}}</view>
-  <view wx:elif="{{!topics.length}}" class="card muted">暂无已发布专题。</view>
-  <view wx:else>
-    <view wx:for="{{topics}}" wx:key="name" class="card">
-      <view style="font-weight: 600; font-size: 30rpx;">{{item.title}}</view>
-      <view style="font-size: 26rpx; margin: 8rpx 0;">{{item.intro}}</view>
-      <view class="muted">含 {{item.resourceCount}} 条资料</view>
-    </view>
+  <view class="actions">
+    <button class="btn {{kind === 'topic' ? '' : 'secondary'}}" disabled="{{loading}}" data-kind="topic" bindtap="selectKind">精选专题</button>
+    <button class="btn {{kind === 'guide' ? '' : 'secondary'}}" disabled="{{loading}}" data-kind="guide" bindtap="selectKind">原创导读</button>
   </view>
+  <view wx:if="{{loading}}" class="muted">加载中…</view>
+  <view wx:elif="{{error}}" class="card">
+    <view>{{error}}</view>
+    <button class="btn" bindtap="retry">重试</button>
+  </view>
+  <block wx:else>
+    <view wx:if="{{!items.length}}" class="card muted">暂无可阅读的{{kind === 'topic' ? '专题' : '导读'}}。</view>
+    <view wx:for="{{items}}" wx:key="name" class="card" data-name="{{item.name}}" bindtap="openReading">
+      <view class="title">{{item.title}}</view>
+      <view wx:if="{{item.intro}}" class="description">{{item.intro}}</view>
+      <view wx:if="{{item.date}}" class="muted">发布于 {{item.date}}</view>
+    </view>
+    <template is="pagination" data="{{page, hasNext, loading}}" />
+  </block>
 </view>

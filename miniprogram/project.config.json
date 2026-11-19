@@ -10,6 +10,7 @@
     "urlCheck": true,
     "useCompilerPlugins": ["typescript"]
   },
+  "packOptions": { "ignore": [{ "type": "folder", "value": "test" }] },
   "appid": "touristappid",
   "projectname": "wanwan-miniprogram"
 }

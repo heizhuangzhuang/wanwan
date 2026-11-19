@@ -49,6 +49,23 @@ export interface TopicView {
   resources: ResourceView[]
 }
 
+export interface PostSummary {
+  name: string
+  title: string
+  excerpt: string | null
+  publishTime: string | null
+}
+
+export interface PostView extends PostSummary {
+  content: string
+}
+
+export class HttpError extends Error {
+  constructor(public readonly statusCode: number) {
+    super(`HTTP ${statusCode}`)
+  }
+}
+
 export interface PageResult<T> {
   page: number
   size: number
@@ -83,6 +100,8 @@ function request<T>(path: string, data?: Record<string, string | number | undefi
   const { globalData } = getApp<AppGlobal>()
   const qs = buildQuery(data)
 
+  if (globalData.useCloudContainer && !wx.cloud) return Promise.reject(new Error('微信云能力不可用'))
+
   if (globalData.useCloudContainer && wx.cloud) {
     return new Promise((resolve, reject) => {
       wx.cloud!.callContainer({
@@ -96,7 +115,7 @@ function request<T>(path: string, data?: Record<string, string | number | undefi
           if (res.statusCode >= 200 && res.statusCode < 300) {
             resolve(res.data as T)
           } else {
-            reject(new Error(`CloudRun HTTP ${res.statusCode}`))
+            reject(new HttpError(res.statusCode))
           }
         },
         fail(err) {
@@ -114,7 +133,7 @@ function request<T>(path: string, data?: Record<string, string | number | undefi
         if (res.statusCode >= 200 && res.statusCode < 300) {
           resolve(res.data as T)
         } else {
-          reject(new Error(`HTTP ${res.statusCode}`))
+          reject(new HttpError(res.statusCode))
         }
       },
       fail(err) {
@@ -126,11 +145,13 @@ function request<T>(path: string, data?: Record<string, string | number | undefi
 
 export const wanwanApi = {
   getStages: () => request<StageView[]>('/stages'),
-  listResources: (params: { stage?: string; type?: string; page?: number; size?: number }) =>
+  listResources: (params: { stage?: string; type?: string; tag?: string; page?: number; size?: number }) =>
     request<PageResult<ResourceView>>('/resources', params),
   getResource: (name: string) => request<ResourceView>(`/resources/${encodeURIComponent(name)}`),
   listTopics: (page = 1, size = 20) => request<PageResult<TopicSummary>>('/topics', { page, size }),
   getTopic: (name: string) => request<TopicView>(`/topics/${encodeURIComponent(name)}`),
-  search: (keyword: string, page = 1, size = 20) =>
-    request<PageResult<ResourceView>>('/search', { keyword, page, size }),
+  listPosts: (page = 1, size = 20) => request<PageResult<PostSummary>>('/posts', { page, size }),
+  getPost: (name: string) => request<PostView>(`/posts/${encodeURIComponent(name)}`),
+  search: (params: { keyword: string; stage?: string; type?: string; page?: number; size?: number }) =>
+    request<PageResult<ResourceView>>('/search', params),
 }

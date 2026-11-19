@@ -4,6 +4,9 @@ declare namespace WechatMiniprogram {
       dataset: Record<string, unknown>
     }
   }
+  interface PickerChange {
+    detail: { value: string | number }
+  }
   interface Input {
     detail: {
       value: string
@@ -38,8 +41,10 @@ declare const wx: {
     fail?: (err: unknown) => void
   }): void
   navigateTo(options: { url: string }): void
+  reLaunch(options: { url: string }): void
   navigateToMiniProgram(options: { appId: string; path?: string; fail?: () => void }): void
   setNavigationBarTitle(options: { title: string }): void
-  setClipboardData(options: { data: string; success?: () => void }): void
+  setClipboardData(options: { data: string; success?: () => void; fail?: () => void }): void
+  openOfficialAccountArticle?(options: { url: string; fail?: () => void }): void
   showToast(options: { title: string; icon?: string }): void
 }

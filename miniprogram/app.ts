@@ -8,6 +8,7 @@ export interface IAppOption {
     cloudService: string
     /** 本地开发或关闭云托管直连时的备用 HTTPS API 基地址 */
     apiBase: string
+    contactEmail: string
   }
 }
 
@@ -17,6 +18,7 @@ App<IAppOption>({
     cloudEnv: '',
     cloudService: 'wanwan-backend',
     apiBase: 'https://api.example.com/apis/api.wanwan.run/v1alpha1',
+    contactEmail: '',
   },
   onLaunch() {
     if (this.globalData.useCloudContainer && wx.cloud) {

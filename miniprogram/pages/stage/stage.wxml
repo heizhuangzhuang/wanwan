@@ -1,12 +1,20 @@
+<import src="../../templates/public.wxml" />
 <view class="container">
-  <view wx:if="{{loading}}" class="muted">加载中...</view>
-  <view wx:elif="{{error}}" class="card">{{error}}</view>
-  <view wx:elif="{{!items.length}}" class="card muted">该阶段暂未收录公开资料。</view>
-  <view wx:else>
-    <view wx:for="{{items}}" wx:key="name" class="card" data-name="{{item.name}}" bindtap="openDetail">
-      <view style="font-weight: 600; font-size: 30rpx; margin-bottom: 8rpx;">{{item.title}}</view>
-      <view style="font-size: 26rpx; margin-bottom: 10rpx;">{{item.intro}}</view>
-      <view class="muted">来源：{{item.sourceName}} · 核对：{{item.lastVerifiedDate || '未记录'}}</view>
-    </view>
+  <picker mode="selector" range="{{materials}}" range-key="label" value="{{typeIndex}}" disabled="{{loading}}" bindchange="onType">
+    <view class="filter">{{materials[typeIndex].label}} ▾</view>
+  </picker>
+  <view class="actions">
+    <input class="field" placeholder="按主题标签筛选" maxlength="50" value="{{tag}}" disabled="{{loading}}" bindinput="onTag" bindconfirm="applyTag" />
+    <button class="btn" disabled="{{loading}}" bindtap="applyTag">筛选</button>
   </view>
+  <view wx:if="{{loading}}" class="muted">加载中…</view>
+  <view wx:elif="{{error}}" class="card">
+    <view>{{error}}</view>
+    <button class="btn" bindtap="retry">重试</button>
+  </view>
+  <block wx:else>
+    <view wx:if="{{!items.length}}" class="card muted">没有符合当前条件的公开资料。</view>
+    <template is="resourceCards" data="{{items}}" />
+    <template is="pagination" data="{{page, hasNext, loading}}" />
+  </block>
 </view>
