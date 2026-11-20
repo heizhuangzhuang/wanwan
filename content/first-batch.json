@@ -1,0 +1,179 @@
+{
+  "verifiedDate": "2026-11-20",
+  "resources": [
+    {
+      "id": "beijing-prenatal-ultrasound",
+      "originalTitle": "产前超声检查知多少",
+      "displayTitle": "大排畸和产前超声主要看什么",
+      "intro": "北京市垂杨柳医院超声科通过首都之窗介绍不同阶段产前超声的用途和局限。刚拿到报告时，可以先了解「系统筛查」指什么，再把仍需确认的部位记下来。",
+      "url": "https://www.beijing.gov.cn/fuwu/bmfw/jhsyfwzdzx/2024sjrkr/kpzs/202406/t20240611_3709450.html",
+      "sourceName": "首都之窗",
+      "author": "北京市垂杨柳医院超声科",
+      "publishedDate": "2024-06-11",
+      "stages": ["JUST_FOUND", "PRENATAL"],
+      "tags": ["产前超声", "大排畸", "复查"]
+    },
+    {
+      "id": "fantasia-isolated-clubfoot",
+      "originalTitle": "Prenatal diagnosis of isolated clubfoot: Diagnostic accuracy and long-term postnatal outcomes",
+      "displayTitle": "产前发现单纯性马蹄足后，研究如何追踪出生后的结果",
+      "intro": "意大利一项回顾性队列研究比较产前超声所见和出生后评估，并追踪接受治疗的儿童。题录适合了解为什么产前记录和出生后评估都值得保留。",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/34273754/",
+      "sourceName": "European Journal of Obstetrics & Gynecology and Reproductive Biology（PubMed）",
+      "author": "Ilaria Fantasia 等",
+      "publishedDate": "2021-07-07",
+      "stages": ["JUST_FOUND", "PRENATAL", "LONG_TERM"],
+      "tags": ["产前超声", "马蹄内翻足", "随访"],
+      "materialType": "PAPER",
+      "language": "OTHER",
+      "doi": "10.1016/j.ejogrb.2021.07.009",
+      "pmid": "34273754"
+    },
+    {
+      "id": "nhs-screening-next-steps",
+      "originalTitle": "If antenatal screening tests find something",
+      "displayTitle": "产前筛查提示异常后，可以问清哪些检查选项",
+      "intro": "NHS 的家长资料介绍筛查结果出来后可能谈到的无创产前筛查、羊水穿刺和后续超声。适合见医生前整理两个问题：先前做的是哪一类筛查，这次提出的检查能回答什么。",
+      "url": "https://www.nhs.uk/pregnancy/your-pregnancy-care/if-antenatal-screening-tests-find-something/",
+      "sourceName": "英国 NHS",
+      "stages": ["PRENATAL"],
+      "tags": ["产前筛查", "无创 DNA", "NIPT", "羊水穿刺"],
+      "language": "OTHER"
+    },
+    {
+      "id": "zju-amniotic-karyotype",
+      "originalTitle": "羊水胎儿细胞染色体分析",
+      "displayTitle": "羊水穿刺与染色体核型分析是什么关系",
+      "intro": "浙江大学遗传与发育研究院用本院服务说明展示了从羊水取样到实验室核型分析的流程。可以用它区分取样、检测和取报告，再核对自己收到的申请单写了哪些项目。",
+      "url": "https://klrg.womanhospital.cn/imgd/articleInfo/190",
+      "sourceName": "浙江大学遗传与发育研究院",
+      "publishedDate": "2024-12-24",
+      "stages": ["PRENATAL"],
+      "tags": ["羊水穿刺", "羊穿", "染色体", "核型", "遗传咨询"]
+    },
+    {
+      "id": "southampton-amniotic-microarray",
+      "originalTitle": "Amniocentesis (QF-PCR and array CGH tests)",
+      "displayTitle": "同一份羊水送检时，快速检测和染色体微阵列分别查什么",
+      "intro": "南安普敦大学医院的患者手册用两个检验项目说明同一次采样后可以怎样安排实验室检测。拿到申请单时，可以借它对照项目名称，向本院确认报告是否分批出具。",
+      "url": "https://www.uhs.nhs.uk/Media/UHS-website-2019/Patientinformation/Pregnancyandbirth/Amniocentesis-QF-PCR-and-array-CGH-tests-2830-PIL.pdf",
+      "sourceName": "南安普敦大学医院 NHS 基金会信托",
+      "stages": ["PRENATAL"],
+      "tags": ["羊水穿刺", "染色体微阵列", "CMA", "基因芯片", "QF-PCR"],
+      "language": "OTHER"
+    },
+    {
+      "id": "cma-ispd-prenatal-sequencing",
+      "originalTitle": "ISPD对基因组测序在产前诊断中的应用的立场声明",
+      "displayTitle": "全外显子测序（WES）与产前遗传咨询",
+      "intro": "中华医学会围产医学分会刊载的中文专业资料涉及产前测序的范围、报告解读和咨询。家长找资料时可以关注检测的边界、是否需要父母样本，以及如何复核不确定结果。",
+      "url": "https://cspm.cma.org.cn/index/news?id=3531",
+      "sourceName": "中华医学会围产医学分会",
+      "publishedDate": "2024-01-08",
+      "stages": ["PRENATAL"],
+      "tags": ["全外显", "WES", "产前测序", "遗传咨询"]
+    },
+    {
+      "id": "shsmu-fetal-medicine",
+      "originalTitle": "胎儿发育异常诊治中心",
+      "displayTitle": "看懂产前诊断门诊、遗传咨询和多学科会诊的分工",
+      "intro": "上海交通大学医学院介绍国际和平妇幼保健院的胎儿医学门诊分工。可用来了解不同门诊一般解决什么问题，再询问本地接诊医院应挂哪一科。",
+      "url": "https://www.shsmu.edu.cn/info/1073/1046.htm",
+      "sourceName": "上海交通大学医学院",
+      "stages": ["PRENATAL"],
+      "tags": ["遗传咨询", "产前诊断", "就诊准备"]
+    },
+    {
+      "id": "shchildren-clubfoot",
+      "originalTitle": "骨科",
+      "displayTitle": "上海市儿童医院骨科介绍中的先天性马蹄内翻足",
+      "intro": "原文在「先天性马蹄内翻足」小节介绍出生后骨科评估，以及石膏矫形到支具阶段的衔接。阅读时可从该小节开始，记下需要向接诊医生确认的流程。",
+      "url": "https://www.shchildren.com.cn/contents/449/2780.html",
+      "sourceName": "上海市儿童医院",
+      "publishedDate": "2023-04-26",
+      "stages": ["JUST_FOUND", "POSTNATAL_TREATMENT"],
+      "tags": ["马蹄内翻足", "Ponseti", "小儿骨科", "石膏", "支具"]
+    },
+    {
+      "id": "nhs-clubfoot",
+      "originalTitle": "Clubfoot",
+      "displayTitle": "出生后从骨科评估到支具随访的整体流程",
+      "intro": "NHS 面向家长说明出生后评估及 Ponseti 治疗各环节。第一次去小儿骨科前，可以先了解分次打石膏、跟腱处理、支具和随访分别处在哪一步。",
+      "url": "https://www.nhs.uk/conditions/club-foot/",
+      "sourceName": "英国 NHS",
+      "stages": ["JUST_FOUND", "POSTNATAL_TREATMENT", "BRACE_DAILY"],
+      "tags": ["马蹄内翻足", "Ponseti", "石膏", "跟腱", "支具", "复诊"],
+      "language": "OTHER"
+    },
+    {
+      "id": "rnoh-ponseti-cast",
+      "originalTitle": "Plaster instructions for parents of babies in a Ponseti cast",
+      "displayTitle": "Ponseti 石膏居家观察与复诊前要问的问题",
+      "intro": "英国皇家国家骨科医院的手册专门面向接受 Ponseti 石膏治疗的婴儿家庭，涉及脚趾和石膏状态的观察。可作为回家前向接诊医院确认观察重点、换石膏安排和联系方式的参考。",
+      "url": "https://www.rnoh.nhs.uk/patients-and-visitors/patient-information-guides/plaster-instructions-parents-babies-ponseti-cast",
+      "sourceName": "英国皇家国家骨科医院（RNOH）",
+      "author": "Plaster Theatre Team",
+      "stages": ["POSTNATAL_TREATMENT"],
+      "tags": ["马蹄内翻足", "Ponseti", "石膏注意事项", "石膏护理", "复诊"],
+      "language": "OTHER"
+    },
+    {
+      "id": "beijing-childrens-cast",
+      "originalTitle": "〖儿研所儿医说〗石膏护理小“膏”招",
+      "displayTitle": "儿童石膏护理中文参考",
+      "intro": "首都儿科研究所的通用护理资料涉及石膏受潮、松动以及肢端外观变化。可用于整理要请治疗团队说明的异常情况，Ponseti 石膏的换药和复查安排以接诊医院交代为准。",
+      "url": "https://wjw.beijing.gov.cn/bmfw_20143/jkzs/jksh/202410/t20241022_3925285.html",
+      "sourceName": "北京市卫生健康委员会",
+      "author": "首都儿科研究所",
+      "publishedDate": "2024-10-22",
+      "stages": ["POSTNATAL_TREATMENT"],
+      "tags": ["石膏", "石膏护理", "日常照护"]
+    },
+    {
+      "id": "alder-hey-boots-and-bar",
+      "originalTitle": "Boots and Bar Ponseti Treatment PIAG 95",
+      "displayTitle": "连杆支具试戴后，怎样准备下一次复查",
+      "intro": "Alder Hey 儿童医院的手册介绍支具试配、观察鞋后跟位置和复查时检查鞋与连杆。它适合用来列出想请矫形团队现场演示的动作，以及复诊要带的器具。",
+      "url": "https://www.alderhey.nhs.uk/conditions/patient-information-leaflets/boots-and-bar-ponseti-treatment/",
+      "sourceName": "Alder Hey 儿童医院 NHS 基金会信托",
+      "stages": ["BRACE_DAILY", "LONG_TERM"],
+      "tags": ["支具", "外展支具", "连杆", "足跟", "复查", "随访"],
+      "language": "OTHER"
+    },
+    {
+      "id": "cooper-ponseti-followup",
+      "originalTitle": "Treatment of idiopathic clubfoot. A thirty-year follow-up note.",
+      "displayTitle": "马蹄内翻足治疗后随访到成年，研究记录了哪些结果",
+      "intro": "Cooper 和 Dietz 的历史随访研究观察接受 Ponseti 治疗人群成年后的足部功能等结果。适合查找长期随访文献，阅读时需留意队列年代和研究对象。",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/7593056/",
+      "sourceName": "The Journal of Bone & Joint Surgery（PubMed）",
+      "author": "D. M. Cooper、F. R. Dietz",
+      "stages": ["LONG_TERM"],
+      "tags": ["马蹄内翻足", "Ponseti", "长期随访", "足部功能", "预后"],
+      "materialType": "PAPER",
+      "language": "OTHER",
+      "doi": "10.2106/00004623-199510000-00002",
+      "pmid": "7593056"
+    }
+  ],
+  "topics": [
+    {
+      "id": "prenatal-visit-preparation",
+      "title": "产前报告提示足内翻，先准备哪些问题",
+      "intro": "先读产前超声与出生后评估的资料，再按手上的检查名称找筛查、羊水取样、核型、芯片和全外显的出处。",
+      "resources": ["beijing-prenatal-ultrasound", "fantasia-isolated-clubfoot", "nhs-screening-next-steps", "zju-amniotic-karyotype", "southampton-amniotic-microarray", "cma-ispd-prenatal-sequencing", "shsmu-fetal-medicine"]
+    },
+    {
+      "id": "after-birth-and-first-cast",
+      "title": "出生后第一次骨科就诊与石膏回家准备",
+      "intro": "从治疗全流程读起，再找专门的石膏护理手册，准备观察事项、复诊日期和医院联系方式。",
+      "resources": ["shchildren-clubfoot", "nhs-clubfoot", "rnoh-ponseti-cast", "beijing-childrens-cast"]
+    },
+    {
+      "id": "brace-and-follow-up",
+      "title": "支具复查与长期随访",
+      "intro": "从支具试配和复诊要带的器具开始，再阅读长期随访的研究题录。",
+      "resources": ["alder-hey-boots-and-bar", "nhs-clubfoot", "cooper-ponseti-followup"]
+    }
+  ]
+}
