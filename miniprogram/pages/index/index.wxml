@@ -16,6 +16,9 @@
     <navigator url="/pages/preparation/preparation" class="quick-link" hover-class="pressed"><text>沟通清单</text><text class="muted">选出想问的问题</text></navigator>
   </view>
 
+  <navigator class="guide-link" url="/pages/downloads/downloads" hover-class="pressed">
+    下载足内翻超声复查清单 <text class="chevron" aria-hidden="true">›</text>
+  </navigator>
   <view wx:if="{{demoMode}}" class="notice">当前展示示例资料。</view>
   <view wx:if="{{noticeTemplate}}" class="notice home-notice">
     <view class="title">新资料提醒</view>

@@ -25,6 +25,8 @@ const server = createServer(async (req, res) => {
     res.writeHead(result.status, {
       'Content-Type': result.contentType,
       'Cache-Control': result.cacheControl ?? 'no-store',
+      ...(result.location ? { Location: result.location } : {}),
+      ...(result.contentDisposition ? { 'Content-Disposition': result.contentDisposition } : {}),
       ...responseHeaders,
     })
     if (req.method === 'HEAD') {

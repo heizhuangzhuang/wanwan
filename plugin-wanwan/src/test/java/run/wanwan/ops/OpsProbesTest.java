@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;
 
 class OpsProbesTest {
-    private static final String API = "/apis/api.wanwan.run/v1alpha1";
+    private static final String API = "/apis/api.xiaojiaoya.run/v1alpha1";
     private HttpServer server;
     private String origin;
 

@@ -21,7 +21,7 @@ import run.wanwan.notice.NoticeService;
 import run.wanwan.search.SearchIndex;
 
 /**
- * 匿名公开接口：/apis/api.wanwan.run/v1alpha1/**（ADR-004）。
+ * 匿名公开接口：/apis/api.xiaojiaoya.run/v1alpha1/**（ADR-004）。
  */
 @Component
 @RequiredArgsConstructor
@@ -57,7 +57,7 @@ public class PublicEndpoint implements CustomEndpoint {
 
     @Override
     public GroupVersion groupVersion() {
-        return GroupVersion.parseAPIVersion("api.wanwan.run/v1alpha1");
+        return GroupVersion.parseAPIVersion("api.xiaojiaoya.run/v1alpha1");
     }
 
     private Mono<ServerResponse> subscribeNotice(ServerRequest req) {

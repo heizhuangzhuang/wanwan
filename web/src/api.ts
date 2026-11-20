@@ -30,6 +30,7 @@ export interface ResourceView {
   storyContext?: string | null
   linkStatus: string
   citationUrl: string | null
+  attachment?: { fileName: string; url: string } | null
   entry: Entry
 }
 

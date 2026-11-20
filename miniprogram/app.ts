@@ -18,7 +18,7 @@ App<IAppOption>({
     useCloudContainer: true,
     cloudEnv: 'prod-d1gm7gr9e711335be',
     cloudService: 'xiaojiaoya',
-    apiBase: 'http://127.0.0.1:18090/apis/api.wanwan.run/v1alpha1',
+    apiBase: 'http://127.0.0.1:18090/apis/api.xiaojiaoya.run/v1alpha1',
     contactEmail: '',
     demoMode: false,
   },

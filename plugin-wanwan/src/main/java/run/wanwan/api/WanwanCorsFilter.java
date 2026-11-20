@@ -16,13 +16,14 @@ import reactor.core.publisher.Mono;
 import run.halo.app.security.BeforeSecurityWebFilter;
 
 /**
- * 公开接口 CORS 白名单过滤器（仅作用于 /apis/api.wanwan.run/**）。
+ * 公开接口 CORS 白名单过滤器。
  * 未配置允许来源时不返回任何跨域放行头；拒绝通配符与凭据复用。
  */
 @Component
 public class WanwanCorsFilter implements BeforeSecurityWebFilter {
 
-    private static final String API_PREFIX = "/apis/api.wanwan.run/";
+    private static final String API_PREFIX = "/apis/api.xiaojiaoya.run/";
+    private static final String LEGACY_PREFIX = "/apis/api.wanwan.run/";
     private static final String ALLOWED_METHODS = "GET, HEAD, OPTIONS";
 
     private final Set<String> allowedOrigins;
@@ -44,7 +45,7 @@ public class WanwanCorsFilter implements BeforeSecurityWebFilter {
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getPath().value();
-        if (!path.startsWith(API_PREFIX)) {
+        if (!path.startsWith(API_PREFIX) && !path.startsWith(LEGACY_PREFIX)) {
             return chain.filter(exchange);
         }
         String origin = request.getHeaders().getOrigin();

@@ -11,10 +11,10 @@ metadata:
     rbac.authorization.halo.run/module: "弯弯知识导航"
     rbac.authorization.halo.run/display-name: "公开资料读取"
 rules:
-  - apiGroups: [ "api.wanwan.run" ]
+  - apiGroups: [ "api.xiaojiaoya.run", "api.wanwan.run" ]
     resources: [ "stages", "resources", "topics", "posts", "search", "notice-config" ]
     verbs: [ "get", "list" ]
-  - apiGroups: [ "api.wanwan.run" ]
+  - apiGroups: [ "api.xiaojiaoya.run", "api.wanwan.run" ]
     resources: [ "notice-subscriptions" ]
     verbs: [ "create" ]
 ---
@@ -46,10 +46,10 @@ metadata:
     rbac.authorization.halo.run/ui-permissions: |
       ["plugin:wanwan:ops"]
 rules:
-  - apiGroups: [ "console.api.wanwan.run" ]
+  - apiGroups: [ "console.api.xiaojiaoya.run" ]
     resources: [ "ops-overview" ]
     verbs: [ "list" ]
-  - apiGroups: [ "console.api.wanwan.run" ]
+  - apiGroups: [ "console.api.xiaojiaoya.run" ]
     resources: [ "ops-miniprogram-checks" ]
     resourceNames: [ "trial", "formal" ]
     verbs: [ "update" ]

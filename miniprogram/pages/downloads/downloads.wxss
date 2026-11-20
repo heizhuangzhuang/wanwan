@@ -1,0 +1,4 @@
+.download-page .page-heading { margin-bottom: 10rpx; }
+.download-actions { display: flex; flex-wrap: wrap; gap: 14rpx; margin: 20rpx 0; }
+.download-actions .btn { margin: 0; }
+.download-page .description { overflow-wrap: anywhere; }

@@ -1,0 +1,21 @@
+<view class="container download-page">
+  <view wx:if="{{loading}}" class="reading-state muted">正在准备文件信息…</view>
+  <view wx:elif="{{error}}" class="reading-state">
+    <text>{{error}}</text>
+    <button class="btn secondary compact" bindtap="loadFile">重新加载</button>
+  </view>
+  <view wx:else class="card">
+    <view class="page-heading">{{resourceName ? '下载资料附件' : '足内翻超声复查清单'}}</view>
+    <view class="description">{{fileName}}</view>
+    <view wx:if="{{!resourceName}}" class="notice">一页空白清单，可以打印并带给医生沟通。</view>
+    <button wx:if="{{!localPath}}" class="btn" bindtap="downloadFile" loading="{{saving}}" disabled="{{saving}}">下载到小程序</button>
+    <view wx:else class="download-actions">
+      <button wx:if="{{kind !== 'archive'}}" class="btn" bindtap="preview">预览文件</button>
+      <button wx:if="{{canShare}}" class="btn secondary" bindtap="forwardFile">转发文件</button>
+      <button wx:if="{{kind === 'image' && canSaveImage}}" class="btn secondary" bindtap="saveToAlbum">保存到手机相册</button>
+    </view>
+    <view wx:if="{{status}}" role="status" class="description">{{status}}</view>
+    <view class="description muted">下载后可在小程序内打开。文档可从预览菜单导出，或转发到微信会话后按手机提供的选项保存。</view>
+    <button class="plain-button site-footer" open-type="share">分享下载入口</button>
+  </view>
+</view>

@@ -20,7 +20,27 @@ declare function Page<T extends { data?: Record<string, unknown> }>(
   options: T & ThisType<T & { setData(data: Partial<T['data']>): void }>,
 ): void
 
+interface MiniProgramFailure { errMsg?: string }
+interface MiniProgramFileSystem {
+  access(options: { path: string; success: () => void; fail: (err: MiniProgramFailure) => void }): void
+  writeFile(options: { filePath: string; data: string; encoding: 'base64';
+    success: () => void; fail: (err: MiniProgramFailure) => void }): void
+  saveFile(options: { filePath?: string; tempFilePath: string;
+    success: (result: { savedFilePath: string }) => void; fail: (err: MiniProgramFailure) => void }): void
+}
+
 declare const wx: {
+  env: { USER_DATA_PATH: string }
+  getFileSystemManager(): MiniProgramFileSystem
+  downloadFile(options: { url: string;
+    success: (result: { tempFilePath?: string; statusCode: number }) => void;
+    fail: (err: MiniProgramFailure) => void }): void
+  openDocument?(options: { filePath: string; fileType?: string; showMenu?: boolean;
+    fail?: (err: MiniProgramFailure) => void }): void
+  previewImage?(options: { urls: string[]; fail?: (err: MiniProgramFailure) => void }): void
+  shareFileMessage?(options: { filePath: string; fileName: string; fail?: (err: MiniProgramFailure) => void }): void
+  saveImageToPhotosAlbum?(options: { filePath: string; success?: () => void;
+    fail?: (err: MiniProgramFailure) => void }): void
   getStorageSync(key: string): unknown
   setStorageSync(key: string, value: unknown): void
   stopPullDownRefresh(): void

@@ -2,6 +2,7 @@ package run.wanwan.api;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import run.halo.app.core.extension.content.Post;
 import run.wanwan.model.Enums.AccessCondition;
@@ -12,6 +13,7 @@ import run.wanwan.model.Enums.MaterialType;
 import run.wanwan.model.ResourceCard;
 import run.wanwan.model.Stage;
 import run.wanwan.model.Topic;
+import run.wanwan.model.Visibility;
 
 /**
  * 公开接口的白名单 DTO。只在这里决定哪些字段可以出站；不返回 Halo 对象本身。
@@ -30,6 +32,29 @@ public final class Dtos {
     public record Entry(EntryType type, String url, String appId, String path) {
         public static Entry citationOnly() {
             return new Entry(EntryType.CITATION_ONLY, null, null, null);
+        }
+    }
+
+    public record Attachment(String fileName, String url) {
+        private static final Set<String> TYPES = Set.of("pdf", "doc", "docx", "xls", "xlsx",
+            "ppt", "pptx", "jpg", "jpeg", "png", "gif", "webp", "zip");
+
+        static Attachment of(ResourceCard card) {
+            var spec = card.getSpec();
+            if (!Visibility.isListed(card) || spec.getLinkStatus() != LinkStatus.OK || !spec.isDownloadApproved()) {
+                return null;
+            }
+            String url = spec.getDownloadUrl();
+            String name = spec.getDownloadFileName();
+            if (url == null || !url.strip().toLowerCase(Locale.ROOT).startsWith("https://")
+                || !EntryResolver.isSafeHttpUrl(url) || name == null || name.length() > 80
+                || name.indexOf('/') >= 0 || name.indexOf('\\') >= 0
+                || name.chars().anyMatch(Character::isISOControl)) {
+                return null;
+            }
+            int dot = name.lastIndexOf('.');
+            return dot > 0 && TYPES.contains(name.substring(dot + 1).toLowerCase(Locale.ROOT))
+                ? new Attachment(name, url.strip()) : null;
         }
     }
 
@@ -53,7 +78,8 @@ public final class Dtos {
         LinkStatus linkStatus,
         /** 原始 URL 仅作为可核对出处展示；能否打开以 entry 为准。 */
         String citationUrl,
-        Entry entry
+        Entry entry,
+        Attachment attachment
     ) {
         public static ResourceView of(ResourceCard card) {
             var s = card.getSpec();
@@ -76,7 +102,8 @@ public final class Dtos {
                 s.getStoryContext(),
                 s.getLinkStatus(),
                 EntryResolver.isSafeHttpUrl(s.getUrl()) ? s.getUrl() : null,
-                EntryResolver.resolve(s)
+                EntryResolver.resolve(s),
+                Attachment.of(card)
             );
         }
     }

@@ -138,6 +138,19 @@ describe('web security & SSR', () => {
     assert.doesNotMatch(result.body, /前往原站阅读/)
   })
 
+  it('serves the original checklist and redirects legacy links to xiaojiaoya', async () => {
+    const site = loadConfig({ SITE_BASE_PATH: '/xiaojiaoya' })
+    const old = await handleRequest('/wanwan/search?keyword=%E7%9F%B3%E8%86%8F', mockClient(), site)
+    assert.equal(old.status, 308)
+    assert.equal(old.location, '/xiaojiaoya/search?keyword=%E7%9F%B3%E8%86%8F')
+    const result = await handleRequest('/xiaojiaoya/downloads/clubfoot-ultrasound-checklist.pdf', mockClient(), site)
+    assert.equal(result.status, 200)
+    assert.equal(result.contentType, 'application/pdf')
+    assert.match(result.contentDisposition || '', /^attachment/)
+    assert.ok(Buffer.isBuffer(result.body))
+    assert.equal(result.body.subarray(0, 5).toString(), '%PDF-')
+  })
+
   it('keeps routes, navigation, forms and sitemap inside the configured path', async () => {
     const subpathConfig = loadConfig({ SITE_ORIGIN: 'https://wanwan.run', SITE_BASE_PATH: '/wanwan/' })
     const client = mockClient()

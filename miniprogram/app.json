@@ -8,7 +8,8 @@
     "pages/search/search",
     "pages/about/about",
     "pages/shelf/shelf",
-    "pages/preparation/preparation"
+    "pages/preparation/preparation",
+    "pages/downloads/downloads"
   ],
   "window": {
     "navigationBarTitleText": "小脚丫步步指南",

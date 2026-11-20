@@ -18,7 +18,7 @@ import reactor.core.publisher.Mono;
 
 @Component
 class OpsProbes {
-    private static final String API = "/apis/api.wanwan.run/v1alpha1";
+    private static final String API = "/apis/api.xiaojiaoya.run/v1alpha1";
     private static final Duration TIMEOUT = Duration.ofSeconds(4);
 
     private final WebClient client;
@@ -30,7 +30,7 @@ class OpsProbes {
         var http = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NEVER)
             .connectTimeout(Duration.ofSeconds(2)).build();
         client = WebClient.builder().clientConnector(new JdkClientHttpConnector(http)).build();
-        web = baseUrl(env.getProperty("WANWAN_OPS_WEB_BASE_URL", "http://81.71.123.100/wanwan"));
+        web = baseUrl(env.getProperty("WANWAN_OPS_WEB_BASE_URL", "http://81.71.123.100/xiaojiaoya"));
         halo = baseUrl(env.getProperty("WANWAN_OPS_HALO_BASE_URL",
             "https://xiaojiaoya-331697-11-1510985006.sh.run.tcloudbase.com"));
         snapshot = Mono.defer(() -> Mono.zip(

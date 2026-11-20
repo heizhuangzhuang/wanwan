@@ -80,6 +80,29 @@ class PublicQueryServiceTest {
     }
 
     @Test
+    void onlyApprovedHttpsAttachmentsFromListedCardsAreExposed() {
+        var resource = card("file", PublishState.PUBLISHED, LinkStatus.OK);
+        var spec = resource.getSpec();
+        spec.setDownloadFileName("可下载文件.xlsx");
+        spec.setDownloadUrl("https://example.com/attachment");
+        assertThat(Dtos.ResourceView.of(resource).attachment()).isNull();
+
+        spec.setDownloadApproved(true);
+        assertThat(Dtos.ResourceView.of(resource).attachment().fileName()).isEqualTo("可下载文件.xlsx");
+        spec.setDownloadUrl("http://example.com/attachment");
+        assertThat(Dtos.ResourceView.of(resource).attachment()).isNull();
+        spec.setDownloadUrl("https://example.com/attachment");
+        spec.setDownloadFileName("../附件.pdf");
+        assertThat(Dtos.ResourceView.of(resource).attachment()).isNull();
+        spec.setDownloadFileName("附件.zip");
+        spec.setLinkStatus(LinkStatus.SOURCE_RETRACTED);
+        assertThat(Dtos.ResourceView.of(resource).attachment()).isNull();
+        spec.setLinkStatus(LinkStatus.OK);
+        spec.setState(PublishState.WITHDRAWN);
+        assertThat(Dtos.ResourceView.of(resource).attachment()).isNull();
+    }
+
+    @Test
     void draftWithdrawnAndDeletingCardsAreHiddenFromDetail() {
         var client = mock(ReactiveExtensionClient.class);
         var service = service(client, mock(PostContentService.class), new SearchIndex());

@@ -31,9 +31,11 @@
     <view class="actions">
       <button wx:if="{{allowArticle}}" class="btn" bindtap="openOfficialAccountArticle">打开公众号原文</button>
       <button wx:if="{{allowMiniProgram}}" class="btn" bindtap="openOtherMiniProgram">打开来源小程序</button>
+      <button wx:if="{{resource.attachment && resource.linkStatus === 'OK'}}" class="btn secondary" bindtap="openDownload">下载附件</button>
       <button class="btn secondary" bindtap="copyCitation">复制出处</button>
     </view>
     <button wx:if="{{resource.linkStatus !== 'SOURCE_RETRACTED'}}" class="btn secondary" bindtap="toggleFavorite">{{saved ? '已收藏 · 点击取消' : '收藏这条资料'}}</button>
+    <button class="btn secondary" open-type="share">分享这条资料</button>
     <button class="plain-button site-footer" bindtap="openFeedback">反馈这条资料</button>
   </view>
   <view wx:if="{{resource && related.length}}" class="section-heading">还可以了解</view>

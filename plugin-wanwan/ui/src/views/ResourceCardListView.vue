@@ -58,6 +58,9 @@ function emptySpec(): ResourceCardSpec {
     author: '',
     publishedDate: '',
     lastVerifiedDate: '',
+    downloadUrl: '',
+    downloadFileName: '',
+    downloadApproved: false,
     stages: ['JUST_FOUND'],
     materialType: 'INSTITUTION',
     tags: [],
@@ -156,6 +159,12 @@ async function save() {
     Toast.warning('请至少选择一个适用阶段')
     return
   }
+  if (form.downloadApproved && (sourceUrl(form.downloadUrl)?.protocol !== 'https:'
+    || !form.downloadFileName?.trim().match(/^[^/\\]+\.(pdf|docx?|xlsx?|pptx?|jpe?g|png|gif|webp|zip)$/i))) {
+    reviewing.value = false
+    Toast.warning('公开附件需要 HTTPS 下载地址和有效的带扩展名文件名')
+    return
+  }
   if (form.state === 'PUBLISHED' && (!reviewing.value || !confirmed.value || loading.value || listFailed.value
     || !form.lastVerifiedDate?.trim())) {
     reviewing.value = true
@@ -172,6 +181,8 @@ async function save() {
     author: form.author?.trim() || undefined,
     publishedDate: form.publishedDate?.trim() || undefined,
     lastVerifiedDate: form.lastVerifiedDate?.trim() || undefined,
+    downloadUrl: form.downloadUrl?.trim() || undefined,
+    downloadFileName: form.downloadFileName?.trim() || undefined,
     doi: form.doi?.trim() || undefined,
     pmid: form.pmid?.trim() || undefined,
     storyContext: form.storyContext?.trim() || undefined,
@@ -390,6 +401,21 @@ onMounted(load)
           <input v-model="form.sourceName" class="ww-input" placeholder="机构/期刊/作者站" />
         </label>
       </div>
+
+      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <label class="ww-field">
+          <span>公开附件下载地址</span>
+          <input v-model="form.downloadUrl" class="ww-input" placeholder="https://…" @input="form.downloadApproved = false" />
+        </label>
+        <label class="ww-field">
+          <span>下载文件名</span>
+          <input v-model="form.downloadFileName" class="ww-input" maxlength="80" placeholder="例如 复查清单.pdf" @input="form.downloadApproved = false" />
+        </label>
+      </div>
+      <label class="inline-flex items-center gap-2 text-sm">
+        <input v-model="form.downloadApproved" type="checkbox" />
+        <span>我已核对该附件的公开下载许可和内容</span>
+      </label>
 
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <label class="ww-field">

@@ -42,6 +42,7 @@ function labelOf<T extends string>(options: { value: T; label: string }[], value
         <dt>来源状态</dt><dd>{{ labelOf(LINK_STATUS_OPTIONS, form.linkStatus) }}</dd>
         <dt>Web 操作</dt><dd>{{ entryPreview.web }}</dd>
         <dt>小程序操作</dt><dd>{{ entryPreview.mini }}</dd>
+      <dt>公开附件</dt><dd>{{ form.downloadApproved && form.linkStatus === 'OK' ? form.downloadFileName : '关闭' }}</dd>
       </dl>
       <p v-if="form.doi || form.pmid" class="ww-citation">{{ [form.doi && 'DOI ' + form.doi, form.pmid && 'PMID ' + form.pmid].filter(Boolean).join(' / ') }}</p>
       <p v-if="form.url" class="ww-citation">{{ form.url }}</p>

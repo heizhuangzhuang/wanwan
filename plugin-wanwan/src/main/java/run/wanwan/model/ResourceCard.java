@@ -40,6 +40,10 @@ public class ResourceCard extends AbstractExtension {
         private String publishedDate;
         private String lastVerifiedDate;
 
+        private String downloadUrl;
+        private String downloadFileName;
+        private boolean downloadApproved;
+
         private Set<Stage> stages = new LinkedHashSet<>();
         private MaterialType materialType;
         private Set<String> tags = new LinkedHashSet<>();

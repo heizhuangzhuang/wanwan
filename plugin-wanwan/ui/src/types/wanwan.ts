@@ -28,6 +28,9 @@ export interface ResourceCardSpec {
   author?: string
   publishedDate?: string
   lastVerifiedDate?: string
+  downloadUrl?: string
+  downloadFileName?: string
+  downloadApproved?: boolean
   stages: StageKey[]
   materialType: MaterialType
   tags: string[]

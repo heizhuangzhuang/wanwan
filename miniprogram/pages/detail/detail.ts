@@ -66,6 +66,17 @@ Page({
     else wx.showToast({ title: '未能更新收藏', icon: 'none' })
   },
   openDetail: openResource,
+  openDownload() {
+    const { resource } = this.data
+    if (resource?.attachment && resource.linkStatus === 'OK') {
+      wx.navigateTo({ url: `/pages/downloads/downloads?resource=${encodeURIComponent(resource.name)}` })
+    }
+  },
+  onShareAppMessage() {
+    const { resource, name } = this.data
+    return { title: resource?.title || '小脚丫步步指南',
+      path: name ? `/pages/detail/detail?name=${encodeURIComponent(name)}` : '/pages/index/index' }
+  },
   openFeedback() {
     const { resource } = this.data
     if (resource) wx.navigateTo({ url: `/pages/about/about?resource=${encodeURIComponent(resource.name)}` })

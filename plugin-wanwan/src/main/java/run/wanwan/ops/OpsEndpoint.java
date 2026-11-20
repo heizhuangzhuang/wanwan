@@ -28,7 +28,7 @@ class OpsEndpoint implements CustomEndpoint {
 
     @Override
     public GroupVersion groupVersion() {
-        return new GroupVersion("console.api.wanwan.run", "v1alpha1");
+        return new GroupVersion("console.api.xiaojiaoya.run", "v1alpha1");
     }
 
     @Override

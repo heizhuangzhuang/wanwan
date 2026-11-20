@@ -28,7 +28,7 @@
 
 发布后检查 `/actuator/health/readiness`，并用连接记录核实目标 MySQL。第一次配置 Halo 时，在受控管理入口完成初始化，然后在「插件」上传同版本 JAR 并启用「弯弯知识导航」。镜像将 JAR 同步到工作目录；Halo 的插件安装记录仍由管理后台建立。已安装的实例如果更换插件版本，在管理后台执行升级。
 
-匿名 `GET /apis/api.wanwan.run/v1alpha1/stages` 应返回 `200 application/json` 和阶段数组。若进程健康但此接口跳到登录页，在受控的 Halo 后台核对插件的安装、启用状态和启动日志，再联调 Web 和小程序。升级前保留原镜像、持久化目录备份和上一版插件 JAR。
+匿名 `GET /apis/api.xiaojiaoya.run/v1alpha1/stages` 应返回 `200 application/json` 和阶段数组。若进程健康但此接口跳到登录页，在受控的 Halo 后台核对插件的安装、启用状态和启动日志，再联调 Web 和小程序。升级前保留原镜像、持久化目录备份和上一版插件 JAR。
 
 
 ## 小程序新资料订阅
@@ -55,7 +55,7 @@
 
 新版插件启用后，管理员从 Halo Console 的「弯弯导航 → 运营总览」查看 Web、资料 API 和小程序真机记录。普通运营账号可在 Halo 分配「运营总览」角色。页面链接直接进入腾讯云 CVM、微信云托管和微信公众平台。
 
-- `WANWAN_OPS_WEB_BASE_URL` 默认沿用弯弯访客 Web 地址，含 `/wanwan` 子路径。更换域名时填写 Web 站点基地址。
+- `WANWAN_OPS_WEB_BASE_URL` 默认沿用弯弯访客 Web 地址，含 `/xiaojiaoya` 子路径。更换域名时填写 Web 站点基地址。
 - `WANWAN_OPS_HALO_BASE_URL` 默认沿用 `xiaojiaoya` 的 HTTPS 测试入口。使用正式域名后填写 Halo 基地址。
 - 探测从 Halo 服务端执行，首屏和刷新时触发。Web 探测包含原创导读页面，Halo API 探测包含匿名读取。真机记录按体验版与正式版分别保存，24 小时后待复核。
 

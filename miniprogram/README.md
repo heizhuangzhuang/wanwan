@@ -21,6 +21,8 @@
 | 专题详情 | `pages/reading/reading?kind=topic&name=topic-a` |
 | 本站原创导读 | `pages/reading/reading?kind=guide&name=guide-a` |
 | 单张资料卡 | `pages/detail/detail?name=resource-a` |
+| 足内翻超声复查清单 | `pages/downloads/downloads` |
+| 已批准的资料附件 | `pages/downloads/downloads?resource=resource-a` |
 | 资料首页 | `pages/index/index` |
 
 运营者用实际公众号和小程序验证账号关联、文章卡片或可用入口、目标页与原文跳转。专题或导读下线时，入口显示不可访问，并可返回资料首页。原创导读在小程序里以文字呈现，保留段落和列表。完整图文与外链可在网站的原创导读页阅读。
@@ -41,3 +43,11 @@ node --test miniprogram/test/public-flow.test.cjs
 ## 当前体验
 
 首页集中展示阶段导航、专题和精选资料。资料搜索、专题与详情复用 Web 使用的 Halo 公开 API。阅读夹只在本机保存收藏和最近浏览的资料标识，重新打开时核对资料可见性。沟通清单使用固定问题，复制功能由用户操作。
+
+## 资料下载
+
+首页和「就诊沟通清单」均可打开足内翻超声复查清单。内置 PDF 来自 `web/public/downloads/clubfoot-ultrasound-checklist.pdf`，与 Web 文件一致，可在离线时写入小程序的用户文件目录。更新 PDF 后，从仓库根目录运行 `node miniprogram/test/sync-checklist.cjs`，再运行公开流程测试验证内容一致。
+
+已公开且链接正常的资料卡可配置获准公开下载的 HTTPS 附件。运营者在 Halo 资料卡填写地址、带后缀的文件名，并确认公开下载许可。微信公众平台须放行附件主机的 `downloadFile` 合法域名。附件先下载，再保存到小程序用户目录。
+
+PDF、Word、Excel 和 PPT 使用微信文档预览。图片可保存到手机相册。支持的文件可转发到微信会话，再从手机提供的选项导出。ZIP 使用下载和转发流程。真机验证时覆盖 iOS、Android、清单离线、文件转发、相册权限、远程下载域名和附件撤回。

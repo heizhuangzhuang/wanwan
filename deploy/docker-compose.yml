@@ -52,7 +52,7 @@ services:
       - "3000:3000"
     environment:
       - PORT=3000
-      - BACKEND_API_BASE=http://backend/apis/api.wanwan.run/v1alpha1
+      - BACKEND_API_BASE=http://backend/apis/api.xiaojiaoya.run/v1alpha1
       - SITE_TITLE=小脚丫步步指南
       - SITE_ORIGIN=http://localhost:3000
       - CONTACT_EMAIL=${CONTACT_EMAIL:-}

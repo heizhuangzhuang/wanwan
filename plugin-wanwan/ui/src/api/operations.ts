@@ -1,6 +1,6 @@
 import { axiosInstance } from '@halo-dev/api-client'
 
-const BASE = '/apis/console.api.wanwan.run/v1alpha1'
+const BASE = '/apis/console.api.xiaojiaoya.run/v1alpha1'
 
 export type ProbeState =
   | 'OK'

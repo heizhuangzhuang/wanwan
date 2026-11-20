@@ -1,5 +1,6 @@
 import { demoResponse } from './demo'
 import type { IAppOption } from '../app'
+import type { Attachment } from './downloads'
 
 export type EntryType = 'WEB' | 'MP_ARTICLE' | 'MINIPROGRAM' | 'CITATION_ONLY'
 
@@ -35,6 +36,7 @@ export interface ResourceView {
   storyContext?: string
   linkStatus: string
   citationUrl: string | null
+  attachment?: Attachment | null
   entry: Entry
 }
 
@@ -77,7 +79,7 @@ export interface PageResult<T> {
   items: T[]
 }
 
-const API_PREFIX = '/apis/api.wanwan.run/v1alpha1'
+const API_PREFIX = '/apis/api.xiaojiaoya.run/v1alpha1'
 
 function buildQuery(params?: Record<string, string | number | undefined>): string {
   if (!params) return ''

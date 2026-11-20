@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict')
 const { execFileSync } = require('node:child_process')
-const { mkdtempSync, rmSync } = require('node:fs')
+const { mkdtempSync, readFileSync, rmSync } = require('node:fs')
 const { tmpdir } = require('node:os')
 const { join, resolve } = require('node:path')
 const { after, test } = require('node:test')
@@ -84,7 +84,7 @@ test('公众号专题入口按编辑顺序显示，返回前台后撤回内容�
   page.onLoad({ kind: 'topic', name: 'topic-a' })
   page.onShow()
   await settle()
-  assert.equal(requests[0], '/apis/api.wanwan.run/v1alpha1/topics/topic-a')
+  assert.equal(requests[0], '/apis/api.xiaojiaoya.run/v1alpha1/topics/topic-a')
   assert.deepEqual(page.data.items.map(resource => resource.name), ['b', 'a'])
   page.openDetail({ currentTarget: { dataset: { name: 'b' } } })
   assert.equal(navigations[0], '/pages/detail/detail?name=b')
@@ -265,4 +265,81 @@ test('点击授权后才用微信登录码登记，消息拒绝不发起写入�
   assert.equal(loginCount, 2)
   assert.equal(registrations[1].enabled, false)
   assert.match(page.data.noticeStatus, /已取消/)
+})
+
+test('原版清单可离线保存到小程序、预览和微信转发', async () => {
+  const { page, requests } = openPage('downloads', () => { throw new Error('unexpected network request') })
+  const saved = new Map()
+  const previews = []
+  const shares = []
+  wx.env = { USER_DATA_PATH: 'wxfile://usr' }
+  wx.getFileSystemManager = () => ({
+    access({ path, success, fail }) { saved.has(path) ? success() : fail({}) },
+    writeFile({ filePath, data, encoding, success }) {
+      saved.set(filePath, Buffer.from(data, encoding))
+      success()
+    },
+  })
+  wx.openDocument = options => previews.push(options)
+  wx.shareFileMessage = options => shares.push(options)
+
+  await page.onLoad({})
+  assert.equal(page.data.kind, 'document')
+  assert.equal(page.data.localPath, '')
+  await page.downloadFile()
+  assert.equal(requests.length, 0)
+  assert.match(page.data.localPath, /^wxfile:\/\/usr\/xiaojiaoya-[\da-f]+\.pdf$/)
+  assert.deepEqual(saved.get(page.data.localPath),
+    readFileSync(resolve(project, '../web/public/downloads/clubfoot-ultrasound-checklist.pdf')))
+  page.preview()
+  assert.equal(previews[0].filePath, page.data.localPath)
+  assert.equal(previews[0].showMenu, true)
+  page.forwardFile()
+  assert.equal(shares[0].fileName, '足内翻超声复查清单_一页简版.pdf')
+  await page.onLoad({})
+  assert.ok(page.data.localPath)
+})
+
+test('授权远程附件兼容 Office、图片和 ZIP，HTTP 错误不保存文件', async () => {
+  const { approvedDownload, fileKind } = require(join(compiled, 'services/downloads.js'))
+  for (const [ext, kind] of [['docx', 'document'], ['xlsx', 'document'], ['jpeg', 'image'], ['zip', 'archive']]) {
+    assert.equal(fileKind(`guide.${ext}`), kind)
+  }
+  assert.equal(approvedDownload('bad', { fileName: 'a.pdf', url: 'http://example.test/a' }), null)
+  assert.equal(approvedDownload('bad', { fileName: '../a.pdf', url: 'https://example.test/a' }), null)
+
+  const input = { ...item('r1'), linkStatus: 'OK', attachment: { fileName: '资料.zip', url: 'https://example.test/files/zip' } }
+  const { page } = openPage('downloads', () => ({ data: input }))
+  let statusCode = 404
+  let persisted = 0
+  const opened = []
+  wx.env = { USER_DATA_PATH: 'wxfile://usr' }
+  wx.downloadFile = ({ url, success }) => {
+    assert.equal(url, input.attachment.url)
+    success({ statusCode, tempFilePath: 'wxfile://temp-download' })
+  }
+  wx.getFileSystemManager = () => ({
+    access({ fail }) { fail({}) },
+    saveFile({ filePath, tempFilePath, success }) {
+      assert.equal(tempFilePath, 'wxfile://temp-download')
+      persisted += 1
+      success({ savedFilePath: filePath })
+    },
+  })
+  wx.openDocument = options => opened.push(options)
+  await page.onLoad({ resource: 'r1' })
+  assert.equal(page.data.kind, 'archive')
+  await page.downloadFile()
+  assert.match(page.data.status, /下载失败/)
+  assert.equal(persisted, 0)
+  statusCode = 200
+  await page.downloadFile()
+  assert.equal(persisted, 1)
+  assert.match(page.data.localPath, /\.zip$/)
+  page.preview()
+  assert.equal(opened.length, 0)
+  input.linkStatus = 'SOURCE_RETRACTED'
+  await page.onShow()
+  assert.match(page.data.error, /已停用/)
+  assert.equal(page.data.localPath, '')
 })

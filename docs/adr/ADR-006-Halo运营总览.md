@@ -21,6 +21,6 @@
 
 ## 接口与验收
 
-- `GET /apis/console.api.wanwan.run/v1alpha1/ops-overview` 返回四项探测和最近真机记录。
-- `PUT /apis/console.api.wanwan.run/v1alpha1/ops-miniprogram-checks/{channel}` 录入对应渠道的真机结论。渠道为 `trial` 或 `formal`，服务端生成时间。
+- `GET /apis/console.api.xiaojiaoya.run/v1alpha1/ops-overview` 返回四项探测和最近真机记录。
+- `PUT /apis/console.api.xiaojiaoya.run/v1alpha1/ops-miniprogram-checks/{channel}` 录入对应渠道的真机结论。渠道为 `trial` 或 `formal`，服务端生成时间。
 - 验收包含 Web 进程正常而资料页面返回 503、Halo 跳转登录或返回异常 JSON、未录入及已过期的真机结果、匿名访问拒绝、运营入口直达。

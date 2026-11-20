@@ -12,12 +12,15 @@ import {
 } from './html.js'
 
 const LOGO_PNG = readFileSync(new URL('../public/logo.png', import.meta.url))
+const CHECKLIST_PDF = readFileSync(new URL('../public/downloads/clubfoot-ultrasound-checklist.pdf', import.meta.url))
 
 export interface RouteResponse {
   status: number
   contentType: string
   body: string | Buffer
   cacheControl?: string
+  location?: string
+  contentDisposition?: string
 }
 
 const TYPES = [
@@ -99,6 +102,10 @@ function renderResourceDetail(r: ResourceView, config: WebConfig): string {
     statusNotice = '<div class="warn-bar">原文目前不可访问，稍后复核。以下保留原始出处信息供核对。</div>'
   }
 
+  const downloadUrl = r.linkStatus === 'OK' ? safeHttpUrl(r.attachment?.url) : null
+  const attachmentLink = downloadUrl?.startsWith('https://') && r.attachment
+    ? `<p class="meta-row"><a href="${escapeHtml(downloadUrl)}" target="_blank" rel="noopener noreferrer">下载附件 · ${escapeHtml(r.attachment.fileName)}</a></p>`
+    : ''
   const originBtn =
     r.linkStatus === 'OK' && originUrl
       ? `<div style="margin-top:14px"><a class="btn" href="${escapeHtml(originUrl)}" target="_blank" rel="noopener noreferrer">前往原站阅读（${escapeHtml(r.sourceName)}）</a></div>`
@@ -127,6 +134,7 @@ function renderResourceDetail(r: ResourceView, config: WebConfig): string {
   </div>
   ${statusNotice}
   ${originBtn}
+  ${attachmentLink}
   ${urlLine}
   <p class="meta-row" style="margin-top:16px">发现来源失效、错误或版权问题？请查看<a href="${config.siteBasePath}/about?resource=${encodeURIComponent(r.name)}#feedback">提交勘误</a>。</p>
 </article>`
@@ -139,6 +147,12 @@ export async function handleRequest(
 ): Promise<RouteResponse> {
   const url = new URL(rawUrl, 'http://localhost')
   const basePath = config.siteBasePath
+  if (basePath === '/xiaojiaoya' && (url.pathname === '/wanwan' || url.pathname.startsWith('/wanwan/'))) {
+    return {
+      status: 308, contentType: 'text/plain; charset=utf-8', body: '',
+      location: `${basePath}${url.pathname.slice('/wanwan'.length) || '/'}${url.search}`,
+    }
+  }
   if (basePath && url.pathname !== basePath && !url.pathname.startsWith(`${basePath}/`)) {
     return notFoundResponse(config)
   }
@@ -153,6 +167,13 @@ export async function handleRequest(
 
   if (path === '/healthz') {
     return { status: 200, contentType: 'text/plain; charset=utf-8', body: 'ok' }
+  }
+
+  if (path === '/downloads/clubfoot-ultrasound-checklist.pdf') {
+    return {
+      status: 200, contentType: 'application/pdf', body: CHECKLIST_PDF,
+      contentDisposition: "attachment; filename=clubfoot-ultrasound-checklist.pdf",
+    }
   }
 
   if (path === '/assets/logo.png' || path === '/favicon.ico') {
@@ -475,6 +496,7 @@ ${resultHtml}`,
   <h2 id="feedback">版权、勘误与撤回联系</h2>
   ${resourceName ? `<p>反馈资料编号 <code>${escapeHtml(resourceName)}</code></p>` : ''}
   <p>若您发现资料来源失效、介绍有误，或认为收录内容涉及版权或隐私问题，请联系运营者。收到有效通知后将先行暂停相关展示并核查处理。</p>
+  <p><a href="${basePath}/downloads/clubfoot-ultrasound-checklist.pdf">下载足内翻超声复查清单（PDF）</a></p>
   ${contactBlock}
 </div>
 <div class="card">

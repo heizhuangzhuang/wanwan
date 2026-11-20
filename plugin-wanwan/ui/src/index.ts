@@ -11,7 +11,7 @@ export default definePlugin({
     {
       parentName: 'Root',
       route: {
-        path: '/wanwan/operations',
+        path: '/xiaojiaoya/operations',
         name: 'WanwanOperations',
         component: OpsOverviewView,
         meta: {
@@ -30,7 +30,7 @@ export default definePlugin({
     {
       parentName: 'Root',
       route: {
-        path: '/wanwan/resources',
+        path: '/xiaojiaoya/resources',
         name: 'WanwanResources',
         component: ResourceCardListView,
         meta: {
@@ -49,7 +49,7 @@ export default definePlugin({
     {
       parentName: 'Root',
       route: {
-        path: '/wanwan/topics',
+        path: '/xiaojiaoya/topics',
         name: 'WanwanTopics',
         component: TopicListView,
         meta: {
