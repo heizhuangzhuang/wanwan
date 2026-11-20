@@ -1,0 +1,17 @@
+<view class="container">
+  <view class="page-intro">
+    <view class="description" wx:if="{{social}}">在对应平台搜索。用科普和家长经验整理问题，检查和治疗安排与接诊团队确认。公开平台请隐去孩子姓名、报告和照片。</view>
+    <view class="description" wx:else>孕期查产前诊断或胎儿医学门诊，出生后可查小儿骨科。复制搜索词后，到对应平台或医院官方渠道查询。</view>
+  </view>
+
+  <view wx:for="{{channels}}" wx:key="key" class="card">
+    <view class="resource-meta">{{item.platform}}</view>
+    <view class="title">{{item.title}}</view>
+    <view class="description">{{item.description}}</view>
+    <view wx:if="{{item.sourceLabel}}" class="muted channel-source">{{item.sourceLabel}}</view>
+    <view class="channel-actions">
+      <button class="btn secondary" data-key="{{item.key}}" data-field="keyword" bindtap="copy">复制搜索词</button>
+      <button wx:if="{{item.sourceUrl}}" class="btn secondary" data-key="{{item.key}}" data-field="source" bindtap="copy">复制来源链接</button>
+    </view>
+  </view>
+</view>

@@ -1,12 +1,5 @@
-import type { PostView, ResourceView, StageView, TopicView } from './api'
-
-export const demoStages: StageView[] = [
-  { key: 'JUST_FOUND', label: '刚发现', order: 0 },
-  { key: 'PRENATAL', label: '产前了解与等待', order: 1 },
-  { key: 'POSTNATAL_TREATMENT', label: '出生后评估与治疗', order: 2 },
-  { key: 'BRACE_DAILY', label: '支具与日常生活', order: 3 },
-  { key: 'LONG_TERM', label: '长期随访与预后', order: 4 },
-]
+import type { PostView, ResourceView, TopicView } from './api'
+import { fixedStages } from './stages'
 
 function card(name: string, title: string, intro: string, stage: string, tag: string): ResourceView {
   return {
@@ -42,7 +35,7 @@ function paged<T>(items: T[], params: Record<string, string | number | undefined
 }
 
 export function demoResponse(path: string, params: Record<string, string | number | undefined> = {}) {
-  if (path === '/stages') return demoStages
+  if (path === '/stages') return fixedStages
   if (path === '/topics') return paged([{ ...topic, resourceCount: topic.resources.length }], params)
   if (path === `/topics/${topic.name}`) return topic
   if (path === '/posts') return paged([guide], params)

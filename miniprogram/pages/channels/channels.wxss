@@ -1,0 +1,3 @@
+.channel-source { margin-top: 12rpx; }
+.channel-actions { display: flex; gap: 12rpx; flex-wrap: wrap; margin-top: 16rpx; }
+.channel-actions > .btn { width: auto; min-height: 88rpx; line-height: 88rpx; padding: 0 20rpx; margin: 0; font-size: 25rpx; }

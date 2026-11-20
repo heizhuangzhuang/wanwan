@@ -2,20 +2,14 @@
   <view class="home-welcome">
     <view class="home-welcome-copy">
       <view class="page-heading">一步一步了解足内翻</view>
-      <view class="description">从最初发现到长期随访，找到这一阶段用得上的资料。</view>
+      <view class="description">从超声提示疑似足内翻，到出生后治疗和随访，每一步都有就诊准备和资料可查。</view>
     </view>
     <image class="home-logo" src="/assets/logo.png" mode="aspectFit" aria-hidden="true" />
   </view>
 
   <view wx:if="{{demoMode}}" class="notice">当前展示示例资料。</view>
   <view class="section-heading">按阶段查找</view>
-  <view wx:if="{{loading && !stages.length}}" class="reading-state muted">正在加载阶段…</view>
-  <view wx:elif="{{error}}" class="reading-state tab-retry">
-    <text>{{error}}</text>
-    <button class="btn secondary compact" bindtap="loadHome" disabled="{{loading}}">重试</button>
-  </view>
-  <view wx:elif="{{!stages.length}}" class="reading-state muted">阶段资料正在整理。</view>
-  <view wx:else class="tab-list">
+  <view class="tab-list">
     <navigator wx:for="{{stages}}" wx:key="key" class="tab-row" hover-class="pressed" url="{{item.url}}">
       <view class="home-stage-dot" aria-hidden="true" />
       <view class="tab-row-copy">
@@ -24,6 +18,10 @@
       </view>
       <text class="tab-chevron" aria-hidden="true">›</text>
     </navigator>
+  </view>
+  <view wx:if="{{error}}" class="reading-state tab-retry">
+    <text>{{error}}</text>
+    <button class="btn secondary compact" bindtap="loadHome" disabled="{{loading}}">重试</button>
   </view>
   <navigator class="home-library" open-type="switchTab" url="/pages/library/library" hover-class="pressed">
     <text>进入资料库</text><text class="tab-chevron" aria-hidden="true">›</text>

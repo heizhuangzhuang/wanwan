@@ -1,3 +1,6 @@
+import { familyGuide } from '../../services/family-guide'
+import { decodeOption } from '../../services/reading'
+
 const prompts = [
   '这次沟通需要带哪些资料？',
   '报告里哪些术语需要请医生解释？',
@@ -7,12 +10,21 @@ const prompts = [
 ]
 
 Page({
-  data: { prompts, selected: [] as string[] },
+  data: { prompts, selected: [] as string[], showUltrasoundChecklist: true },
+  onLoad(options: Record<string, string | undefined>) {
+    const stage = decodeOption(options.stage)
+    const guide = familyGuide(stage)
+    this.setData({
+      prompts: guide?.questions ?? prompts,
+      selected: [],
+      showUltrasoundChecklist: !guide || stage === 'JUST_FOUND' || stage === 'PRENATAL',
+    })
+  },
   onChange(event: { detail: { value: string[] } }) {
     this.setData({ selected: event.detail.value })
   },
   copyQuestions() {
-    const selected = prompts.filter((_, index) => this.data.selected.includes(String(index)))
+    const selected = this.data.prompts.filter((_, index) => this.data.selected.includes(String(index)))
     if (!selected.length) return
     wx.setClipboardData({
       data: selected.map(question => `• ${question}`).join('\n'),

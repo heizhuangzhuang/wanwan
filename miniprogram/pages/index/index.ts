@@ -1,11 +1,19 @@
 import type { IAppOption } from '../../app'
 import { wanwanApi, type StageView } from '../../services/api'
-import { stageIntro } from '../../services/stages'
+import { fixedStages, stageIntro } from '../../services/stages'
 import { selectTab } from '../../services/tabs'
+
+function homeStages(stages: StageView[]) {
+  return stages.map(stage => ({
+    ...stage,
+    intro: stageIntro(stage.key),
+    url: `/pages/stage/stage?key=${encodeURIComponent(stage.key)}&label=${encodeURIComponent(stage.label)}`,
+  }))
+}
 
 Page({
   data: {
-    stages: [] as (StageView & { intro: string; url: string })[],
+    stages: homeStages(fixedStages),
     loading: false, error: '', demoMode: false,
   },
   onLoad() {
@@ -21,13 +29,9 @@ Page({
     this.setData({ loading: true, error: '' })
     try {
       const stages = await wanwanApi.getStages()
-      this.setData({ stages: stages.map(stage => ({
-        ...stage,
-        intro: stageIntro(stage.key),
-        url: `/pages/stage/stage?key=${encodeURIComponent(stage.key)}&label=${encodeURIComponent(stage.label)}`,
-      })) })
+      this.setData({ stages: homeStages(stages.length ? stages : fixedStages) })
     } catch {
-      this.setData({ stages: [], error: '暂时无法加载阶段。' })
+      this.setData({ stages: homeStages(fixedStages), error: '阶段资料暂时无法同步，仍可打开各阶段指南。' })
     } finally {
       this.setData({ loading: false })
     }

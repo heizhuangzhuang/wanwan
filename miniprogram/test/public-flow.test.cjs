@@ -187,7 +187,7 @@ test('本地演示专题无需访问云服务，正式环境缺配置时返回�
 })
 
 
-test('首页阶段加载失败时，仍可在资料栏目读取专题及精选资料', async () => {
+test('首页阶段加载失败时保留五个入口，资料栏目仍可读取专题及精选资料', async () => {
   const respond = url => {
     if (url.pathname.endsWith('/stages')) return { data: '<html>登录</html>' }
     if (url.pathname.endsWith('/topics')) return { data: { items: [{ name: 't1', title: '专题一' }] } }
@@ -196,6 +196,8 @@ test('首页阶段加载失败时，仍可在资料栏目读取专题及精选�
   const { page: home, requests } = openPage('index', respond)
   await home.onLoad()
   assert.match(home.data.error, /阶段/)
+  assert.equal(home.data.stages.length, 5)
+  assert.match(home.data.stages[0].url, /key=JUST_FOUND/)
   assert.deepEqual(requests, ['https://example.test/api/stages'])
   const { page: library } = openPage('library', respond)
   await library.onShow()
@@ -230,6 +232,62 @@ test('沟通清单只复制勾选的问题', () => {
   assert.match(getClipboard(), /这次沟通需要带哪些资料/)
   assert.match(getClipboard(), /应该联系哪个科室/)
   assert.doesNotMatch(getClipboard(), /报告里/)
+})
+
+test('五个阶段可以离线查看准备事项，并进入各自可用的工具', async () => {
+  const config = JSON.parse(readFileSync(join(project, 'app.json'), 'utf8'))
+  const stages = ['JUST_FOUND', 'PRENATAL', 'POSTNATAL_TREATMENT', 'BRACE_DAILY', 'LONG_TERM']
+  const expectedTool = ['downloads', 'prenatal', 'cast', 'channels', 'channels']
+  for (const [index, key] of stages.entries()) {
+    const { page, getClipboard } = openPage('stage', () => null)
+    page.onLoad({ key })
+    await page.fetch(1)
+    assert.match(page.data.error, /无法加载资料/)
+    assert.ok(page.data.guide.summary)
+    assert.equal(page.data.guide.actions[0].url.split('/')[2], expectedTool[index])
+    assert.match(page.data.prepareUrl, new RegExp('stage=' + key + '$'))
+    for (const { url } of page.data.guide.actions) {
+      assert.ok(config.pages.includes(url.split('?')[0].slice(1)))
+    }
+    page.copyGuideSource()
+    assert.match(getClipboard(), /^https:\/\//)
+  }
+  const { page } = openPage('stage', () => null)
+  page.onLoad({})
+  assert.equal(page.data.guide, null)
+})
+
+test('阶段问诊清单复制当前阶段的问题，普通入口保留通用问题', () => {
+  const { page, getClipboard } = openPage('preparation', () => assert.fail('固定问题无需联网'))
+  page.onLoad({ stage: 'BRACE_DAILY' })
+  assert.equal(page.data.showUltrasoundChecklist, false)
+  page.onChange({ detail: { value: ['1'] } })
+  page.copyQuestions()
+  assert.match(getClipboard(), /鞋或连杆/)
+  assert.doesNotMatch(getClipboard(), /现场演示/)
+  page.onLoad({ stage: 'invalid' })
+  assert.equal(page.data.showUltrasoundChecklist, true)
+  assert.deepEqual(page.data.selected, [])
+  assert.match(page.data.prompts[0], /这次沟通/)
+})
+
+test('就诊和社交渠道区分用途，仅在点击时复制固定来源或搜索词', () => {
+  const { page, getClipboard, navigations } = openPage('channels', () => assert.fail('渠道目录无需联网'))
+  const copy = (key, field) => page.copy({ currentTarget: { dataset: { key, field } } })
+  page.onLoad({ period: 'prenatal' })
+  assert.equal(page.data.channels[0].key, 'prenatal-clinic')
+  assert.equal(getClipboard(), '')
+  copy('haodf', 'source')
+  assert.match(getClipboard(), /^https:\/\/www\.haodf\.com\//)
+  page.onLoad({ type: 'social' })
+  assert.equal(page.data.social, true)
+  copy('xiaohongshu-families', 'keyword')
+  assert.match(getClipboard(), /马蹄内翻足/)
+  copy('haodf', 'source')
+  assert.match(getClipboard(), /马蹄内翻足/)
+  copy('douyin-sun', 'source')
+  assert.match(getClipboard(), /^https:\/\/www\.smu\.edu\.cn\//)
+  assert.deepEqual(navigations, [])
 })
 
 test('点击授权后才用微信登录码登记，消息拒绝不发起写入，并支持取消', async () => {

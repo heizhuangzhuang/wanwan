@@ -23,4 +23,21 @@
       <text class="tab-chevron" aria-hidden="true">›</text>
     </navigator>
   </view>
+  <view class="section-heading">找医生与交流参考</view>
+  <view class="tab-list">
+    <navigator class="tab-row" url="{{doctorChannelsUrl}}" hover-class="pressed">
+      <view class="tab-row-copy">
+        <view class="tab-row-title">找医生与门诊</view>
+        <view class="tab-row-caption">产前诊断、医院小儿骨科和好大夫在线</view>
+      </view>
+      <text class="tab-chevron" aria-hidden="true">›</text>
+    </navigator>
+    <navigator class="tab-row" url="{{socialChannelsUrl}}" hover-class="pressed">
+      <view class="tab-row-copy">
+        <view class="tab-row-title">科普与家长经验</view>
+        <view class="tab-row-caption">小红书、抖音搜索词和可核对的科普账号</view>
+      </view>
+      <text class="tab-chevron" aria-hidden="true">›</text>
+    </navigator>
+  </view>
 </view>

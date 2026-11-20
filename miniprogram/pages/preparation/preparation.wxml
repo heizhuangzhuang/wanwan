@@ -3,7 +3,7 @@
     <view class="page-heading">见医生前，把问题记下来</view>
     <view class="description">勾选想问的问题，复制到自己的备忘录。</view>
   </view>
-  <navigator class="feature-link" hover-class="pressed" url="/pages/downloads/downloads">
+  <navigator wx:if="{{showUltrasoundChecklist}}" class="feature-link" hover-class="pressed" url="/pages/downloads/downloads">
     <view class="title">足内翻超声复查清单</view>
     <view class="muted">一页 PDF，可下载、预览和转发</view>
   </navigator>

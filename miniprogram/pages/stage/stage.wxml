@@ -1,6 +1,25 @@
 <import src="../../templates/public.wxml" />
 <view class="container">
   <view class="page-intro"><view class="page-heading">{{heading}}</view><view class="description">{{intro}}</view></view>
+  <block wx:if="{{guide}}">
+    <view class="tab-list">
+      <navigator class="tab-row" url="{{prepareUrl}}" hover-class="pressed">
+        <view class="tab-row-copy tab-row-title">这一阶段可以问医生什么</view>
+        <text class="tab-chevron" aria-hidden="true">›</text>
+      </navigator>
+      <navigator wx:for="{{guide.actions}}" wx:key="url" class="tab-row" url="{{item.url}}" hover-class="pressed">
+        <view class="tab-row-copy tab-row-title">{{item.title}}</view>
+        <text class="tab-chevron" aria-hidden="true">›</text>
+      </navigator>
+      <button class="tab-row" bindtap="copyGuideSource">
+        <view class="tab-row-copy">
+          <view class="tab-row-title">复制参考来源链接</view>
+          <view class="tab-row-caption">{{guide.source.title}}</view>
+        </view>
+      </button>
+    </view>
+    <view class="section-heading">这一阶段的资料</view>
+  </block>
   <picker mode="selector" range="{{materials}}" range-key="label" value="{{typeIndex}}" disabled="{{loading}}" bindchange="onType">
     <view class="filter">{{materials[typeIndex].label}} ▾</view>
   </picker>

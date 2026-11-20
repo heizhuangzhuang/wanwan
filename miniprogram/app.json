@@ -15,7 +15,8 @@
     "pages/cast/cast",
     "pages/library/library",
     "pages/me/me",
-    "pages/saved-files/saved-files"
+    "pages/saved-files/saved-files",
+    "pages/channels/channels"
   ],
   "window": {
     "navigationBarTitleText": "小脚丫步步指南",
