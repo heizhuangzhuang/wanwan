@@ -12,7 +12,9 @@
     "pages/downloads/downloads",
     "pages/tools/tools",
     "pages/prenatal/prenatal",
-    "pages/cast/cast"
+    "pages/cast/cast",
+    "pages/library/library",
+    "pages/me/me"
   ],
   "window": {
     "navigationBarTitleText": "小脚丫步步指南",
@@ -21,5 +23,30 @@
     "backgroundColor": "#FBF7F0"
   },
   "style": "v2",
-  "sitemapLocation": "sitemap.json"
+  "sitemapLocation": "sitemap.json",
+  "tabBar": {
+    "custom": true,
+    "color": "#555c51",
+    "selectedColor": "#285143",
+    "backgroundColor": "#fffdf9",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/library/library",
+        "text": "资料"
+      },
+      {
+        "pagePath": "pages/tools/tools",
+        "text": "工具"
+      },
+      {
+        "pagePath": "pages/me/me",
+        "text": "我的"
+      }
+    ]
+  }
 }

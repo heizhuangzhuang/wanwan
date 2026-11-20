@@ -1,70 +1,31 @@
-<import src="../../templates/public.wxml" />
-<view class="container home">
-  <view class="welcome">
-    <view class="welcome-copy">
-      <view class="welcome-title">慢慢来，<text>一步一步了解。</text></view>
-      <view class="description">为关注足内翻的家庭整理公开资料、论文题录和家庭经历。</view>
+<view class="container tab-page home">
+  <view class="home-welcome">
+    <view class="home-welcome-copy">
+      <view class="page-heading">一步一步了解足内翻</view>
+      <view class="description">从最初发现到长期随访，找到这一阶段用得上的资料。</view>
     </view>
-    <image class="welcome-logo" src="/assets/logo.png" mode="aspectFit" />
-  </view>
-  <navigator class="search-entry" url="/pages/search/search" hover-class="pressed">
-    <view class="search-mark" /><text>搜索题名、来源或关键词</text><text class="search-action">搜索</text>
-  </navigator>
-  <view class="quick-links">
-    <navigator url="/pages/stage/stage" class="quick-link" hover-class="pressed"><text>资料库</text><text class="muted">全部资料</text></navigator>
-    <navigator url="/pages/shelf/shelf" class="quick-link" hover-class="pressed"><text>阅读夹</text><text class="muted">{{shelfCount ? shelfCount + ' 条收藏' : '收藏和最近阅读'}}</text></navigator>
-    <navigator url="/pages/preparation/preparation" class="quick-link" hover-class="pressed"><text>沟通清单</text><text class="muted">选出想问的问题</text></navigator>
+    <image class="home-logo" src="/assets/logo.png" mode="aspectFit" aria-hidden="true" />
   </view>
 
-  <view class="home-tool-links">
-    <navigator url="/pages/tools/tools" class="feature-link" hover-class="pressed">
-      <view class="title">家庭工具</view><view class="muted">石膏记录与复诊提醒</view>
-    </navigator>
-    <navigator url="/pages/prenatal/prenatal" class="feature-link" hover-class="pressed">
-      <view class="title">产前检查专项</view><view class="muted">羊水穿刺、全外显等</view>
-    </navigator>
-  </view>
-  <navigator class="guide-link" url="/pages/downloads/downloads" hover-class="pressed">
-    下载足内翻超声复查清单 <text class="chevron" aria-hidden="true">›</text>
-  </navigator>
   <view wx:if="{{demoMode}}" class="notice">当前展示示例资料。</view>
-  <view wx:if="{{noticeTemplate}}" class="notice home-notice">
-    <view class="title">新资料提醒</view>
-    <view class="description">授权后在微信接收一条更新提醒。为送达提醒，本站最多保存你的微信标识 90 天。</view>
-    <view class="notice-actions">
-      <button class="btn compact" bindtap="subscribeNotice" loading="{{noticeBusy}}" disabled="{{noticeBusy}}">订阅一次</button>
-      <button class="btn secondary compact" bindtap="cancelNotice" disabled="{{noticeBusy}}">取消待发</button>
-    </view>
-    <view wx:if="{{noticeStatus}}" class="description" aria-live="polite">{{noticeStatus}}</view>
+  <view class="section-heading">按阶段查找</view>
+  <view wx:if="{{loading && !stages.length}}" class="reading-state muted">正在加载阶段…</view>
+  <view wx:elif="{{error}}" class="reading-state tab-retry">
+    <text>{{error}}</text>
+    <button class="btn secondary compact" bindtap="loadHome" disabled="{{loading}}">重试</button>
   </view>
-  <view class="section-heading">按阶段查找资料</view>
-  <view wx:if="{{loading}}" class="reading-state muted">正在加载阶段和公开资料…</view>
-  <view wx:elif="{{error}}" class="reading-state">
-    <text>{{error}}</text><button class="btn secondary compact" bindtap="loadHome">重试</button>
+  <view wx:elif="{{!stages.length}}" class="reading-state muted">阶段资料正在整理。</view>
+  <view wx:else class="tab-list">
+    <navigator wx:for="{{stages}}" wx:key="key" class="tab-row" hover-class="pressed" url="{{item.url}}">
+      <view class="home-stage-dot" aria-hidden="true" />
+      <view class="tab-row-copy">
+        <view class="tab-row-title">{{item.label}}</view>
+        <view class="tab-row-caption">{{item.intro}}</view>
+      </view>
+      <text class="tab-chevron" aria-hidden="true">›</text>
+    </navigator>
   </view>
-  <view wx:elif="{{!stages.length}}" class="reading-state muted">暂无可浏览的阶段。</view>
-  <view wx:else class="journey">
-    <button wx:for="{{stages}}" wx:key="key" class="journey-step" data-key="{{item.key}}" data-label="{{item.label}}" bindtap="goStage" hover-class="pressed">
-      <text class="journey-number">{{index + 1}}</text>
-      <view class="journey-copy"><view class="title">{{item.label}}</view><view class="muted">{{item.intro}}</view></view>
-      <text class="chevron" aria-hidden="true">›</text>
-    </button>
-  </view>
-
-  <view class="section-bar">
-    <view class="section-heading">阅读专题</view>
-    <navigator class="text-link" url="/pages/topics/topics">全部专题</navigator>
-  </view>
-  <view wx:if="{{!loading && !topics.length && !featuredError}}" class="reading-state muted">专题整理中。</view>
-  <button wx:for="{{topics}}" wx:key="name" class="feature-link" data-name="{{item.name}}" bindtap="openTopic" hover-class="pressed">
-    <view class="title">{{item.title}}</view>
-    <view wx:if="{{item.intro}}" class="description">{{item.intro}}</view>
-    <view class="muted">{{item.resourceCount}} 条资料</view>
-  </button>
-  <navigator class="guide-link" url="/pages/topics/topics?kind=guide" hover-class="pressed">查看原创导读 <text class="chevron" aria-hidden="true">›</text></navigator>
-
-  <view wx:if="{{resources.length}}" class="section-heading">精选资料</view>
-  <template is="resourceCards" data="{{items: resources}}" />
-  <view wx:if="{{featuredError}}" class="reading-state"><text>部分资料暂时无法加载。</text><button class="btn secondary compact" bindtap="loadHome">重新加载</button></view>
-  <navigator class="site-footer" url="/pages/about/about">关于本站、版权与勘误</navigator>
+  <navigator class="home-library" open-type="switchTab" url="/pages/library/library" hover-class="pressed">
+    <text>进入资料库</text><text class="tab-chevron" aria-hidden="true">›</text>
+  </navigator>
 </view>

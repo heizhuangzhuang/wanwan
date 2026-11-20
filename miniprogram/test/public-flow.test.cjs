@@ -34,7 +34,7 @@ function openPage(page, respond, globals = {}) {
     cloud: { callContainer: req => request(req, req.path) },
     setNavigationBarTitle() {},
     navigateTo: ({ url }) => navigations.push(url),
-    reLaunch: ({ url }) => navigations.push(url),
+    switchTab: ({ url }) => navigations.push(url),
     setClipboardData: ({ data, success }) => { clipboard = data; success?.() },
     showToast: value => toasts.push(value.title),
   }
@@ -187,16 +187,20 @@ test('本地演示专题无需访问云服务，正式环境缺配置时返回�
 })
 
 
-test('首页的阶段接口返回登录页时，仍可读取其他公开内容', async () => {
-  const { page } = openPage('index', url => {
+test('首页阶段加载失败时，仍可在资料栏目读取专题及精选资料', async () => {
+  const respond = url => {
     if (url.pathname.endsWith('/stages')) return { data: '<html>登录</html>' }
     if (url.pathname.endsWith('/topics')) return { data: { items: [{ name: 't1', title: '专题一' }] } }
     return { data: { items: [item('r1')] } }
-  })
-  await page.loadHome()
-  assert.match(page.data.error, /阶段/)
-  assert.deepEqual(page.data.topics.map(topic => topic.name), ['t1'])
-  assert.deepEqual(page.data.resources.map(resource => resource.name), ['r1'])
+  }
+  const { page: home, requests } = openPage('index', respond)
+  await home.onLoad()
+  assert.match(home.data.error, /阶段/)
+  assert.deepEqual(requests, ['https://example.test/api/stages'])
+  const { page: library } = openPage('library', respond)
+  await library.onShow()
+  assert.deepEqual(library.data.topics.map(topic => topic.name), ['t1'])
+  assert.deepEqual(library.data.resources.map(resource => resource.name), ['r1'])
 })
 
 test('收藏和最近阅读只保存标识，撤回后清理收藏', async () => {
@@ -233,7 +237,7 @@ test('点击授权后才用微信登录码登记，消息拒绝不发起写入�
   const registrations = []
   let requested
   let loginCount = 0
-  const { page } = openPage('index', (url, req) => {
+  const { page } = openPage('me', (url, req) => {
     if (url.pathname.endsWith('/notice-config')) return { data: { templateId: template } }
     assert.equal(req.method, 'POST')
     assert.equal(req.header['X-WX-SERVICE'], 'wanwan-backend')
@@ -354,7 +358,7 @@ test('公开列表在新接口跳转登录时使用线上兼容路径，私有�
   }, cloud)
   await page.loadHome()
   assert.equal(page.data.stages[0].label, '初次发现')
-  assert.equal(page.data.featuredError, false)
+  assert.equal(page.data.error, '')
   assert.ok(requests.includes('/apis/api.wanwan.run/v1alpha1/stages'))
 
   const cast = openPage('cast', () => ({ status: 302, data: '' }), cloud)
@@ -404,4 +408,52 @@ test('产前专项在没有 API 的情况下可用，与 Web 专项内容一致'
   page.copySource()
   assert.equal(getClipboard(), page.data.selected.sourceUrl)
   assert.equal(requests.length, 0)
+})
+
+test('四个一级栏目和自定义底栏同步，切换使用 switchTab', () => {
+  const config = JSON.parse(readFileSync(join(project, 'app.json'), 'utf8'))
+  assert.equal(config.tabBar.custom, true)
+  assert.deepEqual(config.tabBar.list.map(item => item.text), ['首页', '资料', '工具', '我的'])
+  for (const { pagePath } of config.tabBar.list) {
+    assert.ok(config.pages.includes(pagePath))
+    const pageName = pagePath.split('/')[1]
+    const { page } = openPage(pageName, () => ({ data: { items: [] } }))
+    let selected
+    page.getTabBar = () => ({ setData: ({ active }) => { selected = active } })
+    page.onShow()
+    assert.equal(selected, pagePath)
+  }
+
+  const calls = []
+  let component
+  global.Component = options => { component = options }
+  wx.switchTab = ({ url }) => calls.push(url)
+  global.getCurrentPages = () => [{ route: 'pages/index/index' }]
+  const tabPath = join(compiled, 'custom-tab-bar/index.js')
+  delete require.cache[require.resolve(tabPath)]
+  require(tabPath)
+  component.setData = values => Object.assign(component.data, values)
+  component.lifetimes.ready.call(component)
+  assert.equal(component.data.active, 'pages/index/index')
+  assert.deepEqual(component.data.tabs.map(tab => ({ pagePath: tab.path, text: tab.label })), config.tabBar.list)
+  for (const path of ['pages/index/index', 'pages/library/library', 'pages/tools/tools', 'unknown']) {
+    component.methods.switchSection.call(component, { currentTarget: { dataset: { path } } })
+  }
+  assert.deepEqual(calls, ['/pages/library/library', '/pages/tools/tools'])
+})
+
+test('我的在返回时更新本机阅读数量，最近阅读可直达', async () => {
+  const storage = new Map([['wanwan-reading-local-saved', ['r1']], ['wanwan-reading-local-recent', ['r1', 'r2']]])
+  const { page } = openPage('me', () => { throw new Error('Unexpected request') }, { storage })
+  page.onShow()
+  assert.equal(page.data.saved, 1)
+  assert.equal(page.data.recent, 2)
+  storage.set('wanwan-reading-local-saved', [])
+  page.onShow()
+  assert.equal(page.data.saved, 0)
+  const { page: shelf, requests } = openPage('shelf', url => ({ data: item(url.pathname.split('/').pop()) }), { storage })
+  shelf.onLoad({ kind: 'recent' })
+  await shelf.load(1)
+  assert.equal(shelf.data.kind, 'recent')
+  assert.deepEqual(requests.map(url => url.split('/').pop()), ['r1', 'r2'])
 })

@@ -10,6 +10,9 @@ Page({
     kind: 'saved' as ShelfKind, items: [] as ReturnType<typeof resourceLabel>[],
     page: 1, hasNext: false, loading: false, failed: false,
   },
+  onLoad(options: Record<string, string | undefined>) {
+    if (options.kind === 'recent') this.setData({ kind: 'recent' })
+  },
   onShow() { void this.load(this.data.page) },
   selectKind(event: WechatMiniprogram.TouchEvent) {
     const kind = event.currentTarget.dataset.kind

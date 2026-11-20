@@ -61,5 +61,5 @@ Page({
   previousPage() { if (this.data.page > 1) void this.fetch(this.data.page - 1) },
   nextPage() { if (this.data.hasNext) void this.fetch(this.data.page + 1) },
   openDetail: openResource,
-  browseStages() { wx.reLaunch({ url: '/pages/index/index' }) },
+  browseStages() { wx.switchTab({ url: '/pages/index/index' }) },
 })

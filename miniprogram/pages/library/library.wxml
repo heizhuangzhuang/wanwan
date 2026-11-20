@@ -1,0 +1,45 @@
+<import src="../../templates/public.wxml" />
+<view class="container tab-page library">
+  <navigator class="search-entry" url="/pages/search/search" hover-class="pressed">
+    <view class="search-mark" aria-hidden="true" />
+    <text>标题、来源或关键词</text>
+    <text class="search-action">搜索</text>
+  </navigator>
+  <navigator class="tab-feature library-prenatal" url="/pages/prenatal/prenatal" hover-class="pressed">
+    <view class="tab-row-copy">
+      <view class="tab-feature-title">产前检查专项</view>
+      <view class="tab-feature-description">结构超声、羊水穿刺、全外显子测序等</view>
+    </view>
+    <text class="tab-chevron" aria-hidden="true">›</text>
+  </navigator>
+  <view class="section-heading">资料目录</view>
+  <view class="tab-list">
+    <navigator class="tab-row" url="/pages/stage/stage" hover-class="pressed">
+      <view class="tab-row-copy"><view class="tab-row-title">全部资料</view><view class="tab-row-caption">按阶段、材料类型或标签查找</view></view>
+      <text class="tab-chevron" aria-hidden="true">›</text>
+    </navigator>
+    <navigator class="tab-row" url="/pages/topics/topics" hover-class="pressed">
+      <view class="tab-row-copy"><view class="tab-row-title">阅读专题</view><view class="tab-row-caption">按话题整理的资料合集</view></view>
+      <text class="tab-chevron" aria-hidden="true">›</text>
+    </navigator>
+    <navigator class="tab-row" url="/pages/topics/topics?kind=guide" hover-class="pressed">
+      <view class="tab-row-copy"><view class="tab-row-title">原创导读</view><view class="tab-row-caption">跟着导读了解背景和出处</view></view>
+      <text class="tab-chevron" aria-hidden="true">›</text>
+    </navigator>
+  </view>
+
+  <view wx:if="{{topics.length}}" class="section-heading">精选专题</view>
+  <view wx:if="{{topics.length}}" class="tab-list">
+    <navigator wx:for="{{topics}}" wx:key="name" class="tab-row" url="{{item.url}}" hover-class="pressed">
+      <view class="tab-row-copy"><view class="tab-row-title">{{item.title}}</view><view class="tab-row-caption">{{item.resourceCount}} 条资料</view></view>
+      <text class="tab-chevron" aria-hidden="true">›</text>
+    </navigator>
+  </view>
+
+  <view wx:if="{{resources.length}}" class="section-heading">精选资料</view>
+  <template is="resourceCards" data="{{items: resources}}" />
+  <view wx:if="{{featuredError}}" class="reading-state tab-retry">
+    <text>部分精选内容暂时无法加载。</text>
+    <button class="btn secondary compact" bindtap="loadFeatured" disabled="{{loading}}">重试</button>
+  </view>
+</view>

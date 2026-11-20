@@ -16,8 +16,21 @@ declare namespace WechatMiniprogram {
 
 declare function App<T>(options: T & { onLaunch?(): void } & ThisType<T>): void
 declare function getApp<T = Record<string, unknown>>(): T
+declare function getCurrentPages(): { route?: string }[]
+interface TabBarHost {
+  getTabBar?(): { setData(data: { active: string }): void }
+}
+interface ComponentData<T> {
+  data: T
+  setData(data: Partial<T>): void
+}
+declare function Component<T extends Record<string, unknown>>(options: {
+  data: T
+  lifetimes?: { ready?(): void } & ThisType<ComponentData<T>>
+  methods: Record<string, unknown> & ThisType<ComponentData<T>>
+}): void
 declare function Page<T extends { data?: Record<string, unknown> }>(
-  options: T & ThisType<T & { setData(data: Partial<T['data']>): void }>,
+  options: T & ThisType<T & TabBarHost & { setData(data: Partial<T['data']>): void }>,
 ): void
 
 interface MiniProgramFailure { errMsg?: string }
@@ -71,6 +84,7 @@ declare const wx: {
   }): void
   login(options: { success: (result: { code?: string }) => void; fail: (err: unknown) => void }): void
   navigateTo(options: { url: string }): void
+  switchTab(options: { url: string }): void
   reLaunch(options: { url: string }): void
   navigateToMiniProgram(options: { appId: string; path?: string; fail?: () => void }): void
   setNavigationBarTitle(options: { title: string }): void

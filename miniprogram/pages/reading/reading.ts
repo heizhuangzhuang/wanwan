@@ -41,6 +41,6 @@ Page({
   },
   openDetail: openResource,
   backToIndex() {
-    wx.reLaunch({ url: '/pages/index/index' })
+    wx.switchTab({ url: '/pages/index/index' })
   },
 })

@@ -42,11 +42,18 @@ node --test miniprogram/test/public-flow.test.cjs
 
 ## 当前体验
 
-首页集中展示阶段导航、专题和精选资料。资料搜索、专题与详情复用 Web 使用的 Halo 公开 API。阅读夹只在本机保存收藏和最近浏览的资料标识，重新打开时核对资料可见性。沟通清单使用固定问题，复制功能由用户操作。
+底部有四个一级栏目。详情使用微信页面栈返回到来源栏目。已有公众号专题、导读和下载路径可继续使用。
+
+- 首页集中展示五个阶段，进入某一阶段后浏览对应资料。
+- 资料集中展示搜索、产前检查专项、专题、原创和精选内容。
+- 工具集中提供石膏记录、沟通清单和超声复查 PDF。
+- 我的集中提供本机收藏与最近阅读、微信提醒和反馈。收藏回访时重新核对资料可见性。
+
+资料搜索、专题与详情复用 Web 使用的 Halo 公开 API。
 
 ## 资料下载
 
-首页和「就诊沟通清单」均可打开足内翻超声复查清单。内置 PDF 来自 `web/public/downloads/clubfoot-ultrasound-checklist.pdf`，与 Web 文件一致，可在离线时写入小程序的用户文件目录。更新 PDF 后，从仓库根目录运行 `node miniprogram/test/sync-checklist.cjs`，再运行公开流程测试验证内容一致。
+「工具」和「就诊沟通清单」均可打开足内翻超声复查清单。内置 PDF 来自 `web/public/downloads/clubfoot-ultrasound-checklist.pdf`，与 Web 文件一致，可在离线时写入小程序的用户文件目录。更新 PDF 后，从仓库根目录运行 `node miniprogram/test/sync-checklist.cjs`，再运行公开流程测试验证内容一致。
 
 已公开且链接正常的资料卡可配置获准公开下载的 HTTPS 附件。运营者在 Halo 资料卡填写地址、带后缀的文件名，并确认公开下载许可。微信公众平台须放行附件主机的 `downloadFile` 合法域名。附件先下载，再保存到小程序用户目录。
 
@@ -54,7 +61,7 @@ PDF、Word、Excel 和 PPT 使用微信文档预览。图片可保存到手机�
 
 ## 家庭工具与产前检查专项
 
-首页有「家庭工具」和「产前检查专项」。工具页集中显示石膏记录、就诊沟通清单与 PDF。产前专项内容不依赖 Halo；编辑 `web/public/guides/prenatal.json` 后，在根目录运行 `node miniprogram/test/sync-prenatal-guides.cjs`。专题入口可从公众号链接到 `pages/prenatal/prenatal?key=amniocentesis` 或 `pages/prenatal/prenatal?key=exome`。
+从底部「工具」可打开石膏记录、就诊沟通清单与 PDF。从底部「资料」进入产前检查专项。产前专项内容不依赖 Halo；编辑 `web/public/guides/prenatal.json` 后，在根目录运行 `node miniprogram/test/sync-prenatal-guides.cjs`。专题入口可从公众号链接到 `pages/prenatal/prenatal?key=amniocentesis` 或 `pages/prenatal/prenatal?key=exome`。
 
 石膏记录位于 `pages/cast/cast`。开启后使用当前微信账户识别本人。首次保存前由本人或监护人单独确认，照护事项与时间由家长手动填入。提醒需再次向微信申请一次性授权。变更复诊时间后，原有待发提醒取消。个人记录页禁止小程序搜索索引。
 

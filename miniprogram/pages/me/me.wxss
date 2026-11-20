@@ -1,0 +1,8 @@
+.me-shelf-header { display: flex; justify-content: space-between; align-items: baseline; gap: 16rpx; margin-bottom: 16rpx; }
+.me-shelf-header .section-heading { margin: 0; }
+.me-count { color: #506453; font-size: 26rpx; }
+.me-notices { align-items: flex-start; }
+.me-notice-actions { display: flex; flex-wrap: wrap; gap: 12rpx; margin: 14rpx 0; }
+.me-notice-actions .btn, .me-notices .me-retry { margin-left: 0; }
+.me-notices .me-retry { margin-top: 10rpx; }
+.me-support { margin-top: 28rpx; }

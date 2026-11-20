@@ -15,9 +15,9 @@
       <button class="btn secondary compact" bindtap="retry">重试</button>
     </view>
     <view wx:if="{{!items.length && !failed}}" class="card">
-      <view class="title">{{kind === 'saved' ? '还没有收藏' : '这一页暂无阅读记录'}}</view>
-      <view class="description">找到想读的内容，可以在资料详情中加入收藏。</view>
-      <navigator class="text-link" url="/pages/stage/stage">去资料库看看</navigator>
+      <view class="title">{{kind === 'saved' ? '还没有收藏' : '还没有阅读记录'}}</view>
+      <view class="description">{{kind === 'saved' ? '在资料详情点收藏，方便下次接着读。' : '打开过的资料会显示在这里。'}}</view>
+      <navigator class="text-link" url="/pages/library/library" open-type="switchTab">去资料库看看</navigator>
     </view>
     <view wx:for="{{items}}" wx:key="name" class="card">
       <button class="plain-button" data-name="{{item.name}}" bindtap="openDetail">

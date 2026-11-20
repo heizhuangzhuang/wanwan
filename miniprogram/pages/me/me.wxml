@@ -1,0 +1,46 @@
+<view class="container tab-page me">
+  <view class="me-shelf-header">
+    <view class="section-heading">阅读夹</view>
+    <view class="muted">保存在本机</view>
+  </view>
+  <view class="tab-list">
+    <navigator class="tab-row" url="/pages/shelf/shelf?kind=saved" hover-class="pressed">
+      <view class="tab-row-copy"><view class="tab-row-title">收藏的资料</view></view>
+      <text class="me-count">{{saved}} 条</text><text class="tab-chevron" aria-hidden="true">›</text>
+    </navigator>
+    <navigator class="tab-row" url="/pages/shelf/shelf?kind=recent" hover-class="pressed">
+      <view class="tab-row-copy"><view class="tab-row-title">最近阅读</view></view>
+      <text class="me-count">{{recent}} 条</text><text class="tab-chevron" aria-hidden="true">›</text>
+    </navigator>
+  </view>
+
+  <view class="section-heading">微信提醒</view>
+  <view class="tab-list">
+    <navigator class="tab-row" url="/pages/cast/cast" hover-class="pressed">
+      <view class="tab-row-copy"><view class="tab-row-title">复诊提醒</view><view class="tab-row-caption">查看和管理石膏记录里的提醒</view></view>
+      <text class="tab-chevron" aria-hidden="true">›</text>
+    </navigator>
+    <view class="tab-row me-notices">
+      <view class="tab-row-copy">
+        <view class="tab-row-title">新资料提醒</view>
+        <view wx:if="{{noticeLoading}}" class="tab-row-caption">正在读取订阅设置…</view>
+        <view wx:elif="{{noticeTemplate}}" class="tab-row-caption">授权后可收一条资料更新提醒。</view>
+        <view wx:elif="{{noticeError}}" class="tab-row-caption">暂时无法加载订阅设置。</view>
+        <view wx:else class="tab-row-caption">当前未开放。</view>
+        <view wx:if="{{noticeTemplate}}" class="me-notice-actions">
+          <button class="btn compact" bindtap="subscribeNotice" loading="{{noticeBusy}}" disabled="{{noticeBusy}}">订阅一次</button>
+          <button class="btn secondary compact" bindtap="cancelNotice" disabled="{{noticeBusy}}">取消待发</button>
+        </view>
+        <button wx:if="{{noticeError && !noticeLoading}}" class="btn secondary compact me-retry" bindtap="loadNoticeConfig">重试</button>
+        <view wx:if="{{noticeStatus}}" class="tab-row-caption" aria-live="polite">{{noticeStatus}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="tab-list me-support">
+    <navigator class="tab-row" url="/pages/about/about" hover-class="pressed">
+      <view class="tab-row-copy"><view class="tab-row-title">关于与反馈</view><view class="tab-row-caption">隐私说明、版权和内容勘误</view></view>
+      <text class="tab-chevron" aria-hidden="true">›</text>
+    </navigator>
+  </view>
+</view>

@@ -1,22 +1,26 @@
-<view class="container">
-  <view class="card tools-heading">
-    <view class="page-heading">家庭工具</view>
-    <view class="description">把医院交代的话、下一次时间和想问的问题理清楚。</view>
+<view class="container tab-page">
+  <navigator class="tab-feature tools-cast" url="/pages/cast/cast" hover-class="pressed">
+    <view class="tab-row-copy">
+      <view class="tab-feature-title">石膏记录与复诊提醒</view>
+      <view class="tab-feature-description">按次记下日期、医院交代的事项和下次治疗时间。</view>
+    </view>
+    <text class="tab-chevron" aria-hidden="true">›</text>
+  </navigator>
+  <view class="section-heading">就诊准备</view>
+  <view class="tab-list">
+    <navigator class="tab-row" url="/pages/preparation/preparation" hover-class="pressed">
+      <view class="tab-row-copy">
+        <view class="tab-row-title">就诊沟通清单</view>
+        <view class="tab-row-caption">勾选想问的问题，复制到备忘录</view>
+      </view>
+      <text class="tab-chevron" aria-hidden="true">›</text>
+    </navigator>
+    <navigator class="tab-row" url="/pages/downloads/downloads" hover-class="pressed">
+      <view class="tab-row-copy">
+        <view class="tab-row-title">足内翻超声复查清单</view>
+        <view class="tab-row-caption">下载并打印一页 PDF</view>
+      </view>
+      <text class="tab-chevron" aria-hidden="true">›</text>
+    </navigator>
   </view>
-  <navigator class="feature-link" hover-class="pressed" url="/pages/cast/cast">
-    <view class="title">石膏记录与复诊提醒</view>
-    <view class="description">记下每次打石膏的日期、医院交代的事项和下次时间。</view>
-  </navigator>
-  <navigator class="feature-link" hover-class="pressed" url="/pages/preparation/preparation">
-    <view class="title">就诊沟通清单</view>
-    <view class="description">勾选想向医生确认的问题，复制到自己的备忘录。</view>
-  </navigator>
-  <navigator class="feature-link" hover-class="pressed" url="/pages/downloads/downloads">
-    <view class="title">足内翻超声复查清单</view>
-    <view class="description">下载一页 PDF，可以打印并带去就诊。</view>
-  </navigator>
-  <navigator class="feature-link" hover-class="pressed" url="/pages/prenatal/prenatal">
-    <view class="title">产前检查专项</view>
-    <view class="description">从结构超声、羊水穿刺到全外显子测序。</view>
-  </navigator>
 </view>
