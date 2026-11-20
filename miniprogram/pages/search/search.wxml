@@ -1,17 +1,28 @@
 <import src="../../templates/public.wxml" />
-<view class="container">
+<view class="container search-page">
   <view class="page-intro"><view class="page-heading">找一找关心的资料</view><view class="description">可按题名、来源或关键词查找公开资料。</view></view>
-  <view class="actions">
-    <input class="field" placeholder="搜索资料题名、出处或关键词" maxlength="100" value="{{keyword}}" disabled="{{loading}}" bindinput="onInput" bindconfirm="doSearch" />
-    <button class="btn" disabled="{{loading}}" bindtap="doSearch">搜索</button>
+  <view class="actions search-input-row">
+    <input class="field" placeholder="标题、来源或关键词" maxlength="100" value="{{keyword}}" disabled="{{loading}}" bindinput="onInput" bindconfirm="doSearch" />
+    <button class="btn" size="mini" disabled="{{loading}}" bindtap="doSearch">搜索</button>
   </view>
+  <button wx:if="{{keyword && !loading}}" class="plain-button text-link search-clear" size="mini" bindtap="clearKeyword">清除当前搜索</button>
   <view class="actions">
     <picker mode="selector" range="{{stages}}" range-key="label" value="{{stageIndex}}" disabled="{{loading || stageError}}" bindchange="onStage"><view class="filter">{{stages[stageIndex].label}} ▾</view></picker>
     <picker mode="selector" range="{{materials}}" range-key="label" value="{{typeIndex}}" disabled="{{loading}}" bindchange="onType"><view class="filter">{{materials[typeIndex].label}} ▾</view></picker>
   </view>
+  <view wx:if="{{!submittedKeyword && !loading && history.length}}" class="search-history">
+    <view class="search-history-header">
+      <view class="title">最近搜索</view>
+      <button class="plain-button text-link" size="mini" bindtap="confirmClearHistory">清空</button>
+    </view>
+    <view class="search-suggestions">
+      <button wx:for="{{history}}" wx:key="*this" class="term" size="mini" data-keyword="{{item}}" bindtap="pickKeyword">{{item}}</button>
+    </view>
+    <view class="muted">仅保存在本机</view>
+  </view>
   <view wx:if="{{!submittedKeyword && !error}}" class="search-suggestions">
-    <text class="muted">试试这些关键词</text>
-    <button wx:for="{{suggestions}}" wx:key="*this" class="term" data-keyword="{{item}}" bindtap="pickKeyword">{{item}}</button>
+    <text class="muted search-suggestions-label">推荐关键词</text>
+    <button wx:for="{{suggestions}}" wx:key="*this" class="term" size="mini" data-keyword="{{item}}" bindtap="pickKeyword">{{item}}</button>
   </view>
   <view wx:if="{{stageError}}" class="muted" bindtap="loadFilters">阶段列表暂不可用，点击重试。</view>
   <view wx:if="{{loading}}" class="muted">搜索中…</view>

@@ -457,3 +457,236 @@ test('我的在返回时更新本机阅读数量，最近阅读可直达', async
   assert.equal(shelf.data.kind, 'recent')
   assert.deepEqual(requests.map(url => url.split('/').pop()), ['r1', 'r2'])
 })
+
+function installFileSystem(keys = []) {
+  const files = new Set(keys)
+  const unlinked = []
+  const directory = { readable: true, removable: true }
+  const userPath = 'wxfile://usr'
+  wx.env = { USER_DATA_PATH: userPath }
+  wx.getFileSystemManager = () => ({
+    access: ({ path, success, fail }) => files.has(path.slice(userPath.length + 1)) ? success() : fail({}),
+    readdir: ({ dirPath, success, fail }) => {
+      assert.equal(dirPath, userPath)
+      if (directory.readable) success({ files: [...files] })
+      else fail({ errMsg: 'permission denied' })
+    },
+    unlink: ({ filePath, success, fail }) => {
+      assert.ok(filePath.startsWith(userPath + '/'))
+      unlinked.push(filePath)
+      const key = filePath.slice(userPath.length + 1)
+      if (directory.removable && files.delete(key)) success()
+      else fail({ errMsg: 'unlink failed' })
+    },
+  })
+  return { files, unlinked, directory }
+}
+
+test('已下载找回旧清单，旧附件可清理，忽略其他本地文件和失效索引', async () => {
+  const { downloadFileKey, ultrasoundChecklist } = require(join(compiled, 'services/downloads.js'))
+  const pdf = downloadFileKey(ultrasoundChecklist)
+  const unknown = 'xiaojiaoya-ab12.zip'
+  const storage = new Map([['xiaojiaoya-saved-files', [
+    { key: 'xiaojiaoya-9876.pdf', fileName: '已丢失.pdf', resourceName: 'lost', savedAt: 2000 },
+    { key: '../private.pdf', fileName: '无效项.pdf', resourceName: 'bad', savedAt: 3000 },
+  ]]])
+  const { page, requests } = openPage('saved-files', () => assert.fail('本机列表不读取后端'), { storage })
+  installFileSystem([pdf, unknown, 'patient.pdf', 'xiaojiaoya-1234.exe', '../private.pdf'])
+
+  await page.onShow()
+  assert.equal(page.data.files.length, 2)
+  const checklist = page.data.files.find(file => file.key === pdf)
+  assert.equal(checklist.fileName, ultrasoundChecklist.fileName)
+  assert.equal(checklist.url, '/pages/downloads/downloads')
+  const oldCopy = page.data.files.find(file => file.key === unknown)
+  assert.equal(oldCopy.fileName, '以前保存的附件')
+  assert.equal(oldCopy.url, '')
+  assert.equal(requests.length, 0)
+})
+
+test('确认后只移除指定文件，取消与删除失败保留原副本', async () => {
+  const key = 'xiaojiaoya-abcd.pdf'
+  const { page, toasts } = openPage('saved-files', () => assert.fail('不需要网络'))
+  const { files, unlinked, directory } = installFileSystem([key, 'other.pdf'])
+  let modal
+  wx.showModal = value => { modal = value }
+  await page.refresh()
+  const event = { currentTarget: { dataset: { key } } }
+  page.confirmRemoval(event)
+  assert.equal(modal.confirmText, '移除')
+  modal.success({ confirm: false })
+  assert.equal(unlinked.length, 0)
+  assert.equal(page.data.files.length, 1)
+
+  directory.removable = false
+  page.confirmRemoval(event)
+  modal.success({ confirm: true })
+  await settle()
+  assert.match(page.data.removalError, /未能移除/)
+  assert.ok(files.has(key))
+
+  directory.removable = true
+  await page.remove(key)
+  assert.deepEqual([...files], ['other.pdf'])
+  assert.equal(page.data.files.length, 0)
+  assert.equal(toasts.at(-1), '已移除')
+  const { deleteSavedFile } = require(join(compiled, 'services/download-library.js'))
+  await assert.rejects(deleteSavedFile('../other.pdf'), /Invalid saved file/)
+  assert.ok(unlinked.every(path => path === 'wxfile://usr/' + key))
+})
+
+test('读目录失败提供重试，恢复后文件重新出现', async () => {
+  const { page } = openPage('saved-files', () => assert.fail('不需要网络'))
+  const { directory } = installFileSystem(['xiaojiaoya-a123.png'])
+  directory.readable = false
+  await page.onShow()
+  assert.match(page.data.error, /无法读取/)
+  assert.equal(page.data.loading, false)
+  directory.readable = true
+  await page.refresh()
+  assert.equal(page.data.error, '')
+  assert.equal(page.data.files[0].suffix, 'PNG')
+})
+
+test('已存在的远程副本补登记；重新打开时核对附件版本、撤回和分享路径', async () => {
+  const { downloadFileKey, approvedDownload } = require(join(compiled, 'services/downloads.js'))
+  const initial = { fileName: '检查清单.pdf', url: 'https://example.test/a.pdf?download=1' }
+  const key = downloadFileKey(approvedDownload('r1', initial))
+  const storage = new Map()
+  const resource = { ...item('r1'), attachment: initial }
+  const page1 = openPage('downloads', () => ({ data: resource }), { storage })
+  installFileSystem([key])
+  await page1.page.onLoad({ resource: 'r1' })
+  assert.ok(page1.page.data.localPath)
+  const saved = openPage('saved-files', () => assert.fail('目录无需后端'), { storage })
+  installFileSystem([key])
+  await saved.page.refresh()
+  assert.equal(saved.page.data.files[0].fileName, initial.fileName)
+  assert.match(saved.page.data.files[0].url, /resource=r1&copy=/)
+  assert.doesNotMatch(JSON.stringify([...storage.values()]), /https:\/\//)
+
+  const page2 = openPage('downloads', () => ({ data: resource }), { storage })
+  installFileSystem([key])
+  await page2.page.onLoad({ resource: 'r1', copy: key })
+  assert.ok(page2.page.data.localPath)
+  assert.equal(page2.page.onShareAppMessage().path, '/pages/downloads/downloads?resource=r1')
+  resource.attachment = { ...initial, url: 'https://example.test/updated.pdf' }
+  await page2.page.onShow()
+  assert.equal(page2.page.data.versionChanged, true)
+  assert.equal(page2.page.data.localPath, '')
+  page2.page.openResource()
+  assert.equal(page2.navigations[0], '/pages/detail/detail?name=r1')
+  resource.linkStatus = 'SOURCE_RETRACTED'
+  await page2.page.onShow()
+  assert.match(page2.page.data.error, /已停用/)
+  assert.equal(page2.page.data.versionChanged, false)
+})
+
+test('删除清单后返回原下载页可重新下载', async () => {
+  const { downloadFileKey, ultrasoundChecklist } = require(join(compiled, 'services/downloads.js'))
+  const key = downloadFileKey(ultrasoundChecklist)
+  const { page, requests } = openPage('downloads', () => assert.fail('内置文件不需要网络'))
+  const { files } = installFileSystem([key])
+  await page.onLoad({})
+  assert.ok(page.data.localPath)
+  files.delete(key)
+  await page.onShow()
+  assert.equal(page.data.localPath, '')
+  assert.equal(page.data.kind, 'document')
+  assert.equal(requests.length, 0)
+})
+
+test('搜索记录保持最近八条，去空格和去重，点击时才发起搜索', async () => {
+  const storage = new Map()
+  const respond = () => ({ data: { items: [], page: 1, size: 20, total: 0 } })
+  const first = openPage('search', respond, { storage })
+  for (const keyword of [...Array.from({ length: 9 }, (_, i) => '复诊' + i), ' 复诊5 ']) {
+    first.page.onInput({ detail: { value: keyword } })
+    first.page.doSearch()
+    await settle()
+  }
+  assert.deepEqual(first.page.data.history, ['复诊5', '复诊8', '复诊7', '复诊6', '复诊4', '复诊3', '复诊2', '复诊1'])
+
+  const reopened = openPage('search', respond, { storage })
+  reopened.page.onShow()
+  assert.equal(reopened.requests.length, 0)
+  assert.deepEqual(reopened.page.data.history, first.page.data.history)
+  reopened.page.pickKeyword({ currentTarget: { dataset: { keyword: '复诊3' } } })
+  await settle()
+  assert.equal(new URL(reopened.requests[0]).searchParams.get('keyword'), '复诊3')
+  assert.equal(reopened.page.data.history[0], '复诊3')
+  reopened.page.clearKeyword()
+  assert.equal(reopened.page.data.submittedKeyword, '')
+  assert.equal(reopened.page.data.history.length, 8)
+})
+
+test('空关键词不发请求，搜索失败不登记，成功重试后才能清空记录', async () => {
+  let works = false
+  const storage = new Map([['other', '保留']])
+  const { page, requests } = openPage('search', () => works
+    ? { data: { items: [], page: 1, size: 20, total: 0 } } : { status: 503 }, { storage })
+  page.doSearch()
+  assert.equal(requests.length, 0)
+  page.onInput({ detail: { value: '石膏' } })
+  page.doSearch()
+  await settle()
+  assert.deepEqual(page.data.history, [])
+  assert.match(page.data.error, /暂时不可用/)
+  works = true
+  page.retry()
+  await settle()
+  assert.deepEqual(page.data.history, ['石膏'])
+
+  page.clearKeyword()
+  let modal
+  wx.showModal = options => { modal = options }
+  page.confirmClearHistory()
+  modal.success({ confirm: false })
+  assert.deepEqual(page.data.history, ['石膏'])
+  page.confirmClearHistory()
+  modal.success({ confirm: true })
+  assert.deepEqual(page.data.history, [])
+  assert.equal(storage.get('other'), '保留')
+})
+
+test('专题和导读精准转发，加载中和撤回后只分享公开资料库', async () => {
+  let status = 200
+  const { page, navigations } = openPage('reading', url => ({
+    status,
+    data: url.pathname.includes('/topics/') ? { title: '产前专题', intro: '', resources: [] }
+      : { title: '导读', content: '<p>公开</p>' },
+  }))
+  const fallback = '/pages/library/library'
+  page.onLoad({ kind: 'topic', name: '专题%20一' })
+  assert.equal(page.onShareAppMessage().path, fallback)
+  await page.load()
+  assert.deepEqual(page.onShareAppMessage(), {
+    title: '产前专题', path: '/pages/reading/reading?kind=topic&name=%E4%B8%93%E9%A2%98%20%E4%B8%80',
+  })
+  page.onLoad({ kind: 'guide', name: 'guide-a' })
+  await page.load()
+  assert.equal(page.onShareAppMessage().path, '/pages/reading/reading?kind=guide&name=guide-a')
+  status = 404
+  await page.load()
+  assert.match(page.data.error, /已下线/)
+  assert.equal(page.onShareAppMessage().path, fallback)
+  page.backToLibrary()
+  assert.equal(navigations[0], fallback)
+})
+
+test('相册权限失败后保留本机图片，可重试保存', async () => {
+  const image = { fileName: '资料.png', url: 'https://example.test/a.png' }
+  const { downloadFileKey, approvedDownload } = require(join(compiled, 'services/downloads.js'))
+  const key = downloadFileKey(approvedDownload('r1', image))
+  const { page } = openPage('downloads', () => ({ data: { ...item('r1'), attachment: image } }))
+  installFileSystem([key])
+  let allowed = false
+  wx.saveImageToPhotosAlbum = ({ success, fail }) => allowed ? success() : fail({})
+  await page.onLoad({ resource: 'r1' })
+  page.saveToAlbum()
+  assert.match(page.data.status, /相册权限/)
+  assert.ok(page.data.localPath)
+  allowed = true
+  page.saveToAlbum()
+  assert.match(page.data.status, /已保存到手机相册/)
+})

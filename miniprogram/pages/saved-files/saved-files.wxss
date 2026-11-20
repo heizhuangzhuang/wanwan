@@ -1,0 +1,4 @@
+.saved-files > .description { margin: 0 0 22rpx; }
+.saved-file-row { min-height: 108rpx; }
+.saved-file-name { padding: 8rpx 0; }
+.saved-file-row .saved-file-remove { flex: none; width: 116rpx; max-width: 116rpx; margin: 0; padding: 0; }

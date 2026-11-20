@@ -2,7 +2,8 @@
   <view wx:if="{{loading}}" class="reading-state muted">正在准备文件信息…</view>
   <view wx:elif="{{error}}" class="reading-state">
     <text>{{error}}</text>
-    <button class="btn secondary compact" bindtap="loadFile">重新加载</button>
+    <button wx:if="{{versionChanged}}" class="btn secondary compact" bindtap="openResource">查看资料详情</button>
+    <button wx:else class="btn secondary compact" bindtap="loadFile">重新加载</button>
   </view>
   <view wx:else class="card">
     <view class="page-heading">{{resourceName ? '下载资料附件' : '足内翻超声复查清单'}}</view>
@@ -18,4 +19,5 @@
     <view class="description muted">下载后可在小程序内打开。文档可从预览菜单导出，或转发到微信会话后按手机提供的选项保存。</view>
     <button class="plain-button site-footer" open-type="share">分享下载入口</button>
   </view>
+  <navigator wx:if="{{localPath}}" class="text-link" url="/pages/saved-files/saved-files">查看已下载文件</navigator>
 </view>

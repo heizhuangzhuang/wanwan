@@ -5,7 +5,7 @@
     <view>{{error}}</view>
     <view class="actions">
       <button wx:if="{{retryable}}" class="btn" bindtap="load">重试</button>
-      <button class="btn secondary" bindtap="backToIndex">查看全部资料</button>
+      <button class="btn secondary" bindtap="backToLibrary">查看全部资料</button>
     </view>
   </view>
   <block wx:else>
@@ -20,6 +20,9 @@
       <template wx:if="{{items.length}}" is="resourceCards" data="{{items}}" />
       <view wx:else class="card muted">该专题暂无公开资料。</view>
     </block>
-    <button class="btn secondary" bindtap="backToIndex">查看全部资料</button>
+    <view class="actions">
+      <button class="btn" open-type="share">分享{{kind === 'guide' ? '导读' : '专题'}}</button>
+      <button class="btn secondary" bindtap="backToLibrary">查看全部资料</button>
+    </view>
   </block>
 </view>

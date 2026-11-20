@@ -1,0 +1,27 @@
+<view class="container saved-files">
+  <view class="description muted">查看和移除保存在小程序里的文件。</view>
+  <view wx:if="{{loading}}" class="reading-state muted">正在读取本机文件…</view>
+  <view wx:elif="{{error}}" class="reading-state tab-retry">
+    <text>{{error}}</text>
+    <button class="btn secondary compact" bindtap="refresh">重试</button>
+  </view>
+  <view wx:elif="{{!files.length}}" class="card">
+    <view class="title">暂无已下载文件</view>
+    <navigator class="text-link" url="/pages/downloads/downloads">查看足内翻超声复查清单</navigator>
+  </view>
+  <view wx:else class="tab-list">
+    <view wx:for="{{files}}" wx:key="key" class="tab-row saved-file-row">
+      <navigator wx:if="{{item.url}}" class="tab-row-copy saved-file-name" url="{{item.url}}" hover-class="pressed">
+        <view class="tab-row-title">{{item.fileName}}</view>
+        <view class="tab-row-caption">{{item.suffix}} · 查看文件</view>
+      </navigator>
+      <view wx:else class="tab-row-copy saved-file-name">
+        <view class="tab-row-title">{{item.fileName}}</view>
+        <view class="tab-row-caption">{{item.suffix}} · 可回原资料重新识别</view>
+      </view>
+      <button class="btn secondary compact saved-file-remove" size="mini" data-key="{{item.key}}" bindtap="confirmRemoval"
+        disabled="{{!!removing}}" loading="{{removing === item.key}}">移除</button>
+    </view>
+  </view>
+  <view wx:if="{{removalError}}" class="notice" aria-live="polite">{{removalError}}</view>
+</view>

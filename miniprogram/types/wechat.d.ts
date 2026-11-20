@@ -40,6 +40,9 @@ interface MiniProgramFileSystem {
     success: () => void; fail: (err: MiniProgramFailure) => void }): void
   saveFile(options: { filePath?: string; tempFilePath: string;
     success: (result: { savedFilePath: string }) => void; fail: (err: MiniProgramFailure) => void }): void
+  readdir(options: { dirPath: string; success: (result: { files: string[] }) => void;
+    fail: (err: MiniProgramFailure) => void }): void
+  unlink(options: { filePath: string; success: () => void; fail: (err: MiniProgramFailure) => void }): void
 }
 
 declare const wx: {

@@ -1,6 +1,6 @@
 <view class="container tab-page me">
   <view class="me-shelf-header">
-    <view class="section-heading">阅读夹</view>
+    <view class="section-heading">本机资料</view>
     <view class="muted">保存在本机</view>
   </view>
   <view class="tab-list">
@@ -11,6 +11,10 @@
     <navigator class="tab-row" url="/pages/shelf/shelf?kind=recent" hover-class="pressed">
       <view class="tab-row-copy"><view class="tab-row-title">最近阅读</view></view>
       <text class="me-count">{{recent}} 条</text><text class="tab-chevron" aria-hidden="true">›</text>
+    </navigator>
+    <navigator class="tab-row" url="/pages/saved-files/saved-files" hover-class="pressed">
+      <view class="tab-row-copy"><view class="tab-row-title">已下载</view><view class="tab-row-caption">查看或移除小程序内保存的文件</view></view>
+      <text class="tab-chevron" aria-hidden="true">›</text>
     </navigator>
   </view>
 

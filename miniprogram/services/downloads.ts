@@ -32,12 +32,16 @@ export function approvedDownload(name: string, attachment?: Attachment | null): 
   return { ...attachment, key: name }
 }
 
-export function downloadPath(download: Download) {
+export function downloadFileKey(download: Download) {
   let hash = 2166136261
   const identity = [download.key, download.fileName, 'url' in download ? download.url : ''].join('\0')
   for (let i = 0; i < identity.length; i++) hash = Math.imul(hash ^ identity.charCodeAt(i), 16777619)
   const suffix = download.fileName.slice(download.fileName.lastIndexOf('.') + 1).toLowerCase()
-  return `${wx.env.USER_DATA_PATH}/xiaojiaoya-${(hash >>> 0).toString(16)}.${suffix}`
+  return `xiaojiaoya-${(hash >>> 0).toString(16)}.${suffix}`
+}
+
+function downloadPath(download: Download) {
+  return `${wx.env.USER_DATA_PATH}/${downloadFileKey(download)}`
 }
 
 export function savedPath(download: Download): Promise<string | null> {

@@ -40,7 +40,14 @@ Page({
     }
   },
   openDetail: openResource,
-  backToIndex() {
-    wx.switchTab({ url: '/pages/index/index' })
+  onShareAppMessage() {
+    const { loading, error, kind, name, title } = this.data
+    if (!loading && !error && title && name && (kind === 'topic' || kind === 'guide')) {
+      return { title, path: `/pages/reading/reading?kind=${kind}&name=${encodeURIComponent(name)}` }
+    }
+    return { title: '小脚丫步步指南｜资料库', path: '/pages/library/library' }
+  },
+  backToLibrary() {
+    wx.switchTab({ url: '/pages/library/library' })
   },
 })

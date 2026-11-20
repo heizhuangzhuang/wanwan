@@ -1,5 +1,6 @@
 import { HttpError, wanwanApi } from '../../services/api'
-import { approvedDownload, fileKind, saveDownload, savedPath, ultrasoundChecklist, type Download } from '../../services/downloads'
+import { rememberDownload } from '../../services/download-library'
+import { approvedDownload, downloadFileKey, fileKind, saveDownload, savedPath, ultrasoundChecklist, type Download } from '../../services/downloads'
 import { decodeOption } from '../../services/reading'
 
 const pagePath = '/pages/downloads/downloads'
@@ -7,25 +8,26 @@ const pagePath = '/pages/downloads/downloads'
 Page({
   download: null as Download | null,
   data: {
-    resourceName: '', fileName: '', kind: '', localPath: '', loading: true,
+    resourceName: '', copy: '', versionChanged: false, fileName: '', kind: '', localPath: '', loading: true,
     saving: false, error: '', status: '', canShare: false, canSaveImage: false,
   },
   onLoad(options: Record<string, string | undefined>) {
     this.setData({
       resourceName: decodeOption(options.resource),
+      copy: decodeOption(options.copy),
       canShare: typeof wx.shareFileMessage === 'function',
       canSaveImage: typeof wx.saveImageToPhotosAlbum === 'function',
     })
     return this.loadFile()
   },
   onShow() {
-    if (this.data.resourceName && !this.data.loading && !this.data.saving) return this.loadFile()
+    if (!this.data.loading && !this.data.saving) return this.loadFile()
   },
   async loadFile() {
-    this.setData({ loading: true, error: '', status: '', localPath: '', fileName: '', kind: '' })
+    this.setData({ loading: true, error: '', versionChanged: false, status: '', localPath: '', fileName: '', kind: '' })
     this.download = null
     try {
-      const { resourceName } = this.data
+      const { resourceName, copy } = this.data
       const item = resourceName ? await wanwanApi.getResource(resourceName) : null
       const download = resourceName
         ? (item?.linkStatus === 'OK' ? approvedDownload(resourceName, item.attachment) : null)
@@ -34,8 +36,13 @@ Page({
         this.setData({ error: '该资料的下载入口已停用。' })
         return
       }
+      if (copy && copy !== downloadFileKey(download)) {
+        this.setData({ error: '原资料的附件已更新，请在资料详情查看当前版本。', versionChanged: true })
+        return
+      }
       this.download = download
       const localPath = await savedPath(download).catch(() => null)
+      if (localPath) rememberDownload(download, resourceName, false)
       this.setData({
         fileName: download.fileName, kind: fileKind(download.fileName) || '',
         localPath: localPath || '',
@@ -48,16 +55,22 @@ Page({
     }
   },
   async downloadFile() {
-    if (!this.download || this.data.saving) return
+    const download = this.download
+    if (!download || this.data.saving || this.data.localPath) return
     this.setData({ saving: true, status: '' })
     try {
-      const localPath = await saveDownload(this.download)
+      const localPath = await saveDownload(download)
+      rememberDownload(download, this.data.resourceName, true)
       this.setData({ localPath, status: '已保存到小程序。' })
     } catch {
       this.setData({ status: '下载失败。请检查网络或小程序的可用存储空间，再重试。' })
     } finally {
       this.setData({ saving: false })
     }
+  },
+  openResource() {
+    const { resourceName } = this.data
+    if (resourceName) wx.navigateTo({ url: `/pages/detail/detail?name=${encodeURIComponent(resourceName)}` })
   },
   preview() {
     const { localPath, kind } = this.data

@@ -1,0 +1,8 @@
+.search-page .search-clear { width: auto; margin: -14rpx 0 14rpx auto; min-height: 56rpx; padding: 0 6rpx; }
+.search-history { margin: 24rpx 0; padding: 22rpx 24rpx; border: 1rpx solid #e7ddd2; border-radius: 24rpx; background: #fffdf9; }
+.search-history-header { display: flex; justify-content: space-between; align-items: center; gap: 16rpx; }
+.search-history-header .text-link { width: auto; margin: 0; min-height: 56rpx; padding: 0 6rpx; }
+.search-history .search-suggestions { margin: 12rpx 0; }
+.search-suggestions-label { flex: 0 0 100%; }
+.search-page .term { flex: 0 0 auto; width: auto; max-width: 100%; padding: 14rpx 18rpx; line-height: 1.45; white-space: normal; overflow-wrap: anywhere; }
+.search-input-row .btn { flex: 0 0 126rpx; width: 126rpx; max-width: 126rpx; line-height: 88rpx; }
