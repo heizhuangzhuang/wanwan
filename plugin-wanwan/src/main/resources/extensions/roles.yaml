@@ -33,3 +33,23 @@ rules:
   - apiGroups: [ "wanwan.run" ]
     resources: [ "resourcecards", "topics" ]
     verbs: [ "*" ]
+---
+apiVersion: v1alpha1
+kind: Role
+metadata:
+  name: role-template-wanwan-ops
+  labels:
+    halo.run/role-template: "true"
+  annotations:
+    rbac.authorization.halo.run/module: "弯弯知识导航"
+    rbac.authorization.halo.run/display-name: "运营总览"
+    rbac.authorization.halo.run/ui-permissions: |
+      ["plugin:wanwan:ops"]
+rules:
+  - apiGroups: [ "console.api.wanwan.run" ]
+    resources: [ "ops-overview" ]
+    verbs: [ "list" ]
+  - apiGroups: [ "console.api.wanwan.run" ]
+    resources: [ "ops-miniprogram-checks" ]
+    resourceNames: [ "trial", "formal" ]
+    verbs: [ "update" ]
