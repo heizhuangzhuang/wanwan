@@ -1,5 +1,6 @@
 <import src="../../templates/public.wxml" />
 <view class="container">
+  <view class="page-intro"><view class="page-heading">{{heading}}</view><view class="description">{{intro}}</view></view>
   <picker mode="selector" range="{{materials}}" range-key="label" value="{{typeIndex}}" disabled="{{loading}}" bindchange="onType">
     <view class="filter">{{materials[typeIndex].label}} ▾</view>
   </picker>
@@ -7,7 +8,7 @@
     <input class="field" placeholder="按主题标签筛选" maxlength="50" value="{{tag}}" disabled="{{loading}}" bindinput="onTag" bindconfirm="applyTag" />
     <button class="btn" disabled="{{loading}}" bindtap="applyTag">筛选</button>
   </view>
-  <view wx:if="{{loading}}" class="muted">加载中…</view>
+  <view wx:if="{{loading}}" class="muted">正在加载资料…</view>
   <view wx:elif="{{error}}" class="card">
     <view>{{error}}</view>
     <button class="btn" bindtap="retry">重试</button>

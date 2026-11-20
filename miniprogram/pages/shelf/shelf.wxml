@@ -1,0 +1,31 @@
+<import src="../../templates/public.wxml" />
+<view class="container">
+  <view class="page-intro">
+    <view class="page-heading">留着慢慢读</view>
+    <view class="description">收藏和最近阅读仅保存在当前设备。</view>
+  </view>
+  <view class="actions">
+    <button class="btn {{kind === 'saved' ? '' : 'secondary'}}" data-kind="saved" disabled="{{loading}}" bindtap="selectKind">我的收藏</button>
+    <button class="btn {{kind === 'recent' ? '' : 'secondary'}}" data-kind="recent" disabled="{{loading}}" bindtap="selectKind">最近阅读</button>
+  </view>
+  <view wx:if="{{loading}}" class="reading-state muted">正在核对资料状态…</view>
+  <block wx:else>
+    <view wx:if="{{failed}}" class="reading-state">
+      <text>有资料暂时无法核对，稍后可重试。</text>
+      <button class="btn secondary compact" bindtap="retry">重试</button>
+    </view>
+    <view wx:if="{{!items.length && !failed}}" class="card">
+      <view class="title">{{kind === 'saved' ? '还没有收藏' : '这一页暂无阅读记录'}}</view>
+      <view class="description">找到想读的内容，可以在资料详情中加入收藏。</view>
+      <navigator class="text-link" url="/pages/stage/stage">去资料库看看</navigator>
+    </view>
+    <view wx:for="{{items}}" wx:key="name" class="card">
+      <button class="plain-button" data-name="{{item.name}}" bindtap="openDetail">
+        <view class="title">{{item.title}}</view>
+        <view class="muted">{{item.materialLabel}} · {{item.sourceName}}</view>
+      </button>
+      <button class="plain-button shelf-remove" data-name="{{item.name}}" bindtap="remove">{{kind === 'saved' ? '取消收藏' : '移除记录'}}</button>
+    </view>
+    <template is="pagination" data="{{page, hasNext, loading}}" />
+  </block>
+</view>

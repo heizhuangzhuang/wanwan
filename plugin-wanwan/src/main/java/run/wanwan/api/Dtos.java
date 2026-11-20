@@ -84,10 +84,10 @@ public final class Dtos {
     }
 
     public record TopicSummary(String name, String title, String intro, int resourceCount) {
-        public static TopicSummary of(Topic topic) {
+        public static TopicSummary of(Topic topic, int resourceCount) {
             var s = topic.getSpec();
             return new TopicSummary(topic.getMetadata().getName(), s.getTitle(), s.getIntro(),
-                s.getResourceNames() == null ? 0 : s.getResourceNames().size());
+                resourceCount);
         }
     }
 

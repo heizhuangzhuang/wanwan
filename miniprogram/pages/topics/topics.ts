@@ -1,6 +1,6 @@
 import { wanwanApi } from '../../services/api'
 
-type ReadingLink = { name: string; title: string; intro: string; date?: string }
+type ReadingLink = { name: string; title: string; intro: string; date?: string; resourceCount?: number }
 
 Page({
   data: {

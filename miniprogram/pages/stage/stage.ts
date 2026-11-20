@@ -1,15 +1,19 @@
 import { wanwanApi } from '../../services/api'
 import { decodeOption, materialTypes, openResource, resourceLabel } from '../../services/reading'
 
+import { stageIntro } from '../../services/stages'
+
 Page({
   data: {
-    stageKey: '', materials: materialTypes, typeIndex: 0, tag: '', submittedTag: '',
+    stageKey: '', heading: '', intro: '', materials: materialTypes, typeIndex: 0, tag: '', submittedTag: '',
     items: [] as ReturnType<typeof resourceLabel>[],
     page: 1, hasNext: false, loading: false, error: '', requestedPage: 1,
   },
   onLoad(options: Record<string, string | undefined>) {
-    wx.setNavigationBarTitle({ title: decodeOption(options.label) || '阶段资料' })
-    this.setData({ stageKey: decodeOption(options.key) })
+    const key = decodeOption(options.key)
+    const heading = decodeOption(options.label) || '公开资料库'
+    wx.setNavigationBarTitle({ title: heading })
+    this.setData({ stageKey: key, heading, intro: key ? stageIntro(key) : '按资料类型和主题标签，找到想继续读的内容。' })
   },
   onShow() { void this.fetch(this.data.page) },
   onType(e: WechatMiniprogram.PickerChange) {

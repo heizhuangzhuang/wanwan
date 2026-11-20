@@ -1,3 +1,4 @@
+<import src="../../templates/public.wxml" />
 <view class="container">
   <view wx:if="{{loading}}" class="muted">加载中...</view>
   <view wx:elif="{{error}}" class="card">
@@ -5,12 +6,12 @@
     <button wx:if="{{retryable}}" class="btn" bindtap="loadDetail">重试</button>
   </view>
   <view wx:elif="{{resource}}" class="card">
-    <view style="font-size: 34rpx; font-weight: 700; margin-bottom: 10rpx;">{{resource.title}}</view>
+    <view class="page-heading">{{resource.title}}</view>
     <view wx:if="{{resource.originalTitle !== resource.title}}" class="muted" style="margin-bottom: 12rpx;">
       原标题：{{resource.originalTitle}}
     </view>
 
-    <view class="notice">本站介绍：{{resource.intro}}</view>
+    <view class="notice"><view class="title">本站介绍</view>{{resource.intro}}</view>
 
     <view class="muted" style="margin-bottom: 16rpx;">
       <view>{{resource.materialLabel}} · {{resource.accessLabel}}</view>
@@ -20,6 +21,7 @@
       <view wx:if="{{resource.lastVerifiedDate}}">最后核对：{{resource.lastVerifiedDate}}</view>
       <view wx:if="{{resource.doi}}">DOI：{{resource.doi}}</view>
       <view wx:if="{{resource.pmid}}">PMID：{{resource.pmid}}</view>
+      <view wx:if="{{resource.storyContext}}">经历背景：{{resource.storyContext}}</view>
     </view>
 
     <view wx:if="{{resource.linkStatus === 'SOURCE_RETRACTED'}}" class="notice">原文已撤回，以下仅保留出处。</view>
@@ -31,5 +33,9 @@
       <button wx:if="{{allowMiniProgram}}" class="btn" bindtap="openOtherMiniProgram">打开来源小程序</button>
       <button class="btn secondary" bindtap="copyCitation">复制出处</button>
     </view>
+    <button wx:if="{{resource.linkStatus !== 'SOURCE_RETRACTED'}}" class="btn secondary" bindtap="toggleFavorite">{{saved ? '已收藏 · 点击取消' : '收藏这条资料'}}</button>
+    <navigator class="site-footer" url="/pages/about/about">版权、勘误与联系方式</navigator>
   </view>
+  <view wx:if="{{resource && related.length}}" class="section-heading">还可以了解</view>
+  <template wx:if="{{resource && related.length}}" is="resourceCards" data="{{items: related}}" />
 </view>

@@ -120,8 +120,11 @@ class PublicQueryServiceTest {
         var client = mock(ReactiveExtensionClient.class);
         var service = service(client, mock(PostContentService.class), new SearchIndex());
 
-        when(client.fetch(Topic.class, "t1"))
-            .thenReturn(Mono.just(topic("t1", PublishState.PUBLISHED, List.of("r2", "draft", "r1", "ret"))));
+        var t1 = topic("t1", PublishState.PUBLISHED, List.of("r2", "draft", "r1", "ret", "r2", "missing"));
+        when(client.fetch(Topic.class, "t1")).thenReturn(Mono.just(t1));
+        when(client.listBy(eq(Topic.class), any(), any()))
+            .thenReturn(Mono.just(new ListResult<>(1, 20, 1, List.of(t1))));
+        when(client.fetch(ResourceCard.class, "missing")).thenReturn(Mono.empty());
         when(client.fetch(ResourceCard.class, "r2"))
             .thenReturn(Mono.just(card("r2", PublishState.PUBLISHED, LinkStatus.OK)));
         when(client.fetch(ResourceCard.class, "draft"))
@@ -134,6 +137,9 @@ class PublicQueryServiceTest {
         var view = service.getTopic("t1").block();
         assertThat(view).isNotNull();
         assertThat(view.resources()).extracting(Dtos.ResourceView::name).containsExactly("r2", "r1");
+        assertThat(service.listTopics(1, 20).block().items())
+            .extracting(Dtos.TopicSummary::resourceCount)
+            .containsExactly(view.resources().size());
     }
 
     @Test

@@ -1,33 +1,50 @@
-<view class="container">
-  <view class="card home-intro">
-    <view class="brand-header">
-      <image class="brand-logo" src="/assets/logo.png" mode="aspectFit" />
-      <view class="brand-meta">
-        <view class="title">从你关心的阶段开始</view>
-        <view class="description muted">查找足内翻相关公开资料，了解出处与阅读条件。</view>
-      </view>
+<import src="../../templates/public.wxml" />
+<view class="container home">
+  <view class="welcome">
+    <view class="welcome-copy">
+      <view class="welcome-title">慢慢来，<text>一步一步了解。</text></view>
+      <view class="description">为关注足内翻的家庭整理公开资料、论文题录和家庭经历。</view>
     </view>
-    <view class="actions">
-      <button class="btn" bindtap="goSearch">搜索资料</button>
-      <button class="btn secondary" bindtap="goTopics">精选专题</button>
-    </view>
-    <button class="btn secondary" bindtap="goGuides">原创导读</button>
+    <image class="welcome-logo" src="/assets/logo.png" mode="aspectFit" />
   </view>
-  <view wx:if="{{demoMode}}" class="notice">本地演示 · 页面展示的是示例资料。</view>
-
-  <view wx:if="{{loading}}" class="muted">加载中...</view>
-  <view wx:elif="{{error}}" class="card">
-    <view>{{error}}</view>
-    <button class="btn" style="margin-top: 16rpx;" bindtap="loadStages">重试</button>
+  <navigator class="search-entry" url="/pages/search/search" hover-class="pressed">
+    <view class="search-mark" /><text>搜索题名、来源或关键词</text><text class="search-action">搜索</text>
+  </navigator>
+  <view class="quick-links">
+    <navigator url="/pages/stage/stage" class="quick-link" hover-class="pressed"><text>资料库</text><text class="muted">全部资料</text></navigator>
+    <navigator url="/pages/shelf/shelf" class="quick-link" hover-class="pressed"><text>阅读夹</text><text class="muted">{{shelfCount ? shelfCount + ' 条收藏' : '收藏和最近阅读'}}</text></navigator>
+    <navigator url="/pages/preparation/preparation" class="quick-link" hover-class="pressed"><text>沟通清单</text><text class="muted">选出想问的问题</text></navigator>
   </view>
 
-  <view wx:else>
-    <view wx:for="{{stages}}" wx:key="key" class="card" data-key="{{item.key}}" data-label="{{item.label}}" bindtap="goStage">
-      <view class="title">{{item.label}}</view>
-    </view>
+  <view wx:if="{{demoMode}}" class="notice">当前展示示例资料。</view>
+  <view class="section-heading">按阶段查找资料</view>
+  <view wx:if="{{loading}}" class="reading-state muted">正在加载阶段和公开资料…</view>
+  <view wx:elif="{{error}}" class="reading-state">
+    <text>{{error}}</text><button class="btn secondary compact" bindtap="loadHome">重试</button>
+  </view>
+  <view wx:elif="{{!stages.length}}" class="reading-state muted">暂无可浏览的阶段。</view>
+  <view wx:else class="journey">
+    <button wx:for="{{stages}}" wx:key="key" class="journey-step" data-key="{{item.key}}" data-label="{{item.label}}" bindtap="goStage" hover-class="pressed">
+      <text class="journey-number">{{index + 1}}</text>
+      <view class="journey-copy"><view class="title">{{item.label}}</view><view class="muted">{{item.intro}}</view></view>
+      <text class="chevron" aria-hidden="true">›</text>
+    </button>
   </view>
 
-  <view style="text-align: center; margin-top: 24rpx;" bindtap="goAbout">
-    <text class="muted">关于本站、版权与勘误联系方式</text>
+  <view class="section-bar">
+    <view class="section-heading">阅读专题</view>
+    <navigator class="text-link" url="/pages/topics/topics">全部专题</navigator>
   </view>
+  <view wx:if="{{!loading && !topics.length && !featuredError}}" class="reading-state muted">专题整理中。</view>
+  <button wx:for="{{topics}}" wx:key="name" class="feature-link" data-name="{{item.name}}" bindtap="openTopic" hover-class="pressed">
+    <view class="title">{{item.title}}</view>
+    <view wx:if="{{item.intro}}" class="description">{{item.intro}}</view>
+    <view class="muted">{{item.resourceCount}} 条资料</view>
+  </button>
+  <navigator class="guide-link" url="/pages/topics/topics?kind=guide" hover-class="pressed">查看原创导读 <text class="chevron" aria-hidden="true">›</text></navigator>
+
+  <view wx:if="{{resources.length}}" class="section-heading">精选资料</view>
+  <template is="resourceCards" data="{{items: resources}}" />
+  <view wx:if="{{featuredError}}" class="reading-state"><text>部分资料暂时无法加载。</text><button class="btn secondary compact" bindtap="loadHome">重新加载</button></view>
+  <navigator class="site-footer" url="/pages/about/about">关于本站、版权与勘误</navigator>
 </view>

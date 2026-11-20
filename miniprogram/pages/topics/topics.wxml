@@ -1,5 +1,6 @@
 <import src="../../templates/public.wxml" />
 <view class="container">
+  <view class="page-intro"><view class="page-heading">跟着主题慢慢读</view><view class="description">从一组资料或一篇导读开始。</view></view>
   <view class="actions">
     <button class="btn {{kind === 'topic' ? '' : 'secondary'}}" disabled="{{loading}}" data-kind="topic" bindtap="selectKind">精选专题</button>
     <button class="btn {{kind === 'guide' ? '' : 'secondary'}}" disabled="{{loading}}" data-kind="guide" bindtap="selectKind">原创导读</button>
@@ -14,6 +15,7 @@
     <view wx:for="{{items}}" wx:key="name" class="card" data-name="{{item.name}}" bindtap="openReading">
       <view class="title">{{item.title}}</view>
       <view wx:if="{{item.intro}}" class="description">{{item.intro}}</view>
+      <view wx:if="{{kind === 'topic'}}" class="muted">{{item.resourceCount}} 条资料</view>
       <view wx:if="{{item.date}}" class="muted">发布于 {{item.date}}</view>
     </view>
     <template is="pagination" data="{{page, hasNext, loading}}" />

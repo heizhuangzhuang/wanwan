@@ -1,9 +1,10 @@
 <template name="resourceCards">
-  <view wx:for="{{items}}" wx:key="name" class="card" data-name="{{item.name}}" bindtap="openDetail">
+  <button wx:for="{{items}}" wx:key="name" class="card resource-card" data-name="{{item.name}}" bindtap="openDetail" hover-class="pressed">
     <view class="title">{{item.title}}</view>
     <view class="description">{{item.intro}}</view>
-    <view class="muted">{{item.materialLabel}} · {{item.sourceName}}</view>
-  </view>
+    <view class="resource-meta"><text>{{item.materialLabel}}</text><text>{{item.sourceName}}</text></view>
+    <view wx:if="{{item.accessLabel}}" class="muted">{{item.accessLabel}}</view>
+  </button>
 </template>
 
 <template name="pagination">

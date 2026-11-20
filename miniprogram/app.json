@@ -6,13 +6,15 @@
     "pages/topics/topics",
     "pages/reading/reading",
     "pages/search/search",
-    "pages/about/about"
+    "pages/about/about",
+    "pages/shelf/shelf",
+    "pages/preparation/preparation"
   ],
   "window": {
     "navigationBarTitleText": "小脚丫步步指南",
-    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarBackgroundColor": "#FBF7F0",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#fafaf8"
+    "backgroundColor": "#FBF7F0"
   },
   "style": "v2",
   "sitemapLocation": "sitemap.json"

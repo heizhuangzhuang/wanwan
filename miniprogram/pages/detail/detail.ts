@@ -1,10 +1,12 @@
-import { HttpError, wanwanApi } from '../../services/api'
-import { decodeOption, resourceLabel } from '../../services/reading'
+import { HttpError, wanwanApi, type ResourceView } from '../../services/api'
+import { decodeOption, openResource, resourceLabel } from '../../services/reading'
+import { rememberResource, removeFromShelf, shelfNames, toggleSaved } from '../../services/reading-shelf'
 
 Page({
   data: {
     name: '', resource: null as ReturnType<typeof resourceLabel> | null,
-    loading: true, error: '', retryable: false, entryError: '',
+    loading: true, error: '', retryable: false, entryError: '', saved: false,
+    related: [] as ReturnType<typeof resourceLabel>[],
     allowArticle: false, allowMiniProgram: false,
   },
   onLoad(options: Record<string, string | undefined>) {
@@ -13,7 +15,7 @@ Page({
   onShow() { void this.loadDetail() },
   async loadDetail() {
     const { name } = this.data
-    this.setData({ loading: true, error: '', retryable: false, entryError: '', resource: null })
+    this.setData({ loading: true, error: '', retryable: false, entryError: '', resource: null, related: [], saved: false })
     if (!name) {
       this.setData({ loading: false, error: '入口缺少有效的资料标识。' })
       return
@@ -21,14 +23,21 @@ Page({
     try {
       const resource = await wanwanApi.getResource(name)
       const verified = resource.linkStatus === 'OK'
+      if (resource.linkStatus !== 'SOURCE_RETRACTED') rememberResource(name)
       this.setData({
         resource: resourceLabel(resource),
+        saved: shelfNames('saved').includes(name),
         allowArticle: verified && resource.entry.type === 'MP_ARTICLE' && !!resource.entry.url
           && typeof wx.openOfficialAccountArticle === 'function',
         allowMiniProgram: verified && resource.entry.type === 'MINIPROGRAM' && !!resource.entry.appId,
       })
+      if (resource.linkStatus !== 'SOURCE_RETRACTED') void this.loadRelated(resource)
     } catch (error) {
       const unavailable = error instanceof HttpError && error.statusCode === 404
+      if (unavailable) {
+        removeFromShelf('saved', name)
+        removeFromShelf('recent', name)
+      }
       this.setData({
         error: unavailable ? '该资料不可访问或已下线。' : '暂时无法读取资料，请重试。',
         retryable: !unavailable,
@@ -37,6 +46,26 @@ Page({
       this.setData({ loading: false })
     }
   },
+  async loadRelated(resource: ResourceView) {
+    const tag = resource.tags && resource.tags[0]
+    const stage = resource.stages && resource.stages[0]
+    if (!tag && !stage) return
+    try {
+      const list = await wanwanApi.listResources({ tag, stage: tag ? undefined : stage, size: 4 })
+      if (this.data.resource?.name !== resource.name || this.data.resource.linkStatus === 'SOURCE_RETRACTED') return
+      this.setData({ related: list.items.filter(item => item.name !== resource.name && item.linkStatus !== 'SOURCE_RETRACTED').slice(0, 3).map(resourceLabel) })
+    } catch {
+      // The detail and citation remain usable if suggestions fail.
+    }
+  },
+  toggleFavorite() {
+    const resource = this.data.resource
+    if (!resource || resource.linkStatus === 'SOURCE_RETRACTED') return
+    const saved = toggleSaved(resource.name)
+    if (saved !== null) this.setData({ saved })
+    else wx.showToast({ title: '未能更新收藏', icon: 'none' })
+  },
+  openDetail: openResource,
   copyCitation() {
     const resource = this.data.resource
     if (!resource) return

@@ -108,6 +108,17 @@ describe('web security & SSR', () => {
     assert.match(sitemap.body, /<loc>https:\/\/wanwan\.run\/wanwan\/resources\/r1<\/loc>/)
   })
 
+  it('keeps stage, type and tag across paginated public queries', async () => {
+    const client = mockClient()
+    client.listResources = async params => {
+      assert.deepEqual(params, { stage: 'JUST_FOUND', type: 'PAPER', tag: '石膏', page: 2, size: 20 })
+      return { page: 2, size: 20, total: 50, items: [] }
+    }
+    const result = await handleRequest('/resources?stage=JUST_FOUND&type=PAPER&tag=石膏&page=2', client, config)
+    assert.equal(result.status, 200)
+    assert.match(String(result.body), /stage=JUST_FOUND&amp;type=PAPER&amp;tag=%E7%9F%B3%E8%86%8F&amp;page=3/)
+  })
+
   it('serves the homepage while the deployment awaits a backend', async () => {
     const pendingConfig = loadConfig({ BACKEND_API_BASE: '', SITE_BASE_PATH: '/wanwan' })
     const client = createBackendClient(pendingConfig.backendApiBase)

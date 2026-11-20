@@ -81,28 +81,33 @@ public class PublicQueryService {
         int p = normalizePage(page);
         int s = normalizeSize(size);
         return client.listBy(Topic.class, options, PageRequestImpl.of(p, s, sort))
-            .map(result -> new Dtos.Page<>(p, s, result.getTotal(),
-                result.getItems().stream()
-                    .filter(Visibility::isPublic)
-                    .map(Dtos.TopicSummary::of)
-                    .toList()));
+            .flatMap(result -> Flux.fromIterable(result.getItems())
+                .filter(Visibility::isPublic)
+                .concatMap(topic -> listedTopicResources(topic)
+                    .count()
+                    .map(count -> Dtos.TopicSummary.of(topic, count.intValue())))
+                .collectList()
+                .map(items -> new Dtos.Page<>(p, s, result.getTotal(), items)));
     }
 
     /** 专题详情：按编辑顺序返回，未列出的资料静默剔除。 */
     public Mono<Dtos.TopicView> getTopic(String name) {
         return client.fetch(Topic.class, name)
             .filter(Visibility::isPublic)
-            .flatMap(topic -> {
-                List<String> names = topic.getSpec().getResourceNames() == null
-                    ? List.of() : topic.getSpec().getResourceNames();
-                return Flux.fromIterable(names)
-                    .concatMap(n -> client.fetch(ResourceCard.class, n))
-                    .filter(Visibility::isListed)
-                    .map(Dtos.ResourceView::of)
-                    .collectList()
-                    .map(items -> new Dtos.TopicView(topic.getMetadata().getName(),
-                        topic.getSpec().getTitle(), topic.getSpec().getIntro(), items));
-            });
+            .flatMap(topic -> listedTopicResources(topic)
+                .map(Dtos.ResourceView::of)
+                .collectList()
+                .map(items -> new Dtos.TopicView(topic.getMetadata().getName(),
+                    topic.getSpec().getTitle(), topic.getSpec().getIntro(), items)));
+    }
+
+    private Flux<ResourceCard> listedTopicResources(Topic topic) {
+        List<String> names = topic.getSpec().getResourceNames() == null
+            ? List.of() : topic.getSpec().getResourceNames();
+        return Flux.fromIterable(names)
+            .distinct()
+            .flatMapSequential(name -> client.fetch(ResourceCard.class, name), 4)
+            .filter(Visibility::isListed);
     }
 
     /** 本站原创导读列表：仅返回已发布且公开的文章。 */

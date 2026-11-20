@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import type { BackendClient, ResourceView } from './api.js'
+import type { BackendClient, PageResult, ResourceView } from './api.js'
 import type { WebConfig } from './config.js'
 import {
   accessLabel,
@@ -42,6 +42,35 @@ function renderFilterBar(basePath: string, selectedType: string, extraQuery = ''
     const cls = selectedType === t.key ? ' class="active"' : ''
     return `<a href="${escapeHtml(href)}"${cls}>${t.label}</a>`
   }).join('')}</div>`
+}
+
+function renderPagination<T>(path: string, result: PageResult<T>, query: URLSearchParams) {
+  const hasNext = result.page * result.size < result.total
+  if (result.page <= 1 && !hasNext) return ''
+  const link = (page: number, label: string) => {
+    const params = new URLSearchParams(query)
+    params.set('page', String(page))
+    return `<a href="${escapeHtml(`${path}?${params}`)}">${label}</a>`
+  }
+  return `<nav aria-label="分页" class="pagination">
+    ${result.page > 1 ? link(result.page - 1, '上一页') : '<span></span>'}
+    <span>第 ${result.page} 页</span>
+    ${hasNext ? link(result.page + 1, '下一页') : '<span></span>'}
+  </nav>`
+}
+
+async function renderRelated(resource: ResourceView, client: BackendClient, config: WebConfig) {
+  const tag = resource.tags?.[0]
+  const stage = resource.stages?.[0]
+  if (resource.linkStatus === 'SOURCE_RETRACTED' || (!tag && !stage)) return ''
+  try {
+    const { items } = await client.listResources({ tag, stage: tag ? undefined : stage, size: 4 })
+    const cards = items.filter(item => item.name !== resource.name && item.linkStatus !== 'SOURCE_RETRACTED')
+      .slice(0, 3).map(item => renderCard(item, config)).join('')
+    return cards ? `<h2>还可以了解</h2><div class="card-list">${cards}</div>` : ''
+  } catch {
+    return ''
+  }
 }
 
 function renderResourceDetail(r: ResourceView, config: WebConfig): string {
@@ -103,8 +132,13 @@ export async function handleRequest(
     return notFoundResponse(config)
   }
   const path = url.pathname.slice(basePath.length).replace(/\/+$/, '') || '/'
-  const page = Math.max(1, Number(url.searchParams.get('page')) || 1)
+  const requestedPage = Number(url.searchParams.get('page'))
+  const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1
   const selectedType = (url.searchParams.get('type') || '').trim().toUpperCase()
+  const selectedTag = (url.searchParams.get('tag') || '').trim().slice(0, 50)
+  const stageFilter = (url.searchParams.get('stage') || '').trim().toUpperCase()
+  const query = new URLSearchParams(url.searchParams)
+  query.delete('page')
 
   if (path === '/healthz') {
     return { status: 200, contentType: 'text/plain; charset=utf-8', body: 'ok' }
@@ -245,7 +279,8 @@ ${postHtml}`,
     if (!stage) {
       return notFoundResponse(config)
     }
-    const list = await client.listResources({ stage: stage.key, type: selectedType || undefined, page, size: 20 })
+    const stagePath = `${basePath}/stages/${encodeURIComponent(stage.key)}`
+    const list = await client.listResources({ stage: stage.key, type: selectedType || undefined, tag: selectedTag || undefined, page, size: 20 })
     const cards = list.items.length
       ? `<div class="card-list">${list.items.map((item) => renderCard(item, config)).join('')}</div>`
       : '<div class="warn-bar">该筛选条件下暂无已公开资料。</div>'
@@ -256,16 +291,20 @@ ${postHtml}`,
         stage.label,
         `<h1>${escapeHtml(stage.label)}</h1>
 <p class="notice-bar">以下为手动核对后收录的公开资料。按编辑推荐阅读顺序排列，不构成个体医学建议。</p>
-${renderFilterBar(`${basePath}/stages/${encodeURIComponent(stage.key)}`, selectedType)}
-${cards}`,
+${renderFilterBar(stagePath, selectedType, query.toString())}
+<form class="search-form" action="${stagePath}" method="get">
+<input type="hidden" name="type" value="${escapeHtml(selectedType)}" />
+<input class="search-input" name="tag" maxlength="50" value="${escapeHtml(selectedTag)}" placeholder="主题标签" aria-label="主题标签" />
+<button type="submit" class="btn">筛选</button></form>
+${cards}${renderPagination(stagePath, list, query)}`,
       ),
     )
   }
 
   if (path === '/resources') {
-    const stageParam = (url.searchParams.get('stage') || '').trim().toUpperCase()
     const list = await client.listResources({
-      stage: stageParam || undefined,
+      stage: stageFilter || undefined,
+      tag: selectedTag || undefined,
       type: selectedType || undefined,
       page,
       size: 20,
@@ -273,20 +312,12 @@ ${cards}`,
     const cards = list.items.length
       ? `<div class="card-list">${list.items.map((item) => renderCard(item, config)).join('')}</div>`
       : '<div class="warn-bar">暂无符合条件的已公开资料。</div>'
-    const pagination =
-      list.total > list.size
-        ? `<div class="pagination">
-          ${list.page > 1 ? `<a href="${basePath}/resources?page=${list.page - 1}">上一页</a>` : '<span></span>'}
-          <span>第 ${list.page} 页（共 ${list.total} 条）</span>
-          ${list.page * list.size < list.total ? `<a href="${basePath}/resources?page=${list.page + 1}">下一页</a>` : '<span></span>'}
-        </div>`
-        : ''
     return htmlResponse(
       200,
       renderLayout(
         config,
         '资料库',
-        `<h1>资料库</h1>${renderFilterBar(`${basePath}/resources`, selectedType, stageParam ? `stage=${encodeURIComponent(stageParam)}` : '')}${cards}${pagination}`,
+        `<h1>资料库</h1>${renderFilterBar(`${basePath}/resources`, selectedType, query.toString())}${cards}${renderPagination(`${basePath}/resources`, list, query)}`,
       ),
     )
   }
@@ -295,7 +326,8 @@ ${cards}`,
     const name = decodeURIComponent(path.slice('/resources/'.length))
     const r = await client.getResource(name)
     if (!r) return notFoundResponse(config)
-    return htmlResponse(200, renderLayout(config, r.title, renderResourceDetail(r, config)))
+    const related = await renderRelated(r, client, config)
+    return htmlResponse(200, renderLayout(config, r.title, renderResourceDetail(r, config) + related))
   }
 
   if (path === '/topics') {
@@ -308,7 +340,7 @@ ${cards}`,
           )
           .join('')}</div>`
       : '<div class="warn-bar">暂无已发布专题。</div>'
-    return htmlResponse(200, renderLayout(config, '精选专题', `<h1>精选专题</h1>${body}`))
+    return htmlResponse(200, renderLayout(config, '精选专题', `<h1>精选专题</h1>${body}${renderPagination(`${basePath}${path}`, list, query)}`))
   }
 
   if (path.startsWith('/topics/')) {
@@ -338,7 +370,7 @@ ${cards}`,
           )
           .join('')}</div>`
       : '<div class="warn-bar">暂无已发布的原创导读。</div>'
-    return htmlResponse(200, renderLayout(config, '本站原创导读', `<h1>本站原创导读</h1>${body}`))
+    return htmlResponse(200, renderLayout(config, '本站原创导读', `<h1>本站原创导读</h1>${body}${renderPagination(`${basePath}${path}`, list, query)}`))
   }
 
   if (path.startsWith('/posts/')) {
@@ -369,11 +401,13 @@ ${cards}`,
     if (tooLong) {
       resultHtml = '<div class="warn-bar">关键词超过 100 个字符限制，请缩短后重试。</div>'
     } else if (keyword) {
-      const results = await client.search({ keyword, page, size: 20 })
+      const results = await client.search({ keyword, stage: stageFilter || undefined, type: selectedType || undefined, page, size: 20 })
       resultHtml = results.items.length
         ? `<p class="meta-row">共找到 ${results.total} 条匹配资料</p><div class="card-list">${results.items.map((item) => renderCard(item, config)).join('')}</div>`
         : `<div class="warn-bar">没有找到匹配「${escapeHtml(keyword)}」的已公开资料。您可以尝试更换关键词，或<a href="${basePath}/stages">按阶段浏览</a>。</div>`
+      resultHtml += renderPagination(`${basePath}/search`, results, query)
     }
+    const stages = await client.getStages().catch(() => [])
     return htmlResponse(
       200,
       renderLayout(
@@ -383,7 +417,19 @@ ${cards}`,
 <p class="meta-row">仅搜索本站已发布资料卡的题录、本站介绍、来源与标签，不联网抓取原文，也不使用 AI 生成回答。</p>
 <form class="search-form" action="${basePath}/search" method="get">
   <input class="search-input" type="search" name="keyword" maxlength="100" value="${escapeHtml(keyword)}" placeholder="输入关键词（最多 100 字符）..." aria-label="搜索关键词" />
+  <input type="hidden" name="stage" value="${escapeHtml(stageFilter)}" />
+  <input type="hidden" name="type" value="${escapeHtml(selectedType)}" />
   <button class="btn" type="submit">搜索</button>
+</form>
+<form class="search-form" action="${basePath}/search" method="get">
+  <input type="hidden" name="keyword" value="${escapeHtml(keyword)}" />
+  <select class="search-input" name="stage" aria-label="阶段"><option value="">全部阶段</option>
+    ${stages.map(s => `<option value="${escapeHtml(s.key)}"${stageFilter === s.key ? ' selected' : ''}>${escapeHtml(s.label)}</option>`).join('')}
+  </select>
+  <select class="search-input" name="type" aria-label="资料类型">
+    ${TYPES.map(t => `<option value="${t.key}"${selectedType === t.key ? ' selected' : ''}>${t.label}</option>`).join('')}
+  </select>
+  <button class="btn" type="submit">筛选</button>
 </form>
 ${resultHtml}`,
       ),

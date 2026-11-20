@@ -1,0 +1,13 @@
+<view class="container">
+  <view class="page-intro">
+    <view class="page-heading">见医生前，把问题记下来</view>
+    <view class="description">勾选想问的问题，复制到自己的备忘录。</view>
+  </view>
+  <checkbox-group class="question-list" bindchange="onChange">
+    <label wx:for="{{prompts}}" wx:key="*this" class="question-row">
+      <checkbox value="{{index}}" color="#376052" />
+      <text>{{item}}</text>
+    </label>
+  </checkbox-group>
+  <button class="btn preparation-copy" disabled="{{!selected.length}}" bindtap="copyQuestions">复制选中的问题{{selected.length ? '（' + selected.length + '）' : ''}}</button>
+</view>

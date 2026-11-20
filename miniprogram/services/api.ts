@@ -113,7 +113,8 @@ function request<T>(path: string, data?: Record<string, string | number | undefi
         },
         success(res) {
           if (res.statusCode >= 200 && res.statusCode < 300) {
-            resolve(res.data as T)
+            if (res.data && typeof res.data === 'object') resolve(res.data as T)
+            else reject(new Error('资料接口没有返回 JSON'))
           } else {
             reject(new HttpError(res.statusCode))
           }
@@ -131,7 +132,8 @@ function request<T>(path: string, data?: Record<string, string | number | undefi
       method: 'GET',
       success(res) {
         if (res.statusCode >= 200 && res.statusCode < 300) {
-          resolve(res.data as T)
+          if (res.data && typeof res.data === 'object') resolve(res.data as T)
+          else reject(new Error('资料接口没有返回 JSON'))
         } else {
           reject(new HttpError(res.statusCode))
         }

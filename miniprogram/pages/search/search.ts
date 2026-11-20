@@ -3,7 +3,7 @@ import { materialTypes, openResource, resourceLabel } from '../../services/readi
 
 Page({
   data: {
-    keyword: '', submittedKeyword: '', items: [] as ReturnType<typeof resourceLabel>[],
+    suggestions: ['产前', '石膏', '支具', '随访'], keyword: '', submittedKeyword: '', items: [] as ReturnType<typeof resourceLabel>[],
     stages: [{ key: '', label: '全部阶段', order: -1 }] as StageView[], stageIndex: 0, stageError: false,
     materials: materialTypes, typeIndex: 0, page: 1, hasNext: false, requestedPage: 1,
     loading: false, error: '',
@@ -17,6 +17,13 @@ Page({
     } catch {
       this.setData({ stageError: true })
     }
+  },
+  pickKeyword(event: WechatMiniprogram.TouchEvent) {
+    if (this.data.loading) return
+    const keyword = event.currentTarget.dataset.keyword
+    if (typeof keyword !== 'string') return
+    this.setData({ keyword })
+    this.doSearch()
   },
   onInput(e: WechatMiniprogram.Input) { this.setData({ keyword: e.detail.value }) },
   doSearch() {

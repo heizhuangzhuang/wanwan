@@ -10,7 +10,7 @@
   </view>
   <block wx:else>
     <view class="card">
-      <view class="title">{{title}}</view>
+      <view class="page-heading">{{title}}</view>
       <view wx:if="{{intro}}" class="description">{{intro}}</view>
       <view wx:if="{{date}}" class="muted">发布于 {{date}}</view>
       <text wx:if="{{kind === 'guide'}}" class="article-body description" selectable>{{body || '暂无可显示的文字正文。'}}</text>

@@ -1,1 +1,4 @@
-{ "navigationBarTitleText": "小脚丫步步指南" }
+{
+  "navigationBarTitleText": "小脚丫步步指南",
+  "enablePullDownRefresh": true
+}

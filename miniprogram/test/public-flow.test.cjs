@@ -26,7 +26,10 @@ function openPage(page, respond, globals = {}) {
     if (!reply) req.fail(new Error('offline'))
     else req.success({ statusCode: reply.status ?? 200, data: reply.data })
   }
+  const storage = globals.storage || new Map()
   global.wx = {
+    getStorageSync: key => storage.get(key),
+    setStorageSync: (key, value) => storage.set(key, value),
     request: req => request(req, req.url),
     cloud: { callContainer: req => request(req, req.path) },
     setNavigationBarTitle() {},
@@ -181,4 +184,46 @@ test('本地演示专题无需访问云服务，正式环境缺配置时返回�
   await production.page.load()
   assert.equal(production.page.data.title, '')
   assert.equal(production.page.data.retryable, true)
+})
+
+
+test('首页的阶段接口返回登录页时，仍可读取其他公开内容', async () => {
+  const { page } = openPage('index', url => {
+    if (url.pathname.endsWith('/stages')) return { data: '<html>登录</html>' }
+    if (url.pathname.endsWith('/topics')) return { data: { items: [{ name: 't1', title: '专题一' }] } }
+    return { data: { items: [item('r1')] } }
+  })
+  await page.loadHome()
+  assert.match(page.data.error, /阶段/)
+  assert.deepEqual(page.data.topics.map(topic => topic.name), ['t1'])
+  assert.deepEqual(page.data.resources.map(resource => resource.name), ['r1'])
+})
+
+test('收藏和最近阅读只保存标识，撤回后清理收藏', async () => {
+  const storage = new Map()
+  const { page: detail } = openPage('detail', url => url.pathname.endsWith('/a')
+    ? { data: { ...item('a'), tags: ['资料'] } }
+    : { data: { items: [item('a'), item('b'), { ...item('withdrawn'), linkStatus: 'SOURCE_RETRACTED' }] } },
+  { storage })
+  detail.onLoad({ name: 'a' })
+  await detail.loadDetail()
+  await settle()
+  assert.deepEqual(detail.data.related.map(resource => resource.name), ['b'])
+  detail.toggleFavorite()
+  assert.equal(detail.data.saved, true)
+  assert.deepEqual([...storage.values()], [['a'], ['a']])
+  const { page: shelf } = openPage('shelf', () => ({ status: 404 }), { storage })
+  await shelf.load(1)
+  assert.deepEqual(shelf.data.items, [])
+  assert.equal(shelf.data.failed, false)
+  assert.deepEqual(storage.get('wanwan-reading-local-saved'), [])
+})
+
+test('沟通清单只复制勾选的问题', () => {
+  const { page, getClipboard } = openPage('preparation', () => assert.fail('不需要请求服务'))
+  page.onChange({ detail: { value: ['0', '4'] } })
+  page.copyQuestions()
+  assert.match(getClipboard(), /这次沟通需要带哪些资料/)
+  assert.match(getClipboard(), /应该联系哪个科室/)
+  assert.doesNotMatch(getClipboard(), /报告里/)
 })

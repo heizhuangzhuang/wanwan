@@ -21,6 +21,9 @@ declare function Page<T extends { data?: Record<string, unknown> }>(
 ): void
 
 declare const wx: {
+  getStorageSync(key: string): unknown
+  setStorageSync(key: string, value: unknown): void
+  stopPullDownRefresh(): void
   getAccountInfoSync(): { miniProgram: { appId: string; envVersion: string } }
   cloud?: {
     init(options?: { env?: string; traceUser?: boolean }): void
