@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { createBackendClient, type BackendClient, type ResourceView } from '../dist/api.js'
+import { createServer } from 'node:http'
+import { createBackendClient, HttpStatusError, type BackendClient, type ResourceView } from '../dist/api.js'
 import { loadConfig } from '../dist/config.js'
 import { escapeHtml, safeHttpUrl, sanitizePostHtml } from '../dist/html.js'
 import { handleRequest } from '../dist/views.js'
@@ -66,6 +67,48 @@ describe('web security & SSR', () => {
     assert.equal(sanitizePostHtml('<p onclick="x()">hi</p><script>1</script>'), '<p>hi</p>')
   })
 
+  it('keeps article formatting and removes embeds and external form controls', () => {
+    const source = '<h2>标题</h2><p><em>正文</em></p><iframe src="https://example.org/"></iframe>'
+      + '<form action="https://example.org/"><input name="patient"></form>'
+      + '<p><a href="https://example.org/" title="来源">出处</a></p>'
+    const clean = sanitizePostHtml(source)
+    assert.match(clean, /<h2>标题<\/h2><p><em>正文<\/em><\/p>/)
+    assert.match(clean, /<a href="https:\/\/example.org\/" title="来源">出处<\/a>/)
+    assert.doesNotMatch(clean, /iframe|form|input/)
+  })
+
+  it('treats backend redirects as an upstream failure and only maps a true 404 to missing', async () => {
+    const calls: string[] = []
+    const server = createServer((req, res) => {
+      calls.push(req.url || '')
+      if (req.url === '/resources/redirected') {
+        res.writeHead(302, { Location: '/login' }).end()
+      } else {
+        res.writeHead(404).end()
+      }
+    })
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const addr = server.address()
+    assert.ok(addr && typeof addr === 'object')
+    try {
+      const client = createBackendClient(`http://127.0.0.1:${addr.port}`)
+      await assert.rejects(client.getResource('redirected'), (err: unknown) =>
+        err instanceof HttpStatusError && err.status === 302)
+      assert.equal(await client.getResource('missing'), null)
+      assert.deepEqual(calls, ['/resources/redirected', '/resources/missing'])
+    } finally {
+      server.close()
+    }
+  })
+
+  it('rejects malformed or multi-segment detail identifiers before calling the backend', async () => {
+    const client = mockClient()
+    client.getResource = async () => { throw new Error('unexpected backend request') }
+    for (const path of ['/resources/%ZZ', '/resources/r1%2Fr2', '/resources/r1/r2']) {
+      assert.equal((await handleRequest(path, client, config)).status, 404)
+    }
+  })
+
   it('renders resource detail safely and returns 404 when withdrawn/missing', async () => {
     const ok = await handleRequest('/resources/r1', mockClient(), config)
     assert.equal(ok.status, 200)
@@ -86,6 +129,13 @@ describe('web security & SSR', () => {
     assert.equal(res.status, 200)
     assert.ok(res.body.includes('原文已被原站撤回或下线'))
     assert.ok(!res.body.includes('前往原站阅读'))
+  })
+
+  it('honors citation-only even when the original URL is healthy', async () => {
+    const resource = mockResource({ entry: { type: 'CITATION_ONLY', url: null, appId: null, path: null } })
+    const result = await handleRequest('/resources/r1', mockClient(resource), config)
+    assert.match(result.body, /原始出处链接/)
+    assert.doesNotMatch(result.body, /前往原站阅读/)
   })
 
   it('keeps routes, navigation, forms and sitemap inside the configured path', async () => {

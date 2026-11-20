@@ -12,6 +12,7 @@
     <view class="card">
       <view class="page-heading">{{title}}</view>
       <view wx:if="{{intro}}" class="description">{{intro}}</view>
+      <view wx:if="{{author}}" class="muted">作者 {{author}}</view>
       <view wx:if="{{date}}" class="muted">发布于 {{date}}</view>
       <text wx:if="{{kind === 'guide'}}" class="article-body description" selectable>{{body || '暂无可显示的文字正文。'}}</text>
     </view>

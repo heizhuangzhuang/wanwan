@@ -15,6 +15,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import run.halo.app.content.ContentWrapper;
 import run.halo.app.content.PostContentService;
+import run.halo.app.core.extension.User;
 import run.halo.app.core.extension.content.Post;
 import run.halo.app.extension.ListResult;
 import run.halo.app.extension.Metadata;
@@ -183,6 +184,13 @@ class PublicQueryServiceTest {
         var service = service(client, postContent, new SearchIndex());
 
         var pub = post("guide-1", true, Post.VisibleEnum.PUBLIC, false);
+        pub.getSpec().setOwner("author-login");
+        var author = new User();
+        author.setMetadata(new Metadata());
+        author.getMetadata().setName("author-login");
+        author.setSpec(new User.UserSpec());
+        author.getSpec().setDisplayName("公开署名");
+        when(client.fetch(User.class, "author-login")).thenReturn(Mono.just(author));
         var priv = post("guide-priv", true, Post.VisibleEnum.PRIVATE, false);
         var draft = post("guide-draft", false, Post.VisibleEnum.PUBLIC, false);
         var deleted = post("guide-del", true, Post.VisibleEnum.PUBLIC, true);
@@ -201,7 +209,11 @@ class PublicQueryServiceTest {
         var view = service.getPost("guide-1").block();
         assertThat(view).isNotNull();
         assertThat(view.content()).isEqualTo("<p>已发布正文</p>");
+        assertThat(view.author()).isEqualTo("公开署名");
         assertThat(service.listPosts(1, 20).block().items())
             .extracting(Dtos.PostSummary::name).containsExactly("guide-1");
+        assertThat(service.listPosts(Integer.MAX_VALUE, 50).block().items()).isEmpty();
+        assertThat(service.listPosts(1, 20).block().items())
+            .extracting(Dtos.PostSummary::author).containsExactly("公开署名");
     }
 }

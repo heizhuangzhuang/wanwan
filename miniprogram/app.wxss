@@ -65,3 +65,7 @@ page {
 .question-row { display: flex; align-items: center; gap: 16rpx; padding: 24rpx 0; font-size: 29rpx; }
 .question-row + .question-row { border-top: 1px solid #ece2d7; }
 .preparation-copy { margin-top: 24rpx; }
+
+.home-notice { background: #eaf1e8; }
+.home-notice .notice-actions { display: flex; flex-wrap: wrap; gap: 14rpx; margin: 14rpx 0 4rpx; }
+.home-notice .btn { margin: 0; }

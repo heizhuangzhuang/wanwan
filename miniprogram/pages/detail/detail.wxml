@@ -34,7 +34,7 @@
       <button class="btn secondary" bindtap="copyCitation">复制出处</button>
     </view>
     <button wx:if="{{resource.linkStatus !== 'SOURCE_RETRACTED'}}" class="btn secondary" bindtap="toggleFavorite">{{saved ? '已收藏 · 点击取消' : '收藏这条资料'}}</button>
-    <navigator class="site-footer" url="/pages/about/about">版权、勘误与联系方式</navigator>
+    <button class="plain-button site-footer" bindtap="openFeedback">反馈这条资料</button>
   </view>
   <view wx:if="{{resource && related.length}}" class="section-heading">还可以了解</view>
   <template wx:if="{{resource && related.length}}" is="resourceCards" data="{{items: related}}" />

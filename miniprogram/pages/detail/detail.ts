@@ -66,6 +66,10 @@ Page({
     else wx.showToast({ title: '未能更新收藏', icon: 'none' })
   },
   openDetail: openResource,
+  openFeedback() {
+    const { resource } = this.data
+    if (resource) wx.navigateTo({ url: `/pages/about/about?resource=${encodeURIComponent(resource.name)}` })
+  },
   copyCitation() {
     const resource = this.data.resource
     if (!resource) return

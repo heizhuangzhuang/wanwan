@@ -17,7 +17,7 @@
    - `HALO_EXTERNAL_URL=https://你的后端域名`
    - `WANWAN_CORS_ALLOWED_ORIGINS` 在浏览器需要跨域调用时填写允许的来源，多个来源用逗号分隔。Web SSR 通过服务器间 HTTPS 请求读取接口
 5. **安全边界**：
-   - 开启公网域名给 Web 侧使用时，应在网关/访问规则中仅允许公开只读接口（`/apis/api.wanwan.run/v1alpha1/**`）；`/console` 管理后台不要暴露给无限制公网入口。
+   - 开启公网域名给 Web 侧使用时，应在网关/访问规则中仅允许公开接口前缀下的 GET/HEAD；小程序订阅写入由云托管通道调用。`/console` 管理后台不要暴露给无限制公网入口。
 
 如果高级设置保存了旧的 `deploy/cloudrun/Dockerfile` 路径，将它清空以使用默认值，或填 `Dockerfile`。出现 GitHub 内容接口 404 时，先检查分支和路径。根目录文件可访问但控制台仍报相同错误时，再检查 GitHub 仓库绑定。
 
@@ -26,4 +26,27 @@
 
 如果已构建插件 JAR，可使用控制台的「本地代码上传」构建服务版本。上传包根目录应包含 `Dockerfile`、`entrypoint.sh` 和 `plugin-wanwan-*.jar`。Dockerfile 基于 `halohub/halo:2.27.3`，复制已构建的插件和入口脚本，监听 `80`。代码压缩包由云端构建为镜像。MySQL 凭据和环境变量在控制台配置。
 
-发布后检查 `/actuator/health/readiness`。启用 MySQL 后，用查询或连接记录核实新版本实际连到目标库。在 Halo 后台确认「弯弯知识导航」插件已启用，匿名 `GET /apis/api.wanwan.run/v1alpha1/stages` 应返回 `200 application/json` 和阶段数组。随后联调 Web 和小程序。升级已有服务时先确认数据源、持久化目录和当前可回滚版本。
+发布后检查 `/actuator/health/readiness`，并用连接记录核实目标 MySQL。第一次配置 Halo 时，在受控管理入口完成初始化，然后在「插件」上传同版本 JAR 并启用「弯弯知识导航」。镜像将 JAR 同步到工作目录；Halo 的插件安装记录仍由管理后台建立。已安装的实例如果更换插件版本，在管理后台执行升级。
+
+匿名 `GET /apis/api.wanwan.run/v1alpha1/stages` 应返回 `200 application/json` 和阶段数组。若进程健康但此接口跳到登录页，在受控的 Halo 后台核对插件的安装、启用状态和启动日志，再联调 Web 和小程序。升级前保留原镜像、持久化目录备份和上一版插件 JAR。
+
+
+## 小程序新资料订阅
+
+所有订阅配置均由云托管环境变量注入。配置缺失时，浏览 API 仍正常工作，「新资料提醒」入口隐藏。
+
+| 变量 | 配置 |
+| --- | --- |
+| `WANWAN_WECHAT_APP_ID` | 当前小程序 AppID |
+| `WANWAN_WECHAT_APP_SECRET` | 微信后台生成的 AppSecret，仅保存于服务端 |
+| `WANWAN_WECHAT_NOTICE_TEMPLATE_ID` | 当前账号、当前类目可用且用途匹配的一次性订阅模板 ID |
+| `WANWAN_WECHAT_NOTICE_TITLE_FIELD` | 模板的标题字段，例如 `thing1` |
+| `WANWAN_WECHAT_NOTICE_TIME_FIELD` | 模板的时间字段，例如 `time2` 或 `date2` |
+| `WANWAN_WECHAT_NOTICE_FROM` | 切换时间，ISO-8601 格式。测试使用本次部署时间，启用后只有在此时间之后创建且首次公开的内容进入通知 |
+| `WANWAN_WECHAT_NOTICE_STATE` | 开发版填 `developer`，体验版填 `trial`，正式版填 `formal`（默认） |
+
+模板需支持上述两个字段。模板要求其他必填字段时，先调整服务端字段映射。核实云托管可访问 `api.weixin.qq.com`，并按微信接口提示配置服务端出口 IP 白名单。数据库须持久化，避免重启后丢失待发授权和发布去重记录。
+
+用本地测试数据或体验版验证：打开小程序首页手动授权，发布一条切换时间后创建的测试资料卡，确认收到一条通知并能打开详情。编辑、撤回后重新发布同一资料，确认无重复推送。验证原创导读同时满足公开可见与有发布快照。拒绝授权和取消待发也应测试。排查可查看云托管日志中的微信错误码，无需查看用户标识。订阅消息的规则可参照[腾讯云开发指南](https://docs.cloudbase.net/recipes/add-subscribe-message-cloud-function)。
+
+停用时移除模板 ID 并重新发布后端。若需回退镜像，在云托管切回上一可用版本，沿用现有 MySQL 与挂载目录。若 Halo 仍指向新版插件，在管理后台恢复备份的上一版 JAR。切回后复查阶段 API 和小程序浏览。

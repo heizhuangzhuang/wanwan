@@ -1,8 +1,8 @@
 # 独立 Web 服务器部署说明
 
-Web 服务器仅运行轻量 Node 22 SSR 前端（`web/`），无数据库、无 Java 进程，通过 HTTPS 调用微信云托管后端的公开 JSON API（`/apis/api.wanwan.run/v1alpha1`）。
+Web 服务器仅运行轻量 Node 22.12+ SSR 前端（`web/`），无数据库、无 Java 进程，通过 HTTPS 调用微信云托管后端的公开 JSON API（`/apis/api.wanwan.run/v1alpha1`）。
 
-## 运行步骤（Node 22）
+## 运行步骤（Node 22.12+）
 1. 在服务器上拉取仓库，进入 `web/`：
    ```bash
    cd web

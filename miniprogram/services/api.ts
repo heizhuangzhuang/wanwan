@@ -53,6 +53,7 @@ export interface TopicView {
 }
 
 export interface PostSummary {
+  author?: string | null
   name: string
   title: string
   excerpt: string | null
@@ -90,62 +91,57 @@ function buildQuery(params?: Record<string, string | number | undefined>): strin
   return parts.length ? `?${parts.join('&')}` : ''
 }
 
-function request<T>(path: string, data?: Record<string, string | number | undefined>): Promise<T> {
+interface NoticeConfig {
+  templateId: string | null
+}
+
+function request<T>(path: string, query?: Record<string, string | number | undefined>,
+  body?: Record<string, unknown>): Promise<T> {
   const { globalData } = getApp<IAppOption>()
   if (globalData.demoMode) {
-    const response = demoResponse(path, data)
+    const response = path === '/notice-config' ? { templateId: null }
+      : body ? undefined : demoResponse(path, query)
     return response === undefined ? Promise.reject(new HttpError(404)) : Promise.resolve(response as T)
   }
-  const qs = buildQuery(data)
 
-  if (globalData.useCloudContainer && (!wx.cloud || !globalData.cloudEnv)) {
-    return Promise.reject(new Error('微信云环境未配置或不可用'))
-  }
-
-  if (globalData.useCloudContainer && wx.cloud) {
-    return new Promise((resolve, reject) => {
-      wx.cloud!.callContainer({
-        config: globalData.cloudEnv ? { env: globalData.cloudEnv } : undefined,
-        path: `${API_PREFIX}${path}${qs}`,
-        method: 'GET',
-        header: {
-          'X-WX-SERVICE': globalData.cloudService,
-        },
-        success(res) {
-          if (res.statusCode >= 200 && res.statusCode < 300) {
-            if (res.data && typeof res.data === 'object') resolve(res.data as T)
-            else reject(new Error('资料接口没有返回 JSON'))
-          } else {
-            reject(new HttpError(res.statusCode))
-          }
-        },
-        fail(err) {
-          reject(err)
-        },
-      })
-    })
-  }
-
+  const address = path + buildQuery(query)
   return new Promise((resolve, reject) => {
-    wx.request({
-      url: `${globalData.apiBase}${path}${qs}`,
-      method: 'GET',
-      success(res) {
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          if (res.data && typeof res.data === 'object') resolve(res.data as T)
-          else reject(new Error('资料接口没有返回 JSON'))
-        } else {
+    const options = {
+      method: body ? 'POST' : 'GET',
+      data: body,
+      success(res: { statusCode: number; data: unknown }) {
+        if (res.statusCode < 200 || res.statusCode >= 300) {
           reject(new HttpError(res.statusCode))
+        } else if (res.data && typeof res.data === 'object') {
+          resolve(res.data as T)
+        } else {
+          reject(new Error('服务没有返回 JSON'))
         }
       },
-      fail(err) {
-        reject(err)
-      },
-    })
+      fail: reject,
+    }
+
+    if (globalData.useCloudContainer) {
+      if (!wx.cloud || !globalData.cloudEnv) {
+        reject(new Error('微信云环境未配置或不可用'))
+        return
+      }
+      wx.cloud.callContainer({
+        ...options,
+        config: { env: globalData.cloudEnv },
+        path: API_PREFIX + address,
+        header: { 'X-WX-SERVICE': globalData.cloudService },
+      })
+    } else {
+      wx.request({ ...options, url: globalData.apiBase + address })
+    }
   })
 }
 
 export const wanwanApi = {
+  getNoticeConfig: () => request<NoticeConfig>('/notice-config'),
+  saveNotice: (code: string, templateId: string, enabled: boolean) =>
+    request<{ subscribed: boolean }>('/notice-subscriptions', undefined, { code, templateId, enabled }),
   getStages: () => request<StageView[]>('/stages'),
   listResources: (params: { stage?: string; type?: string; tag?: string; page?: number; size?: number }) =>
     request<PageResult<ResourceView>>('/resources', params),

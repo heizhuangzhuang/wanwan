@@ -7,9 +7,15 @@ import { handleRequest } from './views.js'
 const config = loadConfig()
 const client = createBackendClient(config.backendApiBase)
 
+const responseHeaders = {
+  'X-Content-Type-Options': 'nosniff',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Content-Security-Policy': "default-src 'none'; img-src 'self' https: http:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+}
+
 const server = createServer(async (req, res) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') {
-    res.writeHead(405, { 'Content-Type': 'text/plain; charset=utf-8' })
+    res.writeHead(405, { ...responseHeaders, 'Content-Type': 'text/plain; charset=utf-8', Allow: 'GET, HEAD' })
     res.end('Method Not Allowed')
     return
   }
@@ -19,8 +25,7 @@ const server = createServer(async (req, res) => {
     res.writeHead(result.status, {
       'Content-Type': result.contentType,
       'Cache-Control': result.cacheControl ?? 'no-store',
-      'X-Content-Type-Options': 'nosniff',
-      'Referrer-Policy': 'strict-origin-when-cross-origin',
+      ...responseHeaders,
     })
     if (req.method === 'HEAD') {
       res.end()
@@ -32,7 +37,7 @@ const server = createServer(async (req, res) => {
     res.writeHead(503, {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'no-store',
-      'X-Content-Type-Options': 'nosniff',
+      ...responseHeaders,
     })
     if (req.method === 'HEAD') {
       res.end()

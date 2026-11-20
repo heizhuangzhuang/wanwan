@@ -32,6 +32,15 @@ function htmlResponse(status: number, body: string): RouteResponse {
   return { status, contentType: 'text/html; charset=utf-8', body }
 }
 
+function routeKey(path: string, prefix: string) {
+  try {
+    const key = decodeURIComponent(path.slice(prefix.length))
+    return key && !/[\x00-\x1f/]/.test(key) ? key : ''
+  } catch {
+    return ''
+  }
+}
+
 function renderFilterBar(basePath: string, selectedType: string, extraQuery = ''): string {
   return `<div class="filter-bar">${TYPES.map((t) => {
     const params = new URLSearchParams(extraQuery)
@@ -74,7 +83,9 @@ async function renderRelated(resource: ResourceView, client: BackendClient, conf
 }
 
 function renderResourceDetail(r: ResourceView, config: WebConfig): string {
-  const safeUrl = safeHttpUrl(r.citationUrl)
+  const citationUrl = safeHttpUrl(r.citationUrl)
+  const originUrl = r.entry.type === 'WEB' || r.entry.type === 'MP_ARTICLE'
+    ? safeHttpUrl(r.entry.url) : null
   const orig =
     r.originalTitle && r.originalTitle !== r.title
       ? `<p class="card-orig-title">原标题：${escapeHtml(r.originalTitle)}</p>`
@@ -89,11 +100,11 @@ function renderResourceDetail(r: ResourceView, config: WebConfig): string {
   }
 
   const originBtn =
-    r.linkStatus === 'OK' && safeUrl
-      ? `<div style="margin-top:14px"><a class="btn" href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer">前往原站阅读（${escapeHtml(r.sourceName)}）</a></div>`
+    r.linkStatus === 'OK' && originUrl
+      ? `<div style="margin-top:14px"><a class="btn" href="${escapeHtml(originUrl)}" target="_blank" rel="noopener noreferrer">前往原站阅读（${escapeHtml(r.sourceName)}）</a></div>`
       : ''
-  const urlLine = safeUrl
-    ? `<p class="meta-row" style="margin-top:10px;word-break:break-all"><span>原始出处链接：${escapeHtml(safeUrl)}</span></p>`
+  const urlLine = citationUrl
+    ? `<p class="meta-row" style="margin-top:10px;word-break:break-all"><span>原始出处链接：${escapeHtml(citationUrl)}</span></p>`
     : ''
 
   return `<p><a href="${config.siteBasePath}/resources">← 返回资料库</a></p>
@@ -117,7 +128,7 @@ function renderResourceDetail(r: ResourceView, config: WebConfig): string {
   ${statusNotice}
   ${originBtn}
   ${urlLine}
-  <p class="meta-row" style="margin-top:16px">发现来源失效、错误或版权问题？请查看<a href="${config.siteBasePath}/about">版权与勘误联系方式</a>。</p>
+  <p class="meta-row" style="margin-top:16px">发现来源失效、错误或版权问题？请查看<a href="${config.siteBasePath}/about?resource=${encodeURIComponent(r.name)}#feedback">提交勘误</a>。</p>
 </article>`
 }
 
@@ -229,7 +240,7 @@ export async function handleRequest(
       ? `<h2>本站原创导读</h2><div class="card-list">${posts.items
           .map(
             (p) =>
-              `<article class="card"><h3 class="card-title"><a href="${basePath}/posts/${encodeURIComponent(p.name)}">${escapeHtml(p.title)}</a></h3><p class="card-intro">${escapeHtml(p.excerpt)}</p></article>`,
+              `<article class="card"><h3 class="card-title"><a href="${basePath}/posts/${encodeURIComponent(p.name)}">${escapeHtml(p.title)}</a></h3><p class="card-intro">${escapeHtml(p.excerpt)}</p>${p.author ? `<div class="meta-row">${escapeHtml(p.author)}</div>` : ''}</article>`,
           )
           .join('')}</div>`
       : ''
@@ -273,7 +284,8 @@ ${postHtml}`,
   }
 
   if (path.startsWith('/stages/')) {
-    const key = decodeURIComponent(path.slice('/stages/'.length)).toUpperCase()
+    const key = routeKey(path, '/stages/').toUpperCase()
+    if (!key) return notFoundResponse(config)
     const stages = await client.getStages()
     const stage = stages.find((s) => s.key === key)
     if (!stage) {
@@ -323,7 +335,8 @@ ${cards}${renderPagination(stagePath, list, query)}`,
   }
 
   if (path.startsWith('/resources/')) {
-    const name = decodeURIComponent(path.slice('/resources/'.length))
+    const name = routeKey(path, '/resources/')
+    if (!name) return notFoundResponse(config)
     const r = await client.getResource(name)
     if (!r) return notFoundResponse(config)
     const related = await renderRelated(r, client, config)
@@ -344,7 +357,8 @@ ${cards}${renderPagination(stagePath, list, query)}`,
   }
 
   if (path.startsWith('/topics/')) {
-    const name = decodeURIComponent(path.slice('/topics/'.length))
+    const name = routeKey(path, '/topics/')
+    if (!name) return notFoundResponse(config)
     const topic = await client.getTopic(name)
     if (!topic) return notFoundResponse(config)
     const cards = topic.resources.length
@@ -366,7 +380,7 @@ ${cards}${renderPagination(stagePath, list, query)}`,
       ? `<div class="card-list">${list.items
           .map(
             (p) =>
-              `<article class="card"><h2 class="card-title"><a href="${basePath}/posts/${encodeURIComponent(p.name)}">${escapeHtml(p.title)}</a></h2><p class="card-intro">${escapeHtml(p.excerpt)}</p></article>`,
+              `<article class="card"><h2 class="card-title"><a href="${basePath}/posts/${encodeURIComponent(p.name)}">${escapeHtml(p.title)}</a></h2><p class="card-intro">${escapeHtml(p.excerpt)}</p>${p.author ? `<div class="meta-row">${escapeHtml(p.author)}</div>` : ''}</article>`,
           )
           .join('')}</div>`
       : '<div class="warn-bar">暂无已发布的原创导读。</div>'
@@ -374,7 +388,8 @@ ${cards}${renderPagination(stagePath, list, query)}`,
   }
 
   if (path.startsWith('/posts/')) {
-    const name = decodeURIComponent(path.slice('/posts/'.length))
+    const name = routeKey(path, '/posts/')
+    if (!name) return notFoundResponse(config)
     const post = await client.getPost(name)
     if (!post) return notFoundResponse(config)
     const dateLine = post.publishTime ? `<span>发布日期：${escapeHtml(post.publishTime.slice(0, 10))}</span>` : ''
@@ -385,7 +400,7 @@ ${cards}${renderPagination(stagePath, list, query)}`,
         post.title,
         `<p><a href="${basePath}/posts">← 返回原创导读</a></p>
 <article class="card">
-  <div class="meta-row" style="margin-bottom:6px"><span class="badge">本站原创导读</span>${dateLine}</div>
+  <div class="meta-row" style="margin-bottom:6px"><span class="badge">本站原创导读</span>${post.author ? `<span>作者 ${escapeHtml(post.author)}</span>` : ''}${dateLine}</div>
   <h1>${escapeHtml(post.title)}</h1>
   <div class="notice-bar">本文为本站原创导读或使用说明，不替代门诊沟通与专业医学意见。</div>
   <div>${sanitizePostHtml(post.content)}</div>
@@ -437,6 +452,7 @@ ${resultHtml}`,
   }
 
   if (path === '/about') {
+    const resourceName = (url.searchParams.get('resource') || '').trim().slice(0, 253)
     const contactBlock = config.contactEmail
       ? `<p>联系邮箱：<strong>${escapeHtml(config.contactEmail)}</strong></p>`
       : '<p class="warn-bar">运营者尚未配置联系邮箱，请在正式公开前通过环境变量 CONTACT_EMAIL 填写真实可用联系方式。</p>'
@@ -456,7 +472,8 @@ ${resultHtml}`,
   <p>所有资料由运营者逐篇查看原始页面后手动录入：保留原标题与来源信息、独立撰写简短介绍，并提供合法原文入口。不自动采集第三方正文，不复制论文摘要或配图，不提供盗版下载或绕过付费墙入口。</p>
 </div>
 <div class="card" style="margin-bottom:14px">
-  <h2>版权、勘误与撤回联系</h2>
+  <h2 id="feedback">版权、勘误与撤回联系</h2>
+  ${resourceName ? `<p>反馈资料编号 <code>${escapeHtml(resourceName)}</code></p>` : ''}
   <p>若您发现资料来源失效、介绍有误，或认为收录内容涉及版权或隐私问题，请联系运营者。收到有效通知后将先行暂停相关展示并核查处理。</p>
   ${contactBlock}
 </div>

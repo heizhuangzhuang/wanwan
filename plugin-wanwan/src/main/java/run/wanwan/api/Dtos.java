@@ -57,20 +57,18 @@ public final class Dtos {
     ) {
         public static ResourceView of(ResourceCard card) {
             var s = card.getSpec();
-            String title = s.getDisplayTitle() != null && !s.getDisplayTitle().isBlank()
-                ? s.getDisplayTitle() : s.getOriginalTitle();
             return new ResourceView(
                 card.getMetadata().getName(),
-                title,
+                s.title(),
                 s.getOriginalTitle(),
                 s.getIntro(),
                 s.getSourceName(),
                 s.getAuthor(),
                 s.getPublishedDate(),
                 s.getLastVerifiedDate(),
-                s.getStages(),
+                s.getStages() == null ? Set.of() : s.getStages(),
                 s.getMaterialType(),
-                s.getTags(),
+                s.getTags() == null ? Set.of() : s.getTags(),
                 s.getLanguage(),
                 s.getAccess(),
                 s.getDoi(),
@@ -95,28 +93,30 @@ public final class Dtos {
     }
 
     /** 本站原创导读摘要（来自 Halo 已发布 Post，仅白名单公开字段）。 */
-    public record PostSummary(String name, String title, String excerpt, Instant publishTime) {
-        public static PostSummary of(Post post) {
+    public record PostSummary(String name, String title, String excerpt, Instant publishTime, String author) {
+        public static PostSummary of(Post post, String author) {
             String excerpt = post.getStatus() != null ? post.getStatus().getExcerpt() : null;
             return new PostSummary(
                 post.getMetadata().getName(),
                 post.getSpec().getTitle(),
                 excerpt,
-                post.getSpec().getPublishTime()
+                post.getSpec().getPublishTime(),
+                author
             );
         }
     }
 
     /** 本站原创导读详情（仅返回已发布快照正文）。 */
-    public record PostView(String name, String title, String excerpt, Instant publishTime, String content) {
-        public static PostView of(Post post, String content) {
+    public record PostView(String name, String title, String excerpt, Instant publishTime, String content, String author) {
+        public static PostView of(Post post, String content, String author) {
             String excerpt = post.getStatus() != null ? post.getStatus().getExcerpt() : null;
             return new PostView(
                 post.getMetadata().getName(),
                 post.getSpec().getTitle(),
                 excerpt,
                 post.getSpec().getPublishTime(),
-                content
+                content,
+                author
             );
         }
     }

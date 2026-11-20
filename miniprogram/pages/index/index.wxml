@@ -17,6 +17,15 @@
   </view>
 
   <view wx:if="{{demoMode}}" class="notice">当前展示示例资料。</view>
+  <view wx:if="{{noticeTemplate}}" class="notice home-notice">
+    <view class="title">新资料提醒</view>
+    <view class="description">授权后在微信接收一条更新提醒。为送达提醒，本站最多保存你的微信标识 90 天。</view>
+    <view class="notice-actions">
+      <button class="btn compact" bindtap="subscribeNotice" loading="{{noticeBusy}}" disabled="{{noticeBusy}}">订阅一次</button>
+      <button class="btn secondary compact" bindtap="cancelNotice" disabled="{{noticeBusy}}">取消待发</button>
+    </view>
+    <view wx:if="{{noticeStatus}}" class="description" aria-live="polite">{{noticeStatus}}</view>
+  </view>
   <view class="section-heading">按阶段查找资料</view>
   <view wx:if="{{loading}}" class="reading-state muted">正在加载阶段和公开资料…</view>
   <view wx:elif="{{error}}" class="reading-state">

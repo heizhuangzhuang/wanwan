@@ -10,7 +10,9 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import run.halo.app.content.PostContentService;
+import run.halo.app.core.extension.User;
 import run.halo.app.core.extension.content.Post;
+import run.halo.app.extension.ExtensionOperator;
 import run.halo.app.extension.ListOptions;
 import run.halo.app.extension.PageRequestImpl;
 import run.halo.app.extension.ReactiveExtensionClient;
@@ -116,20 +118,37 @@ public class PublicQueryService {
         int s = normalizeSize(size);
         return client.list(Post.class, Visibility::isPublicPost, POST_ORDER)
             .collectList()
-            .map(all -> {
-                int from = Math.min((p - 1) * s, all.size());
-                int to = Math.min(from + s, all.size());
-                var items = all.subList(from, to).stream().map(Dtos.PostSummary::of).toList();
-                return new Dtos.Page<>(p, s, all.size(), items);
-            });
+            .flatMap(all -> Flux.fromIterable(pageSlice(all, p, s))
+                .flatMapSequential(post -> publicAuthor(post)
+                    .map(author -> Dtos.PostSummary.of(post, author))
+                    .defaultIfEmpty(Dtos.PostSummary.of(post, null)), 4)
+                .collectList()
+                .map(items -> new Dtos.Page<>(p, s, all.size(), items)));
     }
 
-    /** 本站原创导读详情：只读 releaseSnapshot，绝不泄露未发布草稿正文。 */
+    /** 本站原创导读详情只读 releaseSnapshot。 */
     public Mono<Dtos.PostView> getPost(String name) {
         return client.fetch(Post.class, name)
             .filter(Visibility::isPublicPost)
             .flatMap(post -> postContentService.getReleaseContent(name)
-                .map(cw -> Dtos.PostView.of(post, cw.getContent())));
+                .flatMap(content -> publicAuthor(post)
+                    .map(author -> Dtos.PostView.of(post, content.getContent(), author))
+                    .defaultIfEmpty(Dtos.PostView.of(post, content.getContent(), null))));
+    }
+
+    private Mono<String> publicAuthor(Post post) {
+        String owner = post.getSpec().getOwner();
+        if (owner == null || owner.isBlank()) return Mono.empty();
+        return client.fetch(User.class, owner)
+            .filter(user -> !ExtensionOperator.isDeleted(user) && user.getSpec() != null)
+            .mapNotNull(user -> user.getSpec().getDisplayName())
+            .filter(name -> !name.isBlank());
+    }
+
+    private static <T> List<T> pageSlice(List<T> list, int page, int size) {
+        int from = (int) Math.min((long) (page - 1) * size, list.size());
+        int to = (int) Math.min((long) from + size, list.size());
+        return list.subList(from, to);
     }
 
     public Mono<Dtos.Page<Dtos.ResourceView>> search(String keyword, Stage stage, MaterialType type,
@@ -137,9 +156,7 @@ public class PublicQueryService {
         int p = normalizePage(page);
         int s = normalizeSize(size);
         List<String> names = searchIndex.search(keyword, stage, type);
-        int from = Math.min((p - 1) * s, names.size());
-        int to = Math.min(from + s, names.size());
-        return Flux.fromIterable(names.subList(from, to))
+        return Flux.fromIterable(pageSlice(names, p, s))
             .concatMap(n -> client.fetch(ResourceCard.class, n))
             // ADR-003：返回前按主数据核验
             .filter(Visibility::isListed)

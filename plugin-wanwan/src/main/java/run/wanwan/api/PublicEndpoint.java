@@ -1,8 +1,10 @@
 package run.wanwan.api;
 
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.RouterFunction;
@@ -10,10 +12,12 @@ import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import run.halo.app.core.extension.endpoint.CustomEndpoint;
 import run.halo.app.extension.GroupVersion;
 import run.wanwan.model.Enums.MaterialType;
 import run.wanwan.model.Stage;
+import run.wanwan.notice.NoticeService;
 import run.wanwan.search.SearchIndex;
 
 /**
@@ -24,6 +28,7 @@ import run.wanwan.search.SearchIndex;
 public class PublicEndpoint implements CustomEndpoint {
 
     private final PublicQueryService queryService;
+    private final NoticeService notices;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -44,12 +49,23 @@ public class PublicEndpoint implements CustomEndpoint {
             .GET("posts/{name}", req -> okOrNotFound(
                 queryService.getPost(req.pathVariable("name"))))
             .GET("search", this::search)
+            .GET("notice-config", req -> ServerResponse.ok().cacheControl(CacheControl.noStore())
+                .bodyValue(notices.configuration()))
+            .POST("notice-subscriptions", this::subscribeNotice)
             .build();
     }
 
     @Override
     public GroupVersion groupVersion() {
         return GroupVersion.parseAPIVersion("api.wanwan.run/v1alpha1");
+    }
+
+    private Mono<ServerResponse> subscribeNotice(ServerRequest req) {
+        return req.bodyToMono(NoticeService.NoticeRequest.class)
+            .flatMap(request -> Mono.fromCallable(() -> notices.subscribe(request))
+                .subscribeOn(Schedulers.boundedElastic()))
+            .flatMap(result -> ServerResponse.ok().cacheControl(CacheControl.noStore()).bodyValue(result))
+            .switchIfEmpty(ServerResponse.badRequest().build());
     }
 
     private Mono<ServerResponse> listResources(ServerRequest req) {
@@ -92,7 +108,7 @@ public class PublicEndpoint implements CustomEndpoint {
     static <E extends Enum<E>> E enumParam(ServerRequest req, String key, Class<E> type) {
         return req.queryParam(key).flatMap(v -> {
             try {
-                return Optional.of(Enum.valueOf(type, v.trim().toUpperCase()));
+                return Optional.of(Enum.valueOf(type, v.trim().toUpperCase(Locale.ROOT)));
             } catch (IllegalArgumentException e) {
                 return Optional.empty();
             }

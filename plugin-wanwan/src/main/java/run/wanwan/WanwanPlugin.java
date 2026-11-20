@@ -11,6 +11,9 @@ import run.wanwan.api.PublicQueryService;
 import run.wanwan.model.ResourceCard;
 import run.wanwan.model.Topic;
 import run.wanwan.model.Visibility;
+import run.wanwan.notice.NoticePublication;
+import run.wanwan.notice.NoticeService;
+import run.wanwan.notice.NoticeSubscription;
 
 /**
  * 弯弯插件入口：注册资料卡与专题模型及其查询索引。
@@ -44,6 +47,10 @@ public class WanwanPlugin extends BasePlugin {
                 .indexFunc(card -> card.getSpec().getPriority() == null ? 1000
                     : card.getSpec().getPriority()));
         });
+        schemeManager.register(NoticePublication.class);
+        schemeManager.register(NoticeSubscription.class, specs ->
+            specs.add(IndexSpecs.<NoticeSubscription, String>single(NoticeService.PENDING_SCOPE, String.class)
+                .indexFunc(grant -> grant.getOpenId() == null ? null : grant.getScope())));
         schemeManager.register(Topic.class, specs -> {
             specs.add(IndexSpecs.<Topic, String>single(PublicQueryService.IDX_TOPIC_PUBLIC, String.class)
                 .indexFunc(topic -> String.valueOf(Visibility.isPublic(topic))));
@@ -57,5 +64,7 @@ public class WanwanPlugin extends BasePlugin {
     public void stop() {
         schemeManager.unregister(schemeManager.get(ResourceCard.class));
         schemeManager.unregister(schemeManager.get(Topic.class));
+        schemeManager.unregister(schemeManager.get(NoticePublication.class));
+        schemeManager.unregister(schemeManager.get(NoticeSubscription.class));
     }
 }

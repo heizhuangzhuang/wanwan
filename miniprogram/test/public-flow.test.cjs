@@ -227,3 +227,42 @@ test('沟通清单只复制勾选的问题', () => {
   assert.match(getClipboard(), /应该联系哪个科室/)
   assert.doesNotMatch(getClipboard(), /报告里/)
 })
+
+test('点击授权后才用微信登录码登记，消息拒绝不发起写入，并支持取消', async () => {
+  const template = 'wechat-template-testing'
+  const registrations = []
+  let requested
+  let loginCount = 0
+  const { page } = openPage('index', (url, req) => {
+    if (url.pathname.endsWith('/notice-config')) return { data: { templateId: template } }
+    assert.equal(req.method, 'POST')
+    assert.equal(req.header['X-WX-SERVICE'], 'wanwan-backend')
+    assert.ok(url.pathname.endsWith('/notice-subscriptions'))
+    registrations.push(req.data)
+    return { data: { subscribed: req.data.enabled } }
+  }, { useCloudContainer: true, cloudEnv: 'test', cloudService: 'wanwan-backend' })
+  wx.requestSubscribeMessage = options => { requested = options }
+  wx.login = ({ success }) => { loginCount += 1; success({ code: 'wechat-login-code' }) }
+  page.onLoad()
+  await settle()
+  assert.equal(page.data.noticeTemplate, template)
+  assert.equal(requested, undefined)
+  page.subscribeNotice()
+  assert.deepEqual(requested.tmplIds, [template])
+  requested.success({ [template]: 'reject' })
+  assert.equal(loginCount, 0)
+  assert.deepEqual(registrations, [])
+
+  page.subscribeNotice()
+  requested.success({ [template]: 'accept' })
+  await settle()
+  assert.equal(loginCount, 1)
+  assert.deepEqual(registrations[0], { code: 'wechat-login-code', templateId: template, enabled: true })
+  assert.match(page.data.noticeStatus, /订阅已保存/)
+
+  page.cancelNotice()
+  await settle()
+  assert.equal(loginCount, 2)
+  assert.equal(registrations[1].enabled, false)
+  assert.match(page.data.noticeStatus, /已取消/)
+})

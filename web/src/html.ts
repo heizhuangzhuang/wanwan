@@ -1,3 +1,4 @@
+import sanitizeHtml from 'sanitize-html'
 import type { ResourceView } from './api.js'
 import type { WebConfig } from './config.js'
 
@@ -37,13 +38,20 @@ export function safeHttpUrl(url: string | null | undefined): string | null {
   }
 }
 
-/** 轻量清洗管理员原创导读 HTML，移除 script 与内联事件属性。 */
+/** 只渲染原创导读中需要的排版、图片与出处链接。 */
 export function sanitizePostHtml(html: string | null | undefined): string {
-  if (!html) return ''
-  return html
-    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-    .replace(/\son[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
-    .replace(/javascript\s*:/gi, '')
+  return sanitizeHtml(html ?? '', {
+    allowedTags: [...sanitizeHtml.defaults.allowedTags, 'img', 'del', 's'],
+    allowedAttributes: {
+      a: ['href', 'title'],
+      img: ['src', 'alt', 'title', 'width', 'height'],
+      td: ['colspan', 'rowspan'],
+      th: ['colspan', 'rowspan', 'scope'],
+    },
+    allowedSchemes: ['http', 'https'],
+    allowProtocolRelative: false,
+    nonTextTags: ['script', 'style', 'textarea', 'option', 'iframe', 'object', 'template', 'svg', 'math'],
+  })
 }
 
 export function materialLabel(type: string): string {

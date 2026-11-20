@@ -61,5 +61,9 @@ public class ResourceCard extends AbstractExtension {
         private PublishState state = PublishState.DRAFT;
         /** 人工推荐顺序，越小越靠前。 */
         private Integer priority = 1000;
+
+        public String title() {
+            return displayTitle != null && !displayTitle.isBlank() ? displayTitle : originalTitle;
+        }
     }
 }

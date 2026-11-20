@@ -3,7 +3,7 @@ import { decodeOption, openResource, plainGuideBody, resourceLabel } from '../..
 
 Page({
   data: {
-    kind: '', name: '', title: '', intro: '', date: '', body: '',
+    kind: '', name: '', title: '', intro: '', date: '', author: '', body: '',
     items: [] as ReturnType<typeof resourceLabel>[],
     loading: true, error: '', retryable: false,
   },
@@ -15,7 +15,7 @@ Page({
   },
   async load() {
     const { kind, name } = this.data
-    this.setData({ loading: true, error: '', retryable: false, title: '', items: [], body: '' })
+    this.setData({ loading: true, error: '', retryable: false, title: '', items: [], body: '', date: '', author: '' })
     if (!name || (kind !== 'topic' && kind !== 'guide')) {
       this.setData({ loading: false, error: '入口缺少有效的专题或导读。' })
       return
@@ -28,6 +28,7 @@ Page({
         const guide = await wanwanApi.getPost(name)
         this.setData({
           title: guide.title, intro: '', date: guide.publishTime?.slice(0, 10) ?? '',
+          author: guide.author || '',
           body: plainGuideBody(guide.content),
         })
       }

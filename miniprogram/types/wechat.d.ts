@@ -44,6 +44,12 @@ declare const wx: {
     success?: (res: { statusCode: number; data: unknown }) => void
     fail?: (err: unknown) => void
   }): void
+  requestSubscribeMessage?(options: {
+    tmplIds: string[]
+    success: (result: Record<string, string>) => void
+    fail: (err: unknown) => void
+  }): void
+  login(options: { success: (result: { code?: string }) => void; fail: (err: unknown) => void }): void
   navigateTo(options: { url: string }): void
   reLaunch(options: { url: string }): void
   navigateToMiniProgram(options: { appId: string; path?: string; fail?: () => void }): void

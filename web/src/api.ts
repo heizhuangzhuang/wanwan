@@ -48,6 +48,7 @@ export interface TopicView {
 }
 
 export interface PostSummary {
+  author?: string | null
   name: string
   title: string
   excerpt?: string | null
@@ -55,6 +56,7 @@ export interface PostSummary {
 }
 
 export interface PostView {
+  author?: string | null
   name: string
   title: string
   excerpt?: string | null
@@ -108,6 +110,7 @@ export function createBackendClient(apiBase: string, timeoutMs = 5000): BackendC
     const res = await fetch(url, {
       method: 'GET',
       headers: { Accept: 'application/json' },
+      redirect: 'manual',
       signal: AbortSignal.timeout(timeoutMs),
     })
     if (!res.ok) {
@@ -117,14 +120,12 @@ export function createBackendClient(apiBase: string, timeoutMs = 5000): BackendC
   }
 
   async function getJsonOrNull<T>(path: string): Promise<T | null> {
-    const res = await fetch(backendUrl(path), {
-      method: 'GET',
-      headers: { Accept: 'application/json' },
-      signal: AbortSignal.timeout(timeoutMs),
-    })
-    if (res.status === 404) return null
-    if (!res.ok) throw new HttpStatusError(res.status, `Backend HTTP ${res.status}`)
-    return (await res.json()) as T
+    try {
+      return await getJson<T>(path)
+    } catch (error) {
+      if (error instanceof HttpStatusError && error.status === 404) return null
+      throw error
+    }
   }
 
   return {

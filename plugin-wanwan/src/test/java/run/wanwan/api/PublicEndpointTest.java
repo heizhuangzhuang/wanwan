@@ -6,11 +6,13 @@ import static org.mockito.Mockito.when;
 import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 import run.wanwan.model.Enums.EntryType;
 import run.wanwan.model.Enums.LinkStatus;
 import run.wanwan.model.Enums.PublishState;
+import run.wanwan.notice.NoticeService;
 
 class PublicEndpointTest {
 
@@ -22,10 +24,10 @@ class PublicEndpointTest {
             Mono.just(Dtos.ResourceView.of(
                 PublicQueryServiceTest.card("ok", PublishState.PUBLISHED, LinkStatus.OK))));
         when(queryService.listPosts(1, 20)).thenReturn(Mono.just(new Dtos.Page<>(1, 20, 1,
-            List.of(new Dtos.PostSummary("g1", "导读一", "摘要", Instant.parse("2026-11-17T00:00:00Z"))))));
+            List.of(new Dtos.PostSummary("g1", "导读一", "摘要", Instant.parse("2026-11-17T00:00:00Z"), "公开署名")))));
         when(queryService.getPost("missing")).thenReturn(Mono.empty());
 
-        var client = WebTestClient.bindToRouterFunction(new PublicEndpoint(queryService).endpoint())
+        var client = WebTestClient.bindToRouterFunction(new PublicEndpoint(queryService, mock(NoticeService.class)).endpoint())
             .build();
 
         client.get().uri("/stages")
@@ -50,7 +52,8 @@ class PublicEndpointTest {
             .exchange()
             .expectStatus().isOk()
             .expectBody()
-            .jsonPath("$.items[0].name").isEqualTo("g1");
+            .jsonPath("$.items[0].name").isEqualTo("g1")
+            .jsonPath("$.items[0].author").isEqualTo("公开署名");
 
         client.get().uri("/posts/missing")
             .exchange()
@@ -60,4 +63,31 @@ class PublicEndpointTest {
             .exchange()
             .expectStatus().isBadRequest();
     }
+    @Test
+    void noticeConfigurationAndRegistrationExposeOnlyPublicFields() {
+        var notices = mock(NoticeService.class);
+        when(notices.configuration()).thenReturn(new NoticeService.NoticeConfig("demo-template"));
+        when(notices.subscribe(new NoticeService.NoticeRequest("demo-code", "demo-template", true)))
+            .thenReturn(new NoticeService.NoticeResult(true));
+        var client = WebTestClient.bindToRouterFunction(new PublicEndpoint(mock(PublicQueryService.class), notices)
+            .endpoint()).build();
+
+        client.get().uri("/notice-config").exchange()
+            .expectStatus().isOk()
+            .expectHeader().valueEquals("Cache-Control", "no-store")
+            .expectBody().jsonPath("$.templateId").isEqualTo("demo-template");
+
+        client.post().uri("/notice-subscriptions").contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("""
+                {"code":"demo-code","templateId":"demo-template","enabled":true}
+                """)
+            .exchange().expectStatus().isOk()
+            .expectHeader().valueEquals("Cache-Control", "no-store")
+            .expectBody().jsonPath("$.subscribed").isEqualTo(true)
+            .jsonPath("$.code").doesNotExist();
+
+        client.post().uri("/notice-subscriptions")
+            .exchange().expectStatus().isBadRequest();
+    }
+
 }

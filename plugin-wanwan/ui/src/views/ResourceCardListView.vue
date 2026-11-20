@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import {
   Dialog,
   Toast,
@@ -19,6 +19,8 @@ import {
   listResourceCards,
   updateResourceCard,
 } from '@/api/wanwan'
+import { sourceUrl } from '@/api/resource-review'
+import ResourceReviewPanel from '@/components/ResourceReviewPanel.vue'
 import {
   ACCESS_OPTIONS,
   ENTRY_TYPE_OPTIONS,
@@ -42,6 +44,9 @@ const modalVisible = ref(false)
 const saving = ref(false)
 const editing = ref<ResourceCard | null>(null)
 const tagsInput = ref('')
+const reviewing = ref(false)
+const confirmed = ref(false)
+const listFailed = ref(false)
 
 function emptySpec(): ResourceCardSpec {
   return {
@@ -52,7 +57,7 @@ function emptySpec(): ResourceCardSpec {
     sourceName: '',
     author: '',
     publishedDate: '',
-    lastVerifiedDate: new Date().toISOString().slice(0, 10),
+    lastVerifiedDate: '',
     stages: ['JUST_FOUND'],
     materialType: 'INSTITUTION',
     tags: [],
@@ -64,13 +69,14 @@ function emptySpec(): ResourceCardSpec {
     entryType: 'WEB',
     miniProgramAppId: '',
     miniProgramPath: '',
-    linkStatus: 'OK',
+    linkStatus: 'UNCHECKED',
     state: 'DRAFT',
     priority: 1000,
   }
 }
 
 const form = reactive<ResourceCardSpec>(emptySpec())
+watch([form, tagsInput], () => { confirmed.value = false }, { deep: true, flush: 'sync' })
 
 const filteredItems = computed(() => {
   const kw = keyword.value.trim().toLowerCase()
@@ -90,9 +96,20 @@ const filteredItems = computed(() => {
 async function load() {
   loading.value = true
   try {
-    const res = await listResourceCards(1, 200)
-    items.value = res.items ?? []
+    const cards = new Map<string, ResourceCard>()
+    let page = 1
+    for (;;) {
+      const result = await listResourceCards(page, 100)
+      const count = cards.size
+      for (const card of result.items) cards.set(card.metadata.name, card)
+      if (cards.size >= result.total) break
+      if (cards.size === count) throw new Error('资料卡分页提前结束')
+      page += 1
+    }
+    items.value = [...cards.values()]
+    listFailed.value = false
   } catch {
+    listFailed.value = true
     Toast.error('加载资料卡失败')
   } finally {
     loading.value = false
@@ -103,6 +120,8 @@ function openCreate() {
   editing.value = null
   Object.assign(form, emptySpec())
   tagsInput.value = ''
+  reviewing.value = false
+  confirmed.value = false
   modalVisible.value = true
 }
 
@@ -110,6 +129,8 @@ function openEdit(card: ResourceCard) {
   editing.value = card
   Object.assign(form, emptySpec(), JSON.parse(JSON.stringify(card.spec)))
   tagsInput.value = (card.spec.tags ?? []).join(', ')
+  reviewing.value = false
+  confirmed.value = false
   modalVisible.value = true
 }
 
@@ -127,12 +148,18 @@ async function save() {
     Toast.warning('请填写原标题、自写介绍和来源站名')
     return
   }
-  if (!/^https?:\/\//i.test(form.url.trim())) {
+  if (!sourceUrl(form.url)) {
     Toast.warning('原始 URL 必须以 http:// 或 https:// 开头')
     return
   }
   if (!form.stages.length) {
     Toast.warning('请至少选择一个适用阶段')
+    return
+  }
+  if (form.state === 'PUBLISHED' && (!reviewing.value || !confirmed.value || loading.value || listFailed.value
+    || !form.lastVerifiedDate?.trim())) {
+    reviewing.value = true
+    Toast.warning('发布前请填写核对日期，并确认预览与查重结果')
     return
   }
   const spec: ResourceCardSpec = {
@@ -154,7 +181,7 @@ async function save() {
       .split(/[,，]/)
       .map((t) => t.trim())
       .filter(Boolean),
-    priority: Number(form.priority) || 1000,
+    priority: Number.isFinite(Number(form.priority)) ? Number(form.priority) : 1000,
   }
   saving.value = true
   try {
@@ -179,13 +206,19 @@ async function save() {
   }
 }
 
-async function setState(card: ResourceCard, next: PublishState) {
+function reviewPublication(card: ResourceCard) {
+  openEdit(card)
+  form.state = 'PUBLISHED'
+  reviewing.value = true
+}
+
+async function withdraw(card: ResourceCard) {
   try {
     await updateResourceCard({
       ...card,
-      spec: { ...card.spec, state: next },
+      spec: { ...card.spec, state: 'WITHDRAWN' },
     })
-    Toast.success(next === 'PUBLISHED' ? '已发布' : '已撤回')
+    Toast.success('已撤回')
     await load()
   } catch {
     Toast.error('更新状态失败')
@@ -306,11 +339,11 @@ onMounted(load)
               v-if="card.spec.state !== 'PUBLISHED'"
               size="sm"
               type="secondary"
-              @click="setState(card, 'PUBLISHED')"
+              @click="reviewPublication(card)"
             >
               发布
             </VButton>
-            <VButton v-else size="sm" type="danger" @click="setState(card, 'WITHDRAWN')">
+            <VButton v-else size="sm" type="danger" @click="withdraw(card)">
               撤回
             </VButton>
             <VButton size="sm" type="danger" @click="handleDelete(card)">删除</VButton>
@@ -326,7 +359,11 @@ onMounted(load)
     :title="editing ? '编辑资料卡' : '新建资料卡'"
     @close="modalVisible = false"
   >
-    <div class="space-y-3 text-sm">
+    <div class="ww-review-nav">
+      <button type="button" :aria-pressed="!reviewing" @click="reviewing = false">编辑资料</button>
+      <button type="button" :aria-pressed="reviewing" @click="reviewing = true">预览与核对</button>
+    </div>
+    <div v-if="!reviewing" class="space-y-3 text-sm">
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <label class="ww-field">
           <span>原标题 *</span>
@@ -465,15 +502,31 @@ onMounted(load)
           <input v-model="form.doi" class="ww-input" />
         </label>
         <label class="ww-field">
-          <span>PMID / 经历背景时点</span>
+          <span>PMID（论文适用）</span>
+          <input v-model="form.pmid" class="ww-input" />
+        </label>
+        <label class="ww-field">
+          <span>经历背景时点</span>
           <input v-model="form.storyContext" class="ww-input" placeholder="如：出生后6个月复查" />
         </label>
       </div>
     </div>
 
+    <ResourceReviewPanel
+      v-else
+      v-model:confirmed="confirmed"
+      :form="form"
+      :cards="items"
+      :editing-name="editing?.metadata.name"
+      :loading="loading"
+      :list-failed="listFailed"
+      @refresh="load"
+    />
+
     <template #footer>
       <VSpace>
-        <VButton :loading="saving" type="secondary" @click="save">保存</VButton>
+        <VButton v-if="form.state === 'PUBLISHED' && !reviewing" type="secondary" @click="reviewing = true">预览与核对</VButton>
+        <VButton v-else :loading="saving" type="secondary" @click="save">{{ form.state === 'PUBLISHED' ? '确认发布' : '保存' }}</VButton>
         <VButton @click="modalVisible = false">取消</VButton>
       </VSpace>
     </template>
@@ -501,4 +554,8 @@ onMounted(load)
   padding: 0.25rem 0.5rem;
   font-size: 0.75rem;
 }
+.ww-review-nav { display: flex; gap: 8px; margin-bottom: 16px; }
+.ww-review-nav button { border-radius: 8px; padding: 8px 12px; color: #376052; }
+.ww-review-nav button[aria-pressed="true"] { background: #e8eee4; font-weight: 600; }
+.ww-review-nav button:focus-visible, .ww-input:focus-visible { outline: 2px solid #376052; outline-offset: 2px; }
 </style>
