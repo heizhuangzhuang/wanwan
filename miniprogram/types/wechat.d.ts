@@ -87,6 +87,8 @@ declare const wx: {
   }): void
   login(options: { success: (result: { code?: string }) => void; fail: (err: unknown) => void }): void
   navigateTo(options: { url: string }): void
+  navigateBack(): void
+  redirectTo(options: { url: string }): void
   switchTab(options: { url: string }): void
   reLaunch(options: { url: string }): void
   navigateToMiniProgram(options: { appId: string; path?: string; fail?: () => void }): void

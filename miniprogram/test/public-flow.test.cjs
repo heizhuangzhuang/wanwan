@@ -402,12 +402,49 @@ test('石膏记录需要单独同意，微信拒绝提醒时不提交授权', as
 test('产前专项在没有 API 的情况下可用，与 Web 专项内容一致', () => {
   const { page, requests, getClipboard } = openPage('prenatal', () => { throw new Error('unexpected request') })
   const json = JSON.parse(readFileSync(resolve(project, '../web/public/guides/prenatal.json'), 'utf8'))
-  assert.deepEqual(page.data.guides, json)
+  const { prenatalGuides } = require(join(compiled, 'services/prenatal-guides.js'))
+  assert.deepEqual(prenatalGuides, json)
+  assert.deepEqual(page.data.groups.flatMap(group => group.items.map(item => item.key)), json.map(guide => guide.key))
   page.onLoad({ key: 'exome' })
   assert.match(page.data.selected.title, /全外显子/)
   page.copySource()
   assert.equal(getClipboard(), page.data.selected.sourceUrl)
   assert.equal(requests.length, 0)
+})
+
+test('产前目录按项目分组，支持常用简称、全角字母和清除搜索', () => {
+  const { page, requests } = openPage('prenatal', () => assert.fail('目录搜索不需要网络'))
+  assert.deepEqual(page.data.groups.map(group => group.items.length), [2, 3, 1])
+  for (const [query, key] of [['羊穿', 'amniocentesis'], ['cma 核型', 'chromosome'], [' ＷＥＳ ', 'exome'], ['nipt', 'screening']]) {
+    page.search({ detail: { value: query } })
+    assert.deepEqual(page.data.groups.flatMap(group => group.items.map(item => item.key)), [key])
+  }
+  page.search({ detail: { value: '没有匹配的名称' } })
+  assert.deepEqual(page.data.groups, [])
+  page.clearSearch()
+  assert.equal(page.data.query, '')
+  assert.equal(page.data.groups.flatMap(group => group.items).length, 6)
+  assert.equal(requests.length, 0)
+})
+
+test('产前导读保留公众号直达链接，可复制问题，从目录打开时返回原目录', () => {
+  const { page, getClipboard, navigations } = openPage('prenatal', () => assert.fail('查看导读不需要网络'))
+  const route = 'pages/prenatal/prenatal'
+  global.getCurrentPages = () => [{ route }, { route }]
+  wx.navigateBack = () => navigations.push('back')
+  wx.redirectTo = ({ url }) => navigations.push(url)
+  page.onLoad({ key: 'amniocentesis' })
+  assert.equal(page.data.category, '取样与遗传检测')
+  assert.equal(page.onShareAppMessage().path, '/' + route + '?key=amniocentesis')
+  page.copyQuestions()
+  assert.equal(getClipboard(), page.data.selected.sections.find(section => section.heading === '可以问医生').body)
+  page.openDirectory()
+  global.getCurrentPages = () => [{ route }]
+  page.onLoad({ key: 'unknown' })
+  assert.equal(page.data.missing, true)
+  assert.equal(page.onShareAppMessage().path, '/' + route)
+  page.openDirectory()
+  assert.deepEqual(navigations, ['back', '/' + route])
 })
 
 test('四个一级栏目和自定义底栏同步，切换使用 switchTab', () => {

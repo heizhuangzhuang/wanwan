@@ -1,2 +1,44 @@
-.prenatal-lead { background: #f4e6d7; border-color: #ead6c2; }
-.prenatal-lead .description { margin-bottom: 0; }
+.prenatal {
+  --guide-ink: #243c34;
+  --guide-muted: #566257;
+  --guide-surface: #fffdf9;
+  --guide-border: #e5e0d6;
+  --guide-callout: #e8efe5;
+  padding-top: 22rpx;
+}
+
+.prenatal-search {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  min-height: 92rpx;
+  padding: 0 20rpx;
+  border: 1rpx solid var(--guide-border);
+  border-radius: 20rpx;
+  background: var(--guide-surface);
+}
+
+.prenatal-input { flex: 1; min-width: 0; min-height: 88rpx; color: var(--guide-ink); font-size: 28rpx; }
+.prenatal-clear { margin: 0; width: auto; min-height: 70rpx; padding: 0 6rpx; color: #285143; font-weight: 600; }
+.prenatal-group { margin-top: 24rpx; }
+.prenatal-group-heading { color: var(--guide-muted); font-size: 26rpx; font-weight: 650; margin: 0 0 8rpx 4rpx; }
+.prenatal-row { min-height: 98rpx; padding: 13rpx 20rpx; }
+.prenatal-row .tab-row-caption { margin-top: 3rpx; font-size: 24rpx; }
+.prenatal-row .tab-chevron { font-size: 34rpx; }
+.prenatal-empty { margin-top: 24rpx; padding: 28rpx; border: 1rpx solid var(--guide-border); border-radius: 20rpx; background: var(--guide-surface); }
+.prenatal-empty .muted { margin-top: 6rpx; }
+
+.guide-heading { padding: 10rpx 2rpx 22rpx; }
+.guide-heading .page-heading { color: var(--guide-ink); font-size: 48rpx; }
+.guide-category { display: block; margin-bottom: 8rpx; font-size: 25rpx; color: var(--guide-muted); }
+.guide-summary { margin-top: 14rpx; color: var(--guide-muted); font-size: 29rpx; line-height: 1.65; }
+.guide-section { margin-top: 12rpx; padding: 24rpx 2rpx; border-top: 1rpx solid var(--guide-border); }
+.guide-section-title { color: var(--guide-ink); font-size: 31rpx; font-weight: 650; }
+.guide-body { display: block; margin-top: 10rpx; line-height: 1.8; font-size: 30rpx; }
+.guide-questions { padding: 22rpx; border: 1rpx solid #d6e4d5; border-radius: 22rpx; background: var(--guide-callout); }
+.prenatal .prenatal-action { width: auto; margin: 14rpx 0 0; padding: 0 18rpx; }
+.guide-reference { padding: 18rpx 2rpx; margin-top: 15rpx; border-bottom: 1rpx solid var(--guide-border); }
+.guide-source, .guide-footnote { font-size: 26rpx; color: var(--guide-muted); }
+.guide-source { margin: 6rpx 0; overflow-wrap: anywhere; }
+.guide-footnote { margin: 14rpx 0 4rpx; }
+.prenatal-link { width: auto; min-height: 72rpx; margin: 0; text-underline-offset: 5rpx; }

@@ -63,7 +63,7 @@ PDF、Word、Excel 和 PPT 使用微信文档预览。图片可保存到手机�
 
 ## 家庭工具与产前检查专项
 
-从底部「工具」可打开石膏记录、就诊沟通清单与 PDF。从底部「资料」进入产前检查专项。产前专项内容不依赖 Halo；编辑 `web/public/guides/prenatal.json` 后，在根目录运行 `node miniprogram/test/sync-prenatal-guides.cjs`。专题入口可从公众号链接到 `pages/prenatal/prenatal?key=amniocentesis` 或 `pages/prenatal/prenatal?key=exome`。
+从底部「工具」可打开石膏记录、就诊沟通清单与 PDF。从底部「资料」进入产前检查专项，可按目录分组浏览，或用羊穿、CMA、WES 等简称搜索。详情可复制就诊问题及资料出处。产前专项内容不依赖 Halo；编辑 `web/public/guides/prenatal.json` 后，在根目录运行 `node miniprogram/test/sync-prenatal-guides.cjs`。专题入口可从公众号链接到 `pages/prenatal/prenatal?key=amniocentesis` 或 `pages/prenatal/prenatal?key=exome`。
 
 石膏记录位于 `pages/cast/cast`。开启后使用当前微信账户识别本人。首次保存前由本人或监护人单独确认，照护事项与时间由家长手动填入。提醒需再次向微信申请一次性授权。变更复诊时间后，原有待发提醒取消。个人记录页禁止小程序搜索索引。
 

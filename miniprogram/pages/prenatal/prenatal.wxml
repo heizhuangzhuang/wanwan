@@ -1,29 +1,56 @@
-<view class="container">
-  <view wx:if="{{missing}}" class="reading-state">这篇专项暂不可访问。</view>
+<view class="container prenatal">
+  <view wx:if="{{missing}}" class="prenatal-empty">
+    <view class="title">这项检查导读暂不可访问</view>
+    <button class="btn secondary compact prenatal-action" size="mini" bindtap="openDirectory">查看检查目录</button>
+  </view>
   <block wx:elif="{{selected}}">
-    <view class="card prenatal-lead">
+    <view class="guide-heading">
+      <text wx:if="{{category}}" class="guide-category">{{category}}</text>
       <view class="page-heading">{{selected.title}}</view>
-      <view class="description">{{selected.summary}}</view>
+      <view class="guide-summary">{{selected.summary}}</view>
     </view>
-    <view wx:for="{{selected.sections}}" wx:key="heading" class="card">
-      <view class="title">{{item.heading}}</view>
-      <view class="description">{{item.body}}</view>
+
+    <view wx:for="{{selected.sections}}" wx:key="heading"
+      class="guide-section {{item.heading === '可以问医生' ? 'guide-questions' : ''}}">
+      <view class="guide-section-title">{{item.heading}}</view>
+      <text class="guide-body" selectable>{{item.body}}</text>
+      <button wx:if="{{item.heading === '可以问医生'}}" class="btn secondary compact prenatal-action"
+        size="mini" bindtap="copyQuestions">复制就诊问题</button>
     </view>
-    <view class="card">
-      <view class="title">原始出处</view>
-      <view class="description">{{selected.sourceTitle}}</view>
-      <button class="btn secondary compact" bindtap="copySource">复制来源链接</button>
+
+    <view class="guide-reference">
+      <view class="guide-section-title">资料出处</view>
+      <view class="guide-source">{{selected.sourceTitle}}</view>
+      <button class="plain-button text-link prenatal-link" size="mini" bindtap="copySource">复制来源链接</button>
     </view>
+    <view class="guide-footnote">具体检查和报告解读以产前诊断或遗传咨询门诊说明为准。</view>
+    <button id="return-to-prenatal-directory" class="plain-button text-link prenatal-link" size="mini"
+      bindtap="openDirectory">返回检查目录</button>
   </block>
   <block wx:else>
-    <view class="card prenatal-lead">
-      <view class="page-heading">产前检查专项</view>
-      <view class="description">遇到新的检查名词时，先找对应的介绍，再把想问的问题记下来。</view>
+    <view class="prenatal-search">
+      <view class="search-mark" aria-hidden="true" />
+      <input class="prenatal-input" placeholder="搜检查名或简称，如 WES" aria-label="搜索检查项目"
+        maxlength="40" confirm-type="search" value="{{query}}" bindinput="search" />
+      <button wx:if="{{query}}" class="plain-button prenatal-clear" size="mini" bindtap="clearSearch">清除</button>
     </view>
-    <navigator wx:for="{{guides}}" wx:key="key" class="feature-link" hover-class="pressed"
-      url="/pages/prenatal/prenatal?key={{item.key}}">
-      <view class="title">{{item.title}}</view><view class="description">{{item.summary}}</view>
-    </navigator>
+    <view wx:if="{{!groups.length}}" class="prenatal-empty">
+      <view class="title">没找到这个项目</view>
+      <view class="muted">试试「羊穿」「CMA」或「全外显」。</view>
+      <button class="btn secondary compact prenatal-action" size="mini" bindtap="clearSearch">查看全部项目</button>
+    </view>
+    <view wx:for="{{groups}}" wx:key="key" wx:for-item="group" class="prenatal-group">
+      <view class="prenatal-group-heading">{{group.title}}</view>
+      <view class="tab-list">
+        <navigator wx:for="{{group.items}}" wx:key="key" class="tab-row prenatal-row"
+          url="/pages/prenatal/prenatal?key={{item.key}}" hover-class="pressed">
+          <view class="tab-row-copy">
+            <view class="tab-row-title">{{item.title}}</view>
+            <view class="tab-row-caption">{{item.caption}}</view>
+          </view>
+          <text class="tab-chevron" aria-hidden="true">›</text>
+        </navigator>
+      </view>
+    </view>
   </block>
-  <view class="notice">内容供就诊沟通时查阅。具体检查和报告解读以产前诊断或遗传咨询门诊说明为准。</view>
 </view>
