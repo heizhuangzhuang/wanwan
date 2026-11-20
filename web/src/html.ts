@@ -98,6 +98,12 @@ a:hover{text-decoration:underline}
 .filter-bar a.active{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
 .site-footer{margin-top:40px;padding:20px 0 32px;border-top:1px solid var(--border);font-size:.82rem;color:var(--muted)}
 .pagination{display:flex;justify-content:space-between;align-items:center;margin:20px 0;font-size:.88rem}
+.tool-lead{margin:0 0 18px;padding:22px 24px;background:#f4e6d7;border:1px solid #ead6c2;border-radius:16px;color:#362e26}
+.tool-lead h1{margin:0;font-family:Georgia,"Songti SC",serif}
+.tool-lead p{margin-bottom:0}
+.tools-calendar{display:grid;grid-template-columns:1fr;gap:10px;max-width:24rem}
+.tools-calendar input{box-sizing:border-box;width:100%;padding:8px;border:1px solid #c9d2ca;border-radius:8px;background:#fff;color:inherit;font:inherit}
+.tools-calendar button{justify-self:start}
 `.trim()
 
 export function renderLayout(config: WebConfig, title: string | null, bodyHtml: string): string {
@@ -127,6 +133,8 @@ export function renderLayout(config: WebConfig, title: string | null, bodyHtml: 
         <a href="${config.siteBasePath}/">首页</a>
         <a href="${config.siteBasePath}/stages">按阶段</a>
         <a href="${config.siteBasePath}/topics">专题</a>
+        <a href="${config.siteBasePath}/prenatal">产前检查</a>
+        <a href="${config.siteBasePath}/tools">家庭工具</a>
         <a href="${config.siteBasePath}/resources">资料库</a>
         <a href="${config.siteBasePath}/posts">原创导读</a>
         <a href="${config.siteBasePath}/search">搜索</a>

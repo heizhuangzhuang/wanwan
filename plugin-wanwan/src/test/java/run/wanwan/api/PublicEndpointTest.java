@@ -13,6 +13,7 @@ import run.wanwan.model.Enums.EntryType;
 import run.wanwan.model.Enums.LinkStatus;
 import run.wanwan.model.Enums.PublishState;
 import run.wanwan.notice.NoticeService;
+import run.wanwan.notice.CastJournalService;
 
 class PublicEndpointTest {
 
@@ -27,7 +28,7 @@ class PublicEndpointTest {
             List.of(new Dtos.PostSummary("g1", "导读一", "摘要", Instant.parse("2026-11-17T00:00:00Z"), "公开署名")))));
         when(queryService.getPost("missing")).thenReturn(Mono.empty());
 
-        var client = WebTestClient.bindToRouterFunction(new PublicEndpoint(queryService, mock(NoticeService.class)).endpoint())
+        var client = WebTestClient.bindToRouterFunction(new PublicEndpoint(queryService, mock(NoticeService.class), mock(CastJournalService.class)).endpoint())
             .build();
 
         client.get().uri("/stages")
@@ -69,7 +70,7 @@ class PublicEndpointTest {
         when(notices.configuration()).thenReturn(new NoticeService.NoticeConfig("demo-template"));
         when(notices.subscribe(new NoticeService.NoticeRequest("demo-code", "demo-template", true)))
             .thenReturn(new NoticeService.NoticeResult(true));
-        var client = WebTestClient.bindToRouterFunction(new PublicEndpoint(mock(PublicQueryService.class), notices)
+        var client = WebTestClient.bindToRouterFunction(new PublicEndpoint(mock(PublicQueryService.class), notices, mock(CastJournalService.class))
             .endpoint()).build();
 
         client.get().uri("/notice-config").exchange()

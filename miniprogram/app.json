@@ -9,7 +9,10 @@
     "pages/about/about",
     "pages/shelf/shelf",
     "pages/preparation/preparation",
-    "pages/downloads/downloads"
+    "pages/downloads/downloads",
+    "pages/tools/tools",
+    "pages/prenatal/prenatal",
+    "pages/cast/cast"
   ],
   "window": {
     "navigationBarTitleText": "小脚丫步步指南",

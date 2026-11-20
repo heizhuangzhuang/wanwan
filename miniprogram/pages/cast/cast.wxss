@@ -1,0 +1,10 @@
+.cast-lead { background: #f4e6d7; border-color: #ead6c2; }
+.cast-lead .description { margin-bottom: 0; }
+.cast-reminder { background: #e9efe3; border-color: #dce8d7; }
+.cast-field { display: flex; justify-content: space-between; align-items: baseline; gap: 16rpx; padding: 22rpx 0; border-bottom: 1rpx solid #e8ddd0; font-size: 30rpx; }
+.cast-field picker { color: #254d3e; text-align: right; }
+.cast-note { display: block; }
+.cast-note textarea { margin-top: 16rpx; min-height: 150rpx; width: 100%; font-size: 28rpx; color: #342f29; line-height: 1.55; }
+.cast-care { white-space: pre-wrap; overflow-wrap: anywhere; }
+.cast-actions { display: flex; flex-wrap: wrap; gap: 12rpx; margin-top: 16rpx; }
+.cast-actions .btn { margin: 0; }

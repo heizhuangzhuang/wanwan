@@ -2,6 +2,7 @@ import { createServer } from 'node:http'
 import { createBackendClient } from './api.js'
 import { loadConfig } from './config.js'
 import { renderLayout } from './html.js'
+import { appointmentHash } from './tools.js'
 import { handleRequest } from './views.js'
 
 const config = loadConfig()
@@ -28,6 +29,9 @@ const server = createServer(async (req, res) => {
       ...(result.location ? { Location: result.location } : {}),
       ...(result.contentDisposition ? { 'Content-Disposition': result.contentDisposition } : {}),
       ...responseHeaders,
+      ...(result.toolsScript ? {
+        'Content-Security-Policy': `${responseHeaders['Content-Security-Policy']}; script-src '${appointmentHash}'`,
+      } : {}),
     })
     if (req.method === 'HEAD') {
       res.end()

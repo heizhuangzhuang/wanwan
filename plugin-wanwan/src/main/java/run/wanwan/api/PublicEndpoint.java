@@ -17,6 +17,7 @@ import run.halo.app.core.extension.endpoint.CustomEndpoint;
 import run.halo.app.extension.GroupVersion;
 import run.wanwan.model.Enums.MaterialType;
 import run.wanwan.model.Stage;
+import run.wanwan.notice.CastJournalService;
 import run.wanwan.notice.NoticeService;
 import run.wanwan.search.SearchIndex;
 
@@ -29,9 +30,18 @@ public class PublicEndpoint implements CustomEndpoint {
 
     private final PublicQueryService queryService;
     private final NoticeService notices;
+    private final CastJournalService journals;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
+        return publicRoutes()
+            .GET("cast-journal-config", req -> ServerResponse.ok().cacheControl(CacheControl.noStore())
+                .bodyValue(journals.configuration()))
+            .POST("cast-journal", this::accessJournal)
+            .build();
+    }
+
+    RouterFunctions.Builder publicRoutes() {
         return RouterFunctions.route()
             .GET("stages", req -> ServerResponse.ok()
                 .bodyValue(Arrays.stream(Stage.values()).map(Dtos.StageView::of).toList()))
@@ -51,8 +61,7 @@ public class PublicEndpoint implements CustomEndpoint {
             .GET("search", this::search)
             .GET("notice-config", req -> ServerResponse.ok().cacheControl(CacheControl.noStore())
                 .bodyValue(notices.configuration()))
-            .POST("notice-subscriptions", this::subscribeNotice)
-            .build();
+            .POST("notice-subscriptions", this::subscribeNotice);
     }
 
     @Override
@@ -64,6 +73,13 @@ public class PublicEndpoint implements CustomEndpoint {
         return req.bodyToMono(NoticeService.NoticeRequest.class)
             .flatMap(request -> Mono.fromCallable(() -> notices.subscribe(request))
                 .subscribeOn(Schedulers.boundedElastic()))
+            .flatMap(result -> ServerResponse.ok().cacheControl(CacheControl.noStore()).bodyValue(result))
+            .switchIfEmpty(ServerResponse.badRequest().build());
+    }
+
+    private Mono<ServerResponse> accessJournal(ServerRequest req) {
+        return req.bodyToMono(CastJournalService.Command.class)
+            .flatMap(command -> Mono.fromCallable(() -> journals.access(command)).subscribeOn(Schedulers.boundedElastic()))
             .flatMap(result -> ServerResponse.ok().cacheControl(CacheControl.noStore()).bodyValue(result))
             .switchIfEmpty(ServerResponse.badRequest().build());
     }

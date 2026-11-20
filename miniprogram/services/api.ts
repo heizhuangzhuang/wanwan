@@ -80,6 +80,7 @@ export interface PageResult<T> {
 }
 
 const API_PREFIX = '/apis/api.xiaojiaoya.run/v1alpha1'
+const LEGACY_PREFIX = '/apis/api.wanwan.run/v1alpha1'
 
 function buildQuery(params?: Record<string, string | number | undefined>): string {
   if (!params) return ''
@@ -98,7 +99,7 @@ interface NoticeConfig {
 }
 
 function request<T>(path: string, query?: Record<string, string | number | undefined>,
-  body?: Record<string, unknown>): Promise<T> {
+  body?: Record<string, unknown>, legacy = false): Promise<T> {
   const { globalData } = getApp<IAppOption>()
   if (globalData.demoMode) {
     const response = path === '/notice-config' ? { templateId: null }
@@ -107,13 +108,22 @@ function request<T>(path: string, query?: Record<string, string | number | undef
   }
 
   const address = path + buildQuery(query)
+  const prefix = legacy ? LEGACY_PREFIX : API_PREFIX
+  const canRetry = !legacy && !body && !path.startsWith('/cast-journal')
   return new Promise((resolve, reject) => {
     const options = {
       method: body ? 'POST' : 'GET',
       data: body,
       success(res: { statusCode: number; data: unknown }) {
-        if (res.statusCode < 200 || res.statusCode >= 300) {
+        const loginPage = typeof res.data === 'string'
+          && /authentication_required|<title>[^<]*(登录|login)/i.test(res.data)
+        if (canRetry && ([301, 302, 303, 307, 308, 401, 403].includes(res.statusCode)
+          || (res.statusCode === 404 && path === '/stages') || (res.statusCode === 200 && loginPage))) {
+          request<T>(path, query, undefined, true).then(resolve, reject)
+        } else if (res.statusCode < 200 || res.statusCode >= 300) {
           reject(new HttpError(res.statusCode))
+        } else if (loginPage) {
+          reject(new HttpError(302))
         } else if (res.data && typeof res.data === 'object') {
           resolve(res.data as T)
         } else {
@@ -131,11 +141,16 @@ function request<T>(path: string, query?: Record<string, string | number | undef
       wx.cloud.callContainer({
         ...options,
         config: { env: globalData.cloudEnv },
-        path: API_PREFIX + address,
+        path: prefix + address,
         header: { 'X-WX-SERVICE': globalData.cloudService },
       })
     } else {
-      wx.request({ ...options, url: globalData.apiBase + address })
+      const base = legacy ? globalData.apiBase.replace(API_PREFIX, prefix) : globalData.apiBase
+      if (legacy && base === globalData.apiBase) {
+        reject(new Error('当前后端没有可用的兼容路径'))
+        return
+      }
+      wx.request({ ...options, url: base + address })
     }
   })
 }
@@ -154,4 +169,8 @@ export const wanwanApi = {
   getPost: (name: string) => request<PostView>(`/posts/${encodeURIComponent(name)}`),
   search: (params: { keyword: string; stage?: string; type?: string; page?: number; size?: number }) =>
     request<PageResult<ResourceView>>('/search', params),
+}
+
+export function requestFamilyJournal<T>(path: '/cast-journal-config' | '/cast-journal', body?: Record<string, unknown>) {
+  return request<T>(path, undefined, body)
 }

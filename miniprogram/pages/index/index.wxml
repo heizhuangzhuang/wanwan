@@ -16,6 +16,14 @@
     <navigator url="/pages/preparation/preparation" class="quick-link" hover-class="pressed"><text>沟通清单</text><text class="muted">选出想问的问题</text></navigator>
   </view>
 
+  <view class="home-tool-links">
+    <navigator url="/pages/tools/tools" class="feature-link" hover-class="pressed">
+      <view class="title">家庭工具</view><view class="muted">石膏记录与复诊提醒</view>
+    </navigator>
+    <navigator url="/pages/prenatal/prenatal" class="feature-link" hover-class="pressed">
+      <view class="title">产前检查专项</view><view class="muted">羊水穿刺、全外显等</view>
+    </navigator>
+  </view>
   <navigator class="guide-link" url="/pages/downloads/downloads" hover-class="pressed">
     下载足内翻超声复查清单 <text class="chevron" aria-hidden="true">›</text>
   </navigator>

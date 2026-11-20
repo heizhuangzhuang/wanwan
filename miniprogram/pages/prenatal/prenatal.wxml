@@ -1,0 +1,29 @@
+<view class="container">
+  <view wx:if="{{missing}}" class="reading-state">这篇专项暂不可访问。</view>
+  <block wx:elif="{{selected}}">
+    <view class="card prenatal-lead">
+      <view class="page-heading">{{selected.title}}</view>
+      <view class="description">{{selected.summary}}</view>
+    </view>
+    <view wx:for="{{selected.sections}}" wx:key="heading" class="card">
+      <view class="title">{{item.heading}}</view>
+      <view class="description">{{item.body}}</view>
+    </view>
+    <view class="card">
+      <view class="title">原始出处</view>
+      <view class="description">{{selected.sourceTitle}}</view>
+      <button class="btn secondary compact" bindtap="copySource">复制来源链接</button>
+    </view>
+  </block>
+  <block wx:else>
+    <view class="card prenatal-lead">
+      <view class="page-heading">产前检查专项</view>
+      <view class="description">遇到新的检查名词时，先找对应的介绍，再把想问的问题记下来。</view>
+    </view>
+    <navigator wx:for="{{guides}}" wx:key="key" class="feature-link" hover-class="pressed"
+      url="/pages/prenatal/prenatal?key={{item.key}}">
+      <view class="title">{{item.title}}</view><view class="description">{{item.summary}}</view>
+    </navigator>
+  </block>
+  <view class="notice">内容供就诊沟通时查阅。具体检查和报告解读以产前诊断或遗传咨询门诊说明为准。</view>
+</view>

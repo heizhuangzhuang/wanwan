@@ -33,11 +33,15 @@ class WechatNoticeClient {
     }
 
     String openId(NoticeSettings.Config config, String code) {
+        return openId(config.appId(), config.secret(), code);
+    }
+
+    String openId(String appId, String secret, String code) {
         Map<String, Object> response;
         try {
             response = http.get()
                 .uri("/sns/jscode2session?appid={app}&secret={secret}&js_code={code}&grant_type=authorization_code",
-                    config.appId(), config.secret(), code)
+                    appId, secret, code)
                 .retrieve().body(RESPONSE);
         } catch (RestClientException e) {
             // The provider URL can include credentials. Do not attach the original exception.

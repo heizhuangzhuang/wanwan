@@ -20,6 +20,6 @@ class LegacyPublicEndpoint implements CustomEndpoint {
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
-        return current.endpoint();
+        return current.publicRoutes().build();
     }
 }

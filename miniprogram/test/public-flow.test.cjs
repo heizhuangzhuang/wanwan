@@ -343,3 +343,65 @@ test('授权远程附件兼容 Office、图片和 ZIP，HTTP 错误不保存文�
   assert.match(page.data.error, /已停用/)
   assert.equal(page.data.localPath, '')
 })
+
+test('公开列表在新接口跳转登录时使用线上兼容路径，私有接口不降级', async () => {
+  const cloud = { useCloudContainer: true, cloudEnv: 'test', cloudService: 'xiaojiaoya' }
+  const { page, requests } = openPage('index', url => {
+    if (url.pathname.includes('api.xiaojiaoya.run')) return { status: 302, data: '' }
+    return { data: url.pathname.endsWith('/stages')
+      ? [{ key: 'JUST_FOUND', label: '初次发现', order: 0 }]
+      : { items: [] } }
+  }, cloud)
+  await page.loadHome()
+  assert.equal(page.data.stages[0].label, '初次发现')
+  assert.equal(page.data.featuredError, false)
+  assert.ok(requests.includes('/apis/api.wanwan.run/v1alpha1/stages'))
+
+  const cast = openPage('cast', () => ({ status: 302, data: '' }), cloud)
+  await cast.page.refresh()
+  assert.deepEqual(cast.requests, ['/apis/api.xiaojiaoya.run/v1alpha1/cast-journal-config'])
+  assert.equal(cast.page.data.config, null)
+  assert.equal(cast.page.data.error, '')
+})
+
+test('石膏记录需要单独同意，微信拒绝提醒时不提交授权', async () => {
+  const calls = []
+  const pending = []
+  const fixture = { consented: false, entries: [], reminder: null }
+  const templateId = 'appointment-template'
+  const { page } = openPage('cast', (url, req) => {
+    if (url.pathname.endsWith('/cast-journal-config')) return {
+      data: { enabled: true, consentVersion: 'cast-v1', contact: 'privacy@example.test', templateId },
+    }
+    calls.push(req.data)
+    if (req.data.action === 'consent') fixture.consented = true
+    return { data: fixture }
+  })
+  wx.login = ({ success }) => success({ code: 'test-wechat-login' })
+  wx.requestSubscribeMessage = options => pending.push(options)
+  await page.refresh()
+  assert.equal(page.data.consented, false)
+  await page.consent()
+  assert.equal(page.data.consented, true)
+  assert.equal(calls[1].consentVersion, 'cast-v1')
+  const event = { currentTarget: { dataset: { id: 'cast-test' } } }
+  const declined = page.schedule(event)
+  pending.shift().success({ [templateId]: 'reject' })
+  await declined
+  assert.equal(calls.length, 2)
+  const accepted = page.schedule(event)
+  pending.shift().success({ [templateId]: 'accept' })
+  await accepted
+  assert.deepEqual(calls[2], { action: 'schedule', entryId: 'cast-test', templateId, code: 'test-wechat-login' })
+})
+
+test('产前专项在没有 API 的情况下可用，与 Web 专项内容一致', () => {
+  const { page, requests, getClipboard } = openPage('prenatal', () => { throw new Error('unexpected request') })
+  const json = JSON.parse(readFileSync(resolve(project, '../web/public/guides/prenatal.json'), 'utf8'))
+  assert.deepEqual(page.data.guides, json)
+  page.onLoad({ key: 'exome' })
+  assert.match(page.data.selected.title, /全外显子/)
+  page.copySource()
+  assert.equal(getClipboard(), page.data.selected.sourceUrl)
+  assert.equal(requests.length, 0)
+})

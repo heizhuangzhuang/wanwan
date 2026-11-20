@@ -101,6 +101,53 @@ describe('web security & SSR', () => {
     }
   })
 
+  it('uses the previous public API if the canonical route redirects to Halo login', async () => {
+    const routes: string[] = []
+    const server = createServer((req, res) => {
+      const address = req.url || ''
+      routes.push(address)
+      if (address.includes('api.wanwan.run')) {
+        res.writeHead(200, { 'Content-Type': 'application/json' }).end('{"items":[]}')
+      } else if (address.endsWith('/resources/withdrawn')) {
+        res.writeHead(404).end()
+      } else {
+        res.writeHead(302, { Location: '/login?authentication_required' }).end()
+      }
+    })
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    const addr = server.address()
+    assert.ok(addr && typeof addr === 'object')
+    try {
+      const client = createBackendClient(`http://127.0.0.1:${addr.port}/apis/api.xiaojiaoya.run/v1alpha1`)
+      assert.deepEqual((await client.search({ keyword: '足内翻' })).items, [])
+      assert.equal(await client.getResource('withdrawn'), null)
+      assert.deepEqual(routes.map(route => route.split('?')[0]), [
+        '/apis/api.xiaojiaoya.run/v1alpha1/search', '/apis/api.wanwan.run/v1alpha1/search',
+        '/apis/api.xiaojiaoya.run/v1alpha1/resources/withdrawn',
+      ])
+      assert.equal(new URL(routes[1], 'https://example.test').searchParams.get('keyword'), '足内翻')
+    } finally {
+      server.close()
+    }
+  })
+
+  it('serves tools, their local calendar script, and cited prenatal guides without the backend', async () => {
+    const offline = createBackendClient('')
+    const namespaced = loadConfig({ SITE_BASE_PATH: '/xiaojiaoya' })
+    const tools = await handleRequest('/xiaojiaoya/tools', offline, namespaced)
+    assert.equal(tools.status, 200)
+    assert.equal(tools.toolsScript, true)
+    assert.match(String(tools.body), /家庭工具/)
+    assert.match(String(tools.body), /\/xiaojiaoya\/tools\/appointment.js/)
+    const script = await handleRequest('/xiaojiaoya/tools/appointment.js', offline, namespaced)
+    assert.match(script.contentType, /javascript/)
+    const guide = await handleRequest('/xiaojiaoya/prenatal/exome', offline, namespaced)
+    assert.equal(guide.status, 200)
+    assert.match(String(guide.body), /全外显子测序/)
+    assert.match(String(guide.body), /https:\/\/www.qingdao.gov.cn\//)
+    assert.equal((await handleRequest('/xiaojiaoya/prenatal/unknown', offline, namespaced)).status, 404)
+  })
+
   it('rejects malformed or multi-segment detail identifiers before calling the backend', async () => {
     const client = mockClient()
     client.getResource = async () => { throw new Error('unexpected backend request') }

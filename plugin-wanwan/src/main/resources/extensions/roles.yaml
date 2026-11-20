@@ -17,6 +17,12 @@ rules:
   - apiGroups: [ "api.xiaojiaoya.run", "api.wanwan.run" ]
     resources: [ "notice-subscriptions" ]
     verbs: [ "create" ]
+  - apiGroups: [ "api.xiaojiaoya.run" ]
+    resources: [ "cast-journal-config" ]
+    verbs: [ "get", "list" ]
+  - apiGroups: [ "api.xiaojiaoya.run" ]
+    resources: [ "cast-journal" ]
+    verbs: [ "create" ]
 ---
 apiVersion: v1alpha1
 kind: Role

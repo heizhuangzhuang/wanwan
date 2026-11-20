@@ -77,4 +77,6 @@ declare const wx: {
   setClipboardData(options: { data: string; success?: () => void; fail?: () => void }): void
   openOfficialAccountArticle?(options: { url: string; fail?: () => void }): void
   showToast(options: { title: string; icon?: string }): void
+  showModal(options: { title: string; content: string; confirmText?: string;
+    success: (result: { confirm: boolean }) => void }): void
 }

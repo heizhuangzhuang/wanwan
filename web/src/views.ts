@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import type { BackendClient, PageResult, ResourceView } from './api.js'
 import type { WebConfig } from './config.js'
+import { appointmentScript, prenatalPaths, renderPrenatal, renderTools } from './tools.js'
 import {
   accessLabel,
   escapeHtml,
@@ -21,6 +22,7 @@ export interface RouteResponse {
   cacheControl?: string
   location?: string
   contentDisposition?: string
+  toolsScript?: boolean
 }
 
 const TYPES = [
@@ -169,6 +171,19 @@ export async function handleRequest(
     return { status: 200, contentType: 'text/plain; charset=utf-8', body: 'ok' }
   }
 
+  if (path === '/tools') return { ...htmlResponse(200, renderTools(config)), toolsScript: true }
+
+  if (path === '/tools/appointment.js') {
+    return { status: 200, contentType: 'text/javascript; charset=utf-8', body: appointmentScript }
+  }
+
+  if (path === '/prenatal' || path.startsWith('/prenatal/')) {
+    const key = path === '/prenatal' ? undefined : routeKey(path, '/prenatal/')
+    if (key === '') return notFoundResponse(config)
+    const html = renderPrenatal(config, key)
+    return html ? htmlResponse(200, html) : notFoundResponse(config)
+  }
+
   if (path === '/downloads/clubfoot-ultrasound-checklist.pdf') {
     return {
       status: 200, contentType: 'application/pdf', body: CHECKLIST_PDF,
@@ -209,6 +224,8 @@ export async function handleRequest(
       `${base}/topics`,
       `${base}/posts`,
       `${base}/about`,
+      `${base}/tools`,
+      ...prenatalPaths.map(path => base + path),
       ...stages.map((s) => `${base}/stages/${encodeURIComponent(s.key)}`),
       ...resources.items.map((r) => `${base}/resources/${encodeURIComponent(r.name)}`),
       ...topics.items.map((t) => `${base}/topics/${encodeURIComponent(t.name)}`),
@@ -501,7 +518,8 @@ ${resultHtml}`,
 </div>
 <div class="card">
   <h2>隐私与维护说明</h2>
-  <p>访客无需注册即可浏览与搜索。本站不收集病历、超声报告、遗传资料或儿童治疗记录，也不默认留存完整搜索词。服务器保留最小必要访问日志以保障运行安全。</p>
+  <p>公开浏览与搜索无需注册。Web 的日历工具在本机生成文件。小程序的石膏记录开通后，由本人或孩子的监护人单独授权，再加密保存手填记录。微信提醒另行授权，可在小程序取消提醒、删除记录或撤回同意。病历、检查报告和遗传资料没有上传入口。</p>
+  <p>服务器保留保障运行所需的访问日志，默认省去完整搜索词。</p>
   <p>${escapeHtml(config.maintenanceStatus)}</p>
 </div>`,
       ),

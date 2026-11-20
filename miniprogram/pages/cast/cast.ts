@@ -1,0 +1,131 @@
+import { HttpError } from '../../services/api'
+import { castCommand, castConfig, chinaDateTime, type CastConfig, type CastEntry, type JournalView } from '../../services/cast-journal'
+
+const LABELS = {
+  PENDING: '等待发送', SENT: '微信已受理', FAILED: '发送失败',
+  UNCONFIRMED: '发送结果未确认', MISSED: '已错过发送时段',
+}
+
+const today = () => chinaDateTime().slice(0, 10)
+
+function blank() {
+  return { id: '', castDate: today(), care: '', visitDate: '', visitTime: '' }
+}
+
+Page({
+  data: {
+    config: null as CastConfig | null, consented: false, entries: [] as (CastEntry & { visitText: string; upcoming: boolean })[],
+    reminder: null as (NonNullable<JournalView['reminder']> & { sendText: string; label: string }) | null,
+    today: today(), form: blank(), editing: false, busy: false, error: '', status: '',
+  },
+  onShow() { return this.refresh() },
+  async refresh() {
+    if (this.data.busy) return
+    this.setData({ busy: true, error: '' })
+    try {
+      const config = await castConfig().catch(error => {
+        if (error instanceof HttpError && [302, 404].includes(error.statusCode)) return null
+        throw error
+      })
+      this.setData({ config })
+      if (config?.enabled) this.showJournal(await castCommand('read'))
+    } catch {
+      this.setData({ error: '暂时无法连接石膏记录服务，请稍后重试。' })
+    } finally {
+      this.setData({ busy: false })
+    }
+  },
+  showJournal(journal: JournalView) {
+    const { reminder } = journal
+    const now = Date.now()
+    this.setData({
+      consented: journal.consented,
+      entries: journal.entries.map(item => ({ ...item, visitText: item.visitAt ? chinaDateTime(item.visitAt).replace('T', ' ') : '',
+        upcoming: Boolean(item.visitAt && Date.parse(item.visitAt) > now + 120000) })),
+      reminder: reminder ? { ...reminder, sendText: chinaDateTime(reminder.sendAt).replace('T', ' '), label: LABELS[reminder.state] } : null,
+    })
+  },
+  async apply(action: string, values: Record<string, unknown>, message: string) {
+    if (this.data.busy) return false
+    this.setData({ busy: true, status: '', error: '' })
+    try {
+      this.showJournal(await castCommand(action, values))
+      this.setData({ status: message })
+      return true
+    } catch (e) {
+      const status = e instanceof HttpError ? e.statusCode : 0
+      const error = status === 422 && action === 'schedule' ? '当前只能为未来两分钟至 90 天内的下次治疗设置提醒。'
+        : status === 422 && action === 'save' ? '最多可保存 100 条记录，请先清理不再需要的记录。'
+        : '操作未完成。请核对日期、授权和网络后重试。'
+      this.setData({ status: error })
+      return false
+    } finally {
+      this.setData({ busy: false })
+    }
+  },
+  consent() {
+    const config = this.data.config
+    if (config?.enabled) return this.apply('consent', { consentVersion: config.consentVersion }, '已同意云端保存。')
+  },
+  add() {
+    this.setData({ editing: true, status: '', form: { ...blank(), id: 'cast-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2) } })
+  },
+  edit(e: WechatMiniprogram.TouchEvent) {
+    const entry = this.data.entries.find(item => item.id === e.currentTarget.dataset.id)
+    if (!entry) return
+    const visit = entry.visitAt ? chinaDateTime(entry.visitAt) : ''
+    this.setData({ editing: true, status: '', form: { id: entry.id, castDate: entry.castDate,
+      care: entry.care, visitDate: visit.slice(0, 10), visitTime: visit.slice(11) } })
+  },
+  change(e: WechatMiniprogram.TouchEvent & WechatMiniprogram.Input) {
+    const field = e.currentTarget.dataset.field
+    if (field === 'castDate' || field === 'care' || field === 'visitDate' || field === 'visitTime') {
+      this.setData({ form: { ...this.data.form, [field]: e.detail.value } })
+    }
+  },
+  clearVisit() { this.setData({ form: { ...this.data.form, visitDate: '', visitTime: '' } }) },
+  closeForm() { this.setData({ form: blank(), editing: false }) },
+  async save() {
+    const { id, castDate, care, visitDate, visitTime } = this.data.form
+    if (!castDate || Boolean(visitDate) !== Boolean(visitTime)) {
+      wx.showToast({ title: '请填写石膏日期及完整的复诊时间', icon: 'none' })
+      return
+    }
+    const visit = visitDate ? new Date(visitDate + 'T' + visitTime + ':00+08:00') : null
+    if (visit && !Number.isFinite(visit.getTime())) {
+      wx.showToast({ title: '请选择有效的复诊时间', icon: 'none' })
+      return
+    }
+    const entry = { id, castDate, care: care.trim(), visitAt: visit?.toISOString() ?? null }
+    if (await this.apply('save', { entry }, '记录已保存。修改复诊时间后可重新授权提醒。')) this.closeForm()
+  },
+  remove(e: WechatMiniprogram.TouchEvent) {
+    const entryId = e.currentTarget.dataset.id
+    wx.showModal({ title: '删除这一条记录？', content: '和这条记录关联的待发提醒也会取消。', confirmText: '删除',
+      success: ({ confirm }) => { if (confirm) void this.apply('delete', { entryId }, '记录已删除。') } })
+  },
+  clearAll() {
+    wx.showModal({ title: '撤回云端保存授权？', content: '当前云端记录和待发提醒将清除。此操作无法撤销。', confirmText: '清除',
+      success: ({ confirm }) => {
+        if (confirm) void this.apply('clear', {}, '已撤回并清除云端记录。').then(done => { if (done) this.closeForm() })
+      } })
+  },
+  async schedule(e: WechatMiniprogram.TouchEvent) {
+    const entryId = e.currentTarget.dataset.id
+    const templateId = this.data.config?.templateId
+    if (this.data.busy || !templateId || !wx.requestSubscribeMessage) return
+    this.setData({ busy: true, status: '' })
+    const accepted = await new Promise<boolean>(resolve => wx.requestSubscribeMessage?.({
+      tmplIds: [templateId],
+      success: result => resolve(['accept', 'acceptWithAudio'].includes(result[templateId])),
+      fail: () => resolve(false),
+    }))
+    this.setData({ busy: false })
+    if (!accepted) {
+      this.setData({ status: '本次未授权，记录仍已保存。' })
+      return
+    }
+    return this.apply('schedule', { entryId, templateId }, '复诊提醒已安排。')
+  },
+  cancelReminder() { return this.apply('cancel', {}, '已取消待发提醒。') },
+})

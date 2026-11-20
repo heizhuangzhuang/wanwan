@@ -96,13 +96,15 @@ export interface BackendClient {
 }
 
 export function createBackendClient(apiBase: string, timeoutMs = 5000): BackendClient {
-  function backendUrl(path: string): URL {
+  const legacyBase = apiBase.replace(/\/api\.xiaojiaoya\.run\/v1alpha1$/, '/api.wanwan.run/v1alpha1')
+
+  function backendUrl(path: string, base: string): URL {
     if (!apiBase) throw new Error('BACKEND_API_BASE is not configured')
-    return new URL(`${apiBase}${path}`)
+    return new URL(`${base}${path}`)
   }
 
-  async function getJson<T>(path: string, query?: Record<string, string | number | undefined>): Promise<T> {
-    const url = backendUrl(path)
+  async function getJson<T>(path: string, query?: Record<string, string | number | undefined>, base = apiBase): Promise<T> {
+    const url = backendUrl(path, base)
     if (query) {
       for (const [k, v] of Object.entries(query)) {
         if (v !== undefined && v !== '') url.searchParams.set(k, String(v))
@@ -114,6 +116,11 @@ export function createBackendClient(apiBase: string, timeoutMs = 5000): BackendC
       redirect: 'manual',
       signal: AbortSignal.timeout(timeoutMs),
     })
+    if (base !== legacyBase && ([301, 302, 303, 307, 308, 401, 403].includes(res.status)
+      || (res.status === 404 && path === '/stages'))) {
+      await res.body?.cancel()
+      return getJson<T>(path, query, legacyBase)
+    }
     if (!res.ok) {
       throw new HttpStatusError(res.status, `Backend HTTP ${res.status}`)
     }

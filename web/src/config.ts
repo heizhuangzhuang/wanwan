@@ -9,6 +9,7 @@ export interface WebConfig {
   icpNumber: string
   maintenanceStatus: string
   aboutOperator: string
+  castMiniprogramUrl?: string
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): WebConfig {
@@ -19,7 +20,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): WebConfig {
   if (siteBasePath && !/^(?:\/[A-Za-z0-9_-]+)+$/.test(siteBasePath)) {
     throw new Error('SITE_BASE_PATH must be an absolute path, such as /xiaojiaoya')
   }
+  const castLink = (env.CAST_MINIPROGRAM_URL || '').trim()
   return {
+    castMiniprogramUrl: /^https:\/\/wxaurl\.cn\/[a-z0-9_-]+$/i.test(castLink) ? castLink : undefined,
     port: Number(env.PORT) || 3000,
     host: env.HOST || undefined,
     backendApiBase: backend,

@@ -11,6 +11,7 @@ import run.wanwan.api.PublicQueryService;
 import run.wanwan.model.ResourceCard;
 import run.wanwan.model.Topic;
 import run.wanwan.model.Visibility;
+import run.wanwan.notice.CastJournal;
 import run.wanwan.notice.NoticePublication;
 import run.wanwan.notice.NoticeService;
 import run.wanwan.notice.NoticeSubscription;
@@ -49,6 +50,7 @@ public class WanwanPlugin extends BasePlugin {
                     : card.getSpec().getPriority()));
         });
         schemeManager.register(NoticePublication.class);
+        schemeManager.register(CastJournal.class);
         schemeManager.register(MiniProgramCheck.class);
         schemeManager.register(NoticeSubscription.class, specs ->
             specs.add(IndexSpecs.<NoticeSubscription, String>single(NoticeService.PENDING_SCOPE, String.class)
@@ -67,6 +69,7 @@ public class WanwanPlugin extends BasePlugin {
         schemeManager.unregister(schemeManager.get(ResourceCard.class));
         schemeManager.unregister(schemeManager.get(Topic.class));
         schemeManager.unregister(schemeManager.get(NoticePublication.class));
+        schemeManager.unregister(schemeManager.get(CastJournal.class));
         schemeManager.unregister(schemeManager.get(NoticeSubscription.class));
         schemeManager.unregister(schemeManager.get(MiniProgramCheck.class));
     }

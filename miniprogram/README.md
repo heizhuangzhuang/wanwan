@@ -51,3 +51,11 @@ node --test miniprogram/test/public-flow.test.cjs
 已公开且链接正常的资料卡可配置获准公开下载的 HTTPS 附件。运营者在 Halo 资料卡填写地址、带后缀的文件名，并确认公开下载许可。微信公众平台须放行附件主机的 `downloadFile` 合法域名。附件先下载，再保存到小程序用户目录。
 
 PDF、Word、Excel 和 PPT 使用微信文档预览。图片可保存到手机相册。支持的文件可转发到微信会话，再从手机提供的选项导出。ZIP 使用下载和转发流程。真机验证时覆盖 iOS、Android、清单离线、文件转发、相册权限、远程下载域名和附件撤回。
+
+## 家庭工具与产前检查专项
+
+首页有「家庭工具」和「产前检查专项」。工具页集中显示石膏记录、就诊沟通清单与 PDF。产前专项内容不依赖 Halo；编辑 `web/public/guides/prenatal.json` 后，在根目录运行 `node miniprogram/test/sync-prenatal-guides.cjs`。专题入口可从公众号链接到 `pages/prenatal/prenatal?key=amniocentesis` 或 `pages/prenatal/prenatal?key=exome`。
+
+石膏记录位于 `pages/cast/cast`。开启后使用当前微信账户识别本人。首次保存前由本人或监护人单独确认，照护事项与时间由家长手动填入。提醒需再次向微信申请一次性授权。变更复诊时间后，原有待发提醒取消。个人记录页禁止小程序搜索索引。
+
+公开读取先走新 API。在云托管仍返回 Halo 登录页时，客户端兼容旧公开路径。石膏记录只使用新 API，配置缺失时显示暂未开放。云配置、真机步骤见[微信云托管部署说明](../deploy/cloudrun/README.md#石膏记录与复诊提醒)。

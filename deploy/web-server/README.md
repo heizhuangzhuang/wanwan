@@ -26,3 +26,5 @@ Web 服务器仅运行轻量 Node 22.12+ SSR 前端（`web/`），无数据库�
 ## 公共入口切换
 
 站点使用 `SITE_BASE_PATH=/xiaojiaoya`。同一 Nginx 站点将 `/xiaojiaoya` 和旧 `/wanwan` 请求原样转发至现有 Node.js 端口，由应用对旧链接返回 308，保留子路径和查询参数。发布顺序为先更新支持两个 API 前缀的 Halo 插件，再切 Web 的 `BACKEND_API_BASE`，最后发布小程序。回退 Web 时还原原有 Nginx 配置、环境文件和可用构建版本。
+
+家庭工具位于 `/xiaojiaoya/tools`，产前专项位于 `/xiaojiaoya/prenatal`。这两个入口独立于 Halo API 的可用性。日历文件在浏览器中生成。可使用 `CAST_MINIPROGRAM_URL` 配置微信官方生成、指向 `pages/cast/cast` 的 URL Link。部署时一并同步 `web/public/` 下的 PDF、专题数据和日历脚本。

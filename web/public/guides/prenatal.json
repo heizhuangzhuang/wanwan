@@ -1,0 +1,68 @@
+[
+  {
+    "key": "ultrasound",
+    "title": "胎儿结构超声",
+    "summary": "整理超声报告里的所见、复查安排，以及可带到专科门诊的问题。",
+    "sections": [
+      {"heading":"从哪里开始","body":"结构超声用于观察胎儿的解剖结构。拿到报告后，可以记录检查日期、报告用词和医院安排，复诊凭原报告与医生核对。"},
+      {"heading":"可以问医生","body":"报告描述的是哪一侧、哪一部分？此次观察有哪些局限？是否需要复查或到胎儿医学门诊，预约时需要带哪些资料？"}
+    ],
+    "sourceTitle": "国家卫生健康委｜产前筛查与产前诊断机构基本标准",
+    "sourceUrl": "https://www.fujian.gov.cn/zcwjk/swjw/202307/t20230724_6212237.htm"
+  },
+  {
+    "key": "screening",
+    "title": "血清筛查与无创 DNA",
+    "summary": "了解筛查的范围，整理筛查结果出来后要向门诊确认的事项。",
+    "sections": [
+      {"heading":"这类检查在回答什么","body":"血清学筛查与孕妇外周血胎儿游离 DNA 筛查用于估计特定异常的风险。报告的意义和后续选择由产前诊断门诊结合孕周、超声所见及既往检查说明。"},
+      {"heading":"可以问医生","body":"这次筛查覆盖哪些情况？报告结果还有哪些局限？超声所见如何影响后续沟通和选择？"}
+    ],
+    "sourceTitle": "武汉市卫生健康委员会｜孕前和孕期保健指南",
+    "sourceUrl": "https://wjw.wuhan.gov.cn/ztzl_28/fyjkkp/ycbj/202005/t20200518_1323121.shtml"
+  },
+  {
+    "key": "amniocentesis",
+    "title": "羊水穿刺",
+    "summary": "了解取样与实验室检测的关系，准备穿刺前后及取报告的问题。",
+    "sections": [
+      {"heading":"取样和检测","body":"羊膜腔穿刺是获取羊水样本的介入性操作。实际检测项目、风险、准备工作和复诊安排由具备资质的医疗机构说明。"},
+      {"heading":"可以问医生","body":"这次取样准备做哪几项检测？操作前需要带什么资料？医院交代的注意事项、联系渠道和取报告时间分别是什么？"}
+    ],
+    "sourceTitle": "青岛市妇女儿童医院｜胎儿医学中心就诊攻略",
+    "sourceUrl": "https://www.qingdao.gov.cn/ywdt/zwzl/ggqsydwgk/wsjk_208049/yy/qdsfnetyy/zlfw/jzxz/202308/t20230831_7469005.shtml"
+  },
+  {
+    "key": "chromosome",
+    "title": "染色体核型与微阵列",
+    "summary": "辨认检验单上的核型、基因芯片和拷贝数变异等词，准备和遗传门诊核对。",
+    "sections": [
+      {"heading":"检查关注什么","body":"核型分析观察染色体的数目与可见结构。染色体微阵列（CMA）可以检测部分染色体片段的拷贝数变化。不同实验室的检测范围和报告说明可能不同。"},
+      {"heading":"可以问医生","body":"本次实际安排了哪些方法？报告能覆盖哪些变异？是否有需要与超声、父母样本或其他检查一起解释的结果？"}
+    ],
+    "sourceTitle": "武汉市卫生健康委员会｜孕前和孕期保健指南",
+    "sourceUrl": "https://wjw.wuhan.gov.cn/ztzl_28/fyjkkp/ycbj/202005/t20200518_1323121.shtml"
+  },
+  {
+    "key": "exome",
+    "title": "全外显子测序（WES）",
+    "summary": "了解全外显子关注的基因区域，以及何时询问检测范围、父母样本和结果复核。",
+    "sections": [
+      {"heading":"检查关注什么","body":"全外显子测序主要分析基因中编码蛋白质的区域。遗传门诊会把报告和胎儿超声、家族史及此前检测一起评估。"},
+      {"heading":"可以问医生","body":"此次检测希望回答什么问题？是否需要父母样本？不确定结果、补充验证或今后重新解读由哪个门诊负责？"}
+    ],
+    "sourceTitle": "青岛市妇女儿童医院｜基因检测中心介绍",
+    "sourceUrl": "https://www.qingdao.gov.cn/ywdt/zwzl/ggqsydwgk/wsjk_208049/yy/qdsfnetyy/zlfw/zyjs/202309/t20230902_7456581.shtml"
+  },
+  {
+    "key": "genetic-counseling",
+    "title": "遗传咨询与拿到报告后",
+    "summary": "把影像、检测日期和最想问的问题整理好，带到产前诊断或遗传咨询门诊。",
+    "sections": [
+      {"heading":"就诊准备","body":"可以携带医院出具的原始超声与检验报告、既往相关资料，以及自己记录的问题。具体材料以预约门诊要求为准。"},
+      {"heading":"可以问医生","body":"哪些结果有明确含义，哪些仍需随访？何时复诊？后续需要由哪些专科共同评估，联系方式是什么？"}
+    ],
+    "sourceTitle": "国家卫生健康委｜产前诊断技术管理办法",
+    "sourceUrl": "https://www.nhc.gov.cn/wjw/c100221/202201/681c3d285fe149abb8fcf2779f6aef21/files/%E4%BA%A7%E5%89%8D%E8%AF%8A%E6%96%AD%E6%8A%80%E6%9C%AF%E7%AE%A1%E7%90%86%E5%8A%9E%E6%B3%95.pdf"
+  }
+]

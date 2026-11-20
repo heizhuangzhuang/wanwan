@@ -1,0 +1,68 @@
+<view class="container cast-page">
+  <view class="card cast-lead">
+    <view class="page-heading">石膏记录</view>
+    <view class="description">记下每一次，下一次就诊前有迹可查。</view>
+  </view>
+  <view wx:if="{{error}}" class="reading-state">
+    <view>{{error}}</view><button class="btn secondary compact" bindtap="refresh" disabled="{{busy}}">重试</button>
+  </view>
+  <view wx:elif="{{!config && busy}}" class="reading-state muted">正在读取工具状态…</view>
+  <view wx:elif="{{!config || !config.enabled}}" class="reading-state">
+    <view class="title">云端记录暂未开放</view>
+    <view class="description">公用沟通清单仍可使用。</view>
+    <navigator class="text-link" url="/pages/preparation/preparation">打开沟通清单</navigator>
+  </view>
+  <view wx:elif="{{!consented && !busy}}" class="card">
+    <view class="title">由本人或孩子的监护人授权</view>
+    <view class="description">日期、医院交代事项及下次治疗时间会加密保存在云端。同一微信账户换机可恢复；只填写必要信息。</view>
+    <view class="description">微信提醒需另行授权。可在本页撤回同意、清空云端记录与待发提醒。隐私联系邮箱：{{config.contact}}</view>
+    <navigator class="text-link" url="/pages/about/about">查看隐私说明</navigator>
+    <button class="btn" bindtap="consent" loading="{{busy}}" disabled="{{busy}}">确认监护身份并同意保存</button>
+  </view>
+  <block wx:elif="{{consented}}">
+    <view wx:if="{{reminder}}" class="card cast-reminder">
+      <view class="title">复诊提醒 · {{reminder.label}}</view>
+      <view wx:if="{{reminder.state === 'PENDING'}}" class="description">预计发送 {{reminder.sendText}}（北京时间）。微信只显示通用提醒与时间。</view>
+      <button wx:if="{{reminder.state === 'PENDING'}}" class="btn secondary compact" bindtap="cancelReminder" disabled="{{busy}}">取消提醒</button>
+    </view>
+    <view wx:if="{{editing}}" class="card cast-form">
+      <view class="title">编辑石膏记录</view>
+      <view class="cast-field">
+        <text>打石膏日期</text>
+        <picker mode="date" value="{{form.castDate}}" end="{{today}}" data-field="castDate" bindchange="change"><view>{{form.castDate}}</view></picker>
+      </view>
+      <view class="cast-field cast-note">
+        <text>医院交代的注意事项</text>
+        <textarea value="{{form.care}}" data-field="care" bindinput="change" maxlength="300" placeholder="按医院交代手动填写。请勿填写姓名、证件号或报告内容。" />
+      </view>
+      <view class="cast-field">
+        <text>下次治疗日期</text>
+        <picker mode="date" value="{{form.visitDate || today}}" data-field="visitDate" bindchange="change"><view>{{form.visitDate || '选日期'}}</view></picker>
+      </view>
+      <view class="cast-field">
+        <text>时间（北京时间）</text>
+        <picker mode="time" value="{{form.visitTime || '09:00'}}" data-field="visitTime" bindchange="change"><view>{{form.visitTime || '选时间'}}</view></picker>
+      </view>
+      <button wx:if="{{form.visitDate || form.visitTime}}" class="plain-button" bindtap="clearVisit" disabled="{{busy}}">清除下次时间</button>
+      <view class="cast-actions">
+        <button class="btn compact" bindtap="save" loading="{{busy}}" disabled="{{busy}}">保存</button>
+        <button class="btn secondary compact" bindtap="closeForm" disabled="{{busy}}">取消编辑</button>
+      </view>
+    </view>
+    <button wx:else class="btn" bindtap="add" disabled="{{busy}}">添加一次石膏记录</button>
+    <view wx:if="{{!entries.length && !editing}}" class="reading-state muted">还没有石膏记录。</view>
+    <view wx:for="{{entries}}" wx:key="id" class="card">
+      <view class="title">{{item.castDate}} 打石膏</view>
+      <view wx:if="{{item.care}}" class="description cast-care">{{item.care}}</view>
+      <view wx:if="{{item.visitText}}" class="description">下次治疗 {{item.visitText}}（北京时间）</view>
+      <view class="cast-actions">
+        <button class="btn secondary compact" data-id="{{item.id}}" bindtap="edit" disabled="{{busy}}">编辑</button>
+        <button class="btn secondary compact" data-id="{{item.id}}" bindtap="remove" disabled="{{busy}}">删除</button>
+        <button wx:if="{{item.upcoming && config.templateId && (reminder.entryId !== item.id || reminder.state !== 'PENDING')}}" class="btn compact" data-id="{{item.id}}" bindtap="schedule" disabled="{{busy}}">设置微信提醒</button>
+      </view>
+      <view wx:if="{{item.upcoming && !config.templateId}}" class="muted description">微信提醒暂未开通。</view>
+    </view>
+    <button class="plain-button" bindtap="clearAll" disabled="{{busy}}">撤回同意并清空云端记录</button>
+  </block>
+  <view wx:if="{{status}}" class="notice" aria-live="polite">{{status}}</view>
+</view>
