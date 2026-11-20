@@ -51,7 +51,7 @@ page {
 .question-row + .question-row { border-top: 1px solid #ece2d7; }
 .preparation-copy { margin-top: 24rpx; }
 
-.tab-page { padding-bottom: 128rpx; padding-bottom: calc(128rpx + env(safe-area-inset-bottom)); }
+.tab-page { padding-bottom: 142rpx; padding-bottom: calc(142rpx + env(safe-area-inset-bottom)); }
 .tab-list { background: #fffdf9; border: 1rpx solid #e7ddd2; border-radius: 24rpx; overflow: hidden; }
 .tab-row, .tab-feature { display: flex; box-sizing: border-box; align-items: center; gap: 18rpx; color: #2b302a; }
 .tab-row { width: 100%; min-height: 92rpx; padding: 20rpx 24rpx; margin: 0; text-align: left; background: transparent; border-radius: 0; }
@@ -61,6 +61,24 @@ page {
 .tab-row-title { color: #27382f; font-size: 29rpx; font-weight: 600; line-height: 1.4; }
 .tab-row-caption { margin-top: 5rpx; color: #555c51; font-size: 25rpx; line-height: 1.5; }
 .tab-chevron { flex: none; color: #50715e; font-size: 42rpx; line-height: 1; }
+.icon-tile {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 56rpx;
+  height: 56rpx;
+  border-radius: 16rpx;
+  background: #e0ede4;
+}
+.icon-tile image { display: block; width: 32rpx; height: 32rpx; }
+.icon-peach { background: #f4e3d2; }
+.icon-rose { background: #f3e0de; }
+.icon-sage { background: #e0ede4; }
+.icon-blue { background: #dfebf0; }
+.icon-gold { background: #f3ebd3; }
+.tab-feature > .icon-tile { width: 74rpx; height: 74rpx; background: #fffdf9; border-radius: 20rpx; }
+.tab-feature > .icon-tile image { width: 42rpx; height: 42rpx; }
 .tab-feature { padding: 28rpx 24rpx; border: 1rpx solid #e7ddd2; border-radius: 28rpx; }
 .tab-feature-title { color: #27382f; font-family: "Songti SC", "Noto Serif CJK SC", serif; font-size: 37rpx; font-weight: 700; line-height: 1.3; }
 .tab-feature-description { margin-top: 9rpx; color: #435347; font-size: 26rpx; }

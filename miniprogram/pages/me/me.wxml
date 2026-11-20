@@ -5,14 +5,17 @@
   </view>
   <view class="tab-list">
     <navigator class="tab-row" url="/pages/shelf/shelf?kind=saved" hover-class="pressed">
+      <view class="icon-tile icon-sage" aria-hidden="true"><image src="/assets/icons/bookmark.png" mode="aspectFit" /></view>
       <view class="tab-row-copy"><view class="tab-row-title">收藏的资料</view></view>
       <text class="me-count">{{saved}} 条</text><text class="tab-chevron" aria-hidden="true">›</text>
     </navigator>
     <navigator class="tab-row" url="/pages/shelf/shelf?kind=recent" hover-class="pressed">
+      <view class="icon-tile icon-blue" aria-hidden="true"><image src="/assets/icons/history.png" mode="aspectFit" /></view>
       <view class="tab-row-copy"><view class="tab-row-title">最近阅读</view></view>
       <text class="me-count">{{recent}} 条</text><text class="tab-chevron" aria-hidden="true">›</text>
     </navigator>
     <navigator class="tab-row" url="/pages/saved-files/saved-files" hover-class="pressed">
+      <view class="icon-tile icon-gold" aria-hidden="true"><image src="/assets/icons/file-down.png" mode="aspectFit" /></view>
       <view class="tab-row-copy"><view class="tab-row-title">已下载</view><view class="tab-row-caption">查看或移除小程序内保存的文件</view></view>
       <text class="tab-chevron" aria-hidden="true">›</text>
     </navigator>
@@ -21,10 +24,12 @@
   <view class="section-heading">微信提醒</view>
   <view class="tab-list">
     <navigator class="tab-row" url="/pages/cast/cast" hover-class="pressed">
+      <view class="icon-tile icon-sage" aria-hidden="true"><image src="/assets/icons/calendar-clock.png" mode="aspectFit" /></view>
       <view class="tab-row-copy"><view class="tab-row-title">复诊提醒</view><view class="tab-row-caption">查看和管理石膏记录里的提醒</view></view>
       <text class="tab-chevron" aria-hidden="true">›</text>
     </navigator>
     <view class="tab-row me-notices">
+      <view class="icon-tile icon-gold" aria-hidden="true"><image src="/assets/icons/bell.png" mode="aspectFit" /></view>
       <view class="tab-row-copy">
         <view class="tab-row-title">新资料提醒</view>
         <view wx:if="{{noticeLoading}}" class="tab-row-caption">正在读取订阅设置…</view>
@@ -43,6 +48,7 @@
 
   <view class="tab-list me-support">
     <navigator class="tab-row" url="/pages/about/about" hover-class="pressed">
+      <view class="icon-tile icon-blue" aria-hidden="true"><image src="/assets/icons/info.png" mode="aspectFit" /></view>
       <view class="tab-row-copy"><view class="tab-row-title">关于与反馈</view><view class="tab-row-caption">隐私说明、版权和内容勘误</view></view>
       <text class="tab-chevron" aria-hidden="true">›</text>
     </navigator>

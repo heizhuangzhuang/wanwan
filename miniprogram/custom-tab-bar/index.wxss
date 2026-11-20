@@ -10,15 +10,16 @@
 }
 
 .tab-dock-inner { display: flex; max-width: 840rpx; margin: 0 auto; padding: 0 12rpx; }
-.tab-dock-item { flex: 1; padding: 18rpx 8rpx; }
+.tab-dock-item { flex: 1; padding: 12rpx 8rpx 14rpx; }
+.tab-dock-icon { width: 80rpx; height: 46rpx; margin: 0 auto; border-radius: 30rpx; }
+.tab-dock-glyph { display: block; width: 42rpx; height: 42rpx; margin: 2rpx auto; opacity: .72; }
 .tab-dock-label {
-  background: #fffdf9;
   color: #555c51;
   text-align: center;
-  border-radius: 22rpx;
   font-size: 26rpx;
-  height: 58rpx;
-  line-height: 58rpx;
+  height: 34rpx;
+  line-height: 34rpx;
 }
-
-.tab-dock-active .tab-dock-label { background: #e5eee3; color: #285143; font-weight: 700; }
+.tab-dock-active .tab-dock-icon { background: #dcece0; }
+.tab-dock-active .tab-dock-glyph { opacity: 1; }
+.tab-dock-active .tab-dock-label { color: #285143; font-weight: 700; }

@@ -3,6 +3,9 @@
     <cover-view wx:for="{{tabs}}" wx:key="path" data-path="{{item.path}}" bindtap="switchSection" aria-role="button"
       aria-label="{{item.label}}{{active === item.path ? '，当前栏目' : ''}}"
       class="tab-dock-item {{active === item.path ? 'tab-dock-active' : ''}}">
+      <cover-view class="tab-dock-icon" aria-hidden="true">
+        <cover-image class="tab-dock-glyph" src="/assets/icons/{{item.icon}}.png" />
+      </cover-view>
       <cover-view class="tab-dock-label">{{item.label}}</cover-view>
     </cover-view>
   </cover-view>

@@ -4,6 +4,7 @@
   <block wx:if="{{guide}}">
     <view class="tab-list">
       <navigator class="tab-row" url="{{prepareUrl}}" hover-class="pressed">
+        <view class="icon-tile icon-sage" aria-hidden="true"><image src="/assets/icons/clipboard-list.png" mode="aspectFit" /></view>
         <view class="tab-row-copy tab-row-title">这一阶段可以问医生什么</view>
         <text class="tab-chevron" aria-hidden="true">›</text>
       </navigator>
@@ -12,6 +13,7 @@
         <text class="tab-chevron" aria-hidden="true">›</text>
       </navigator>
       <button class="tab-row" bindtap="copyGuideSource">
+        <view class="icon-tile icon-gold" aria-hidden="true"><image src="/assets/icons/link-2.png" mode="aspectFit" /></view>
         <view class="tab-row-copy">
           <view class="tab-row-title">复制参考来源链接</view>
           <view class="tab-row-caption">{{guide.source.title}}</view>

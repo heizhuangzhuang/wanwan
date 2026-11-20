@@ -4,6 +4,8 @@
 
 五个阶段页内置家庭准备事项、分阶段沟通问题和工具入口，后台资料加载失败时也可使用。「工具」中的就诊与经验目录提供医院、好大夫、小红书和抖音的可复制搜索词，附机构或医生的公开出处。渠道收录由运营者核对，账号状态与号源以原平台为准。
 
+首页、底栏和常用工具使用本地 PNG 图标，取自 [Lucide 0.468.0](https://github.com/lucide-icons/lucide/releases/tag/0.468.0)。授权说明随图标存于 `assets/icons/`。
+
 ## 微信开发者工具与后端接入
 
 在微信开发者工具中导入本目录。[project.config.json](./project.config.json) 中的 `touristappid` 用于本地开发。云端联调时，在开发者工具中换成已绑定 `prod-d1gm7gr9e711335be` 的真实小程序 AppID。 [app.ts](./app.ts) 已配置环境 ID 和服务名 `xiaojiaoya`，对外联系邮箱由运营者填写。

@@ -3,9 +3,18 @@ import { wanwanApi, type StageView } from '../../services/api'
 import { fixedStages, stageIntro } from '../../services/stages'
 import { selectTab } from '../../services/tabs'
 
+const stageIcons = new Map([
+  ['JUST_FOUND', { name: 'scan-line', tone: 'peach' }],
+  ['PRENATAL', { name: 'clipboard-list', tone: 'rose' }],
+  ['POSTNATAL_TREATMENT', { name: 'footprints', tone: 'sage' }],
+  ['BRACE_DAILY', { name: 'ruler', tone: 'blue' }],
+  ['LONG_TERM', { name: 'calendar-days', tone: 'gold' }],
+])
+
 function homeStages(stages: StageView[]) {
   return stages.map(stage => ({
     ...stage,
+    icon: stageIcons.get(stage.key) ?? { name: 'book-open', tone: 'sage' },
     intro: stageIntro(stage.key),
     url: `/pages/stage/stage?key=${encodeURIComponent(stage.key)}&label=${encodeURIComponent(stage.label)}`,
   }))

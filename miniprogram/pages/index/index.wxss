@@ -1,7 +1,13 @@
-.home-welcome { display: flex; align-items: center; gap: 22rpx; padding: 30rpx 28rpx; background: #f6e8d9; border-radius: 28rpx; }
+.home-welcome { display: flex; align-items: center; gap: 20rpx; padding: 28rpx; background: #e2eee5; border: 1rpx solid #d0e3d6; border-radius: 28rpx; }
 .home-welcome-copy { flex: 1; min-width: 0; }
-.home-welcome .page-heading { font-size: 44rpx; }
-.home-welcome .description { margin: 12rpx 0 0; color: #554b40; font-size: 26rpx; }
-.home-logo { flex: none; width: 112rpx; height: 112rpx; border-radius: 26rpx; }
-.home-stage-dot { flex: none; width: 10rpx; height: 10rpx; background: #759480; border-radius: 50%; }
-.home-library { display: flex; justify-content: space-between; align-items: center; min-height: 84rpx; margin: 16rpx 4rpx 0; padding: 0 12rpx; color: #285143; font-size: 28rpx; font-weight: 600; }
+.home-welcome .page-heading { color: #244a3b; font-size: 44rpx; }
+.home-welcome .description { margin: 12rpx 0 0; color: #43574a; font-size: 26rpx; }
+.home-logo { flex: none; width: 116rpx; height: 116rpx; border: 1rpx solid #d3e6d9; border-radius: 28rpx; background: #f3fbf5; }
+.home-stages { border-color: #eadfd2; }
+.home-stages .home-stage { min-height: 104rpx; padding: 16rpx 22rpx; }
+.home-stage.home-stage-start { background: #fff6e9; }
+.home-stage .icon-tile { width: 68rpx; height: 68rpx; }
+.home-stage .icon-tile image { width: 36rpx; height: 36rpx; }
+.home-library { display: flex; align-items: center; gap: 14rpx; min-height: 88rpx; margin: 16rpx 0 0; padding: 0 20rpx; color: #285143; font-size: 28rpx; font-weight: 600; }
+.home-library-icon { flex: none; width: 34rpx; height: 34rpx; }
+.home-library .tab-chevron { margin-left: auto; }

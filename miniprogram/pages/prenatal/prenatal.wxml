@@ -40,7 +40,12 @@
       <button class="btn secondary compact prenatal-action" size="mini" bindtap="clearSearch">查看全部项目</button>
     </view>
     <view wx:for="{{groups}}" wx:key="key" wx:for-item="group" class="prenatal-group">
-      <view class="prenatal-group-heading">{{group.title}}</view>
+      <view class="prenatal-group-heading">
+        <view class="icon-tile icon-{{group.tone}}" aria-hidden="true">
+          <image src="/assets/icons/{{group.icon}}.png" mode="aspectFit" />
+        </view>
+        <text>{{group.title}}</text>
+      </view>
       <view class="tab-list">
         <navigator wx:for="{{group.items}}" wx:key="key" class="tab-row prenatal-row"
           url="/pages/prenatal/prenatal?key={{item.key}}" hover-class="pressed">
