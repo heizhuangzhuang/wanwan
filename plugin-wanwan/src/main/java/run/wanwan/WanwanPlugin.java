@@ -3,6 +3,8 @@ package run.wanwan;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
+import run.halo.app.extension.Extension;
+import run.halo.app.extension.GroupVersionKind;
 import run.halo.app.extension.SchemeManager;
 import run.halo.app.extension.index.IndexSpecs;
 import run.halo.app.plugin.BasePlugin;
@@ -66,11 +68,15 @@ public class WanwanPlugin extends BasePlugin {
 
     @Override
     public void stop() {
-        schemeManager.unregister(schemeManager.get(ResourceCard.class));
-        schemeManager.unregister(schemeManager.get(Topic.class));
-        schemeManager.unregister(schemeManager.get(NoticePublication.class));
-        schemeManager.unregister(schemeManager.get(CastJournal.class));
-        schemeManager.unregister(schemeManager.get(NoticeSubscription.class));
-        schemeManager.unregister(schemeManager.get(MiniProgramCheck.class));
+        unregister(ResourceCard.class);
+        unregister(Topic.class);
+        unregister(NoticePublication.class);
+        unregister(CastJournal.class);
+        unregister(NoticeSubscription.class);
+        unregister(MiniProgramCheck.class);
+    }
+
+    private void unregister(Class<? extends Extension> type) {
+        schemeManager.fetch(GroupVersionKind.fromExtension(type)).ifPresent(schemeManager::unregister);
     }
 }

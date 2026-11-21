@@ -1,5 +1,20 @@
 <view class="container tab-page">
-  <navigator class="tab-feature tools-cast" url="/pages/cast/cast" hover-class="pressed">
+  <view class="tools-heading"><view class="page-heading">家庭工具</view></view>
+  <navigator class="tab-feature tools-brace motion-press" url="/pages/brace-wear/brace-wear"
+    hover-class="pressed" hover-start-time="0" hover-stay-time="90">
+    <view class="icon-tile" aria-hidden="true"><image src="/assets/icons/footprints.png" mode="aspectFit" /></view>
+    <view class="tab-row-copy">
+      <view class="tab-feature-title">矫正鞋穿戴记录</view>
+      <view class="tab-feature-description">穿上开始计时，脱下保存，查看每日累计。</view>
+    </view>
+    <text class="tab-chevron" aria-hidden="true">›</text>
+  </navigator>
+  <navigator class="tools-follow-tab motion-press" url="/pages/brace-dashboard/brace-dashboard" hover-class="pressed">
+    <image src="/assets/icons/calendar-days.png" mode="aspectFit" aria-hidden="true" />
+    <text>支具随访大屏</text><text class="tools-follow-arrow" aria-hidden="true">›</text>
+  </navigator>
+  <navigator class="tab-feature tools-cast motion-press" url="/pages/cast/cast"
+    hover-class="pressed" hover-start-time="0" hover-stay-time="90">
     <view class="icon-tile" aria-hidden="true"><image src="/assets/icons/calendar-clock.png" mode="aspectFit" /></view>
     <view class="tab-row-copy">
       <view class="tab-feature-title">石膏记录与复诊提醒</view>

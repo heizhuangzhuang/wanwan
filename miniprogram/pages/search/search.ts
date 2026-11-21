@@ -1,11 +1,18 @@
 import { wanwanApi, type StageView } from '../../services/api'
+import { filterPrenatalDirectory } from '../../services/prenatal-directory'
 import { materialTypes, openResource, resourceLabel } from '../../services/reading'
 import { clearSearchHistory, readSearchHistory, rememberSearch } from '../../services/search-history'
+import { fixedStages } from '../../services/stages'
+
+const allStages: StageView = { key: '', label: '全部阶段', order: -1 }
 
 Page({
   data: {
-    suggestions: ['产前', '石膏', '支具', '随访'], keyword: '', submittedKeyword: '', items: [] as ReturnType<typeof resourceLabel>[],
-    stages: [{ key: '', label: '全部阶段', order: -1 }] as StageView[], stageIndex: 0, stageError: false,
+    suggestions: ['产前', '羊穿', 'CMA', '石膏', '支具'],
+    keyword: '', submittedKeyword: '',
+    items: [] as ReturnType<typeof resourceLabel>[],
+    prenatalResults: [] as ReturnType<typeof filterPrenatalDirectory>[number]['items'],
+    stages: [allStages, ...fixedStages], stageIndex: 0,
     materials: materialTypes, typeIndex: 0, page: 1, hasNext: false, requestedPage: 1,
     loading: false, error: '',
     history: [] as string[],
@@ -18,9 +25,9 @@ Page({
   async loadFilters() {
     try {
       const stages = await wanwanApi.getStages()
-      this.setData({ stages: [this.data.stages[0], ...stages], stageError: false })
+      if (stages.length && this.data.stageIndex === 0) this.setData({ stages: [allStages, ...stages] })
     } catch {
-      this.setData({ stageError: true })
+      // The fixed stages still work for built-in guides when the public API is unavailable.
     }
   },
   pickKeyword(event: WechatMiniprogram.TouchEvent) {
@@ -33,7 +40,7 @@ Page({
   onInput(e: WechatMiniprogram.Input) { this.setData({ keyword: e.detail.value }) },
   clearKeyword() {
     if (this.data.loading) return
-    this.setData({ keyword: '', submittedKeyword: '', items: [], error: '', page: 1, requestedPage: 1, hasNext: false })
+    this.setData({ keyword: '', submittedKeyword: '', prenatalResults: [], items: [], error: '', page: 1, requestedPage: 1, hasNext: false })
   },
   confirmClearHistory() {
     if (!this.data.history.length || this.data.loading) return
@@ -49,7 +56,7 @@ Page({
     if (this.data.loading) return
     const keyword = this.data.keyword.trim()
     if (!keyword || keyword.length > 100) {
-      this.setData({ error: !keyword ? '请输入关键词。' : '关键词请勿超过 100 个字符。', items: [], submittedKeyword: '', page: 1, hasNext: false })
+      this.setData({ error: !keyword ? '请输入关键词。' : '关键词请勿超过 100 个字符。', items: [], prenatalResults: [], submittedKeyword: '', page: 1, hasNext: false })
       return
     }
     this.setData({ submittedKeyword: keyword })
@@ -68,13 +75,24 @@ Page({
   async fetch(page: number, record = false) {
     if (this.data.loading) return
     const { submittedKeyword, stages, stageIndex, typeIndex } = this.data
-    this.setData({ loading: true, error: '', items: [], requestedPage: page })
+    const stage = stages[stageIndex]?.key
+    const type = materialTypes[typeIndex]?.key
+    const includePrenatal = submittedKeyword && page === 1
+      && (!stage || stage === 'JUST_FOUND' || stage === 'PRENATAL')
+      && (!type || type === 'ORIGINAL')
+    const prenatalResults = includePrenatal ? filterPrenatalDirectory(submittedKeyword).flatMap(group => group.items) : []
+    this.setData({ loading: true, error: '', items: [], prenatalResults, requestedPage: page })
+    if (record && prenatalResults.length) {
+      this.setData({ history: rememberSearch(submittedKeyword) })
+    }
     try {
-      const result = await wanwanApi.search({ keyword: submittedKeyword, stage: stages[stageIndex]?.key, type: materialTypes[typeIndex]?.key, page })
+      const result = await wanwanApi.search({ keyword: submittedKeyword, stage, type, page })
       this.setData({ items: result.items.map(resourceLabel), page: result.page, hasNext: result.page * result.size < result.total })
-      if (record) this.setData({ history: rememberSearch(submittedKeyword) })
+      if (record && !prenatalResults.length) {
+        this.setData({ history: rememberSearch(submittedKeyword) })
+      }
     } catch {
-      this.setData({ error: '搜索暂时不可用，请重试。' })
+      this.setData({ error: '公开资料暂时不可用，请重试。' })
     } finally {
       this.setData({ loading: false })
     }

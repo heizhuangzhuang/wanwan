@@ -1,13 +1,18 @@
 <import src="../../templates/public.wxml" />
 <view class="container search-page">
-  <view class="page-intro"><view class="page-heading">找一找关心的资料</view><view class="description">可按题名、来源或关键词查找公开资料。</view></view>
+  <view class="page-intro"><view class="page-heading">找一找关心的资料</view><view class="description">可搜题名、来源、检查名或简称，比如「羊穿」。</view></view>
   <view class="actions search-input-row">
-    <input class="field" placeholder="标题、来源或关键词" maxlength="100" value="{{keyword}}" disabled="{{loading}}" bindinput="onInput" bindconfirm="doSearch" />
-    <button class="btn" size="mini" disabled="{{loading}}" bindtap="doSearch">搜索</button>
+    <view class="field search-keyword">
+      <input class="search-keyword-input" placeholder="标题、来源或关键词" confirm-type="search"
+        maxlength="100" value="{{keyword}}" disabled="{{loading}}" bindinput="onInput" bindconfirm="doSearch" />
+      <button wx:if="{{keyword && !loading}}" class="plain-button search-clear" size="mini"
+        aria-label="清除当前搜索" bindtap="clearKeyword">清除</button>
+    </view>
+    <button class="btn motion-press" size="mini" disabled="{{loading}}" bindtap="doSearch"
+      hover-class="pressed" hover-start-time="0" hover-stay-time="90">搜索</button>
   </view>
-  <button wx:if="{{keyword && !loading}}" class="plain-button text-link search-clear" size="mini" bindtap="clearKeyword">清除当前搜索</button>
   <view class="actions">
-    <picker mode="selector" range="{{stages}}" range-key="label" value="{{stageIndex}}" disabled="{{loading || stageError}}" bindchange="onStage"><view class="filter">{{stages[stageIndex].label}} ▾</view></picker>
+    <picker mode="selector" range="{{stages}}" range-key="label" value="{{stageIndex}}" disabled="{{loading}}" bindchange="onStage"><view class="filter">{{stages[stageIndex].label}} ▾</view></picker>
     <picker mode="selector" range="{{materials}}" range-key="label" value="{{typeIndex}}" disabled="{{loading}}" bindchange="onType"><view class="filter">{{materials[typeIndex].label}} ▾</view></picker>
   </view>
   <view wx:if="{{!submittedKeyword && !loading && history.length}}" class="search-history">
@@ -24,19 +29,33 @@
     <text class="muted search-suggestions-label">推荐关键词</text>
     <button wx:for="{{suggestions}}" wx:key="*this" class="term" size="mini" data-keyword="{{item}}" bindtap="pickKeyword">{{item}}</button>
   </view>
-  <view wx:if="{{stageError}}" class="muted" bindtap="loadFilters">阶段列表暂不可用，点击重试。</view>
-  <view wx:if="{{loading}}" class="muted">搜索中…</view>
+  <view wx:if="{{submittedKeyword}}" class="search-status title">“{{submittedKeyword}}”的搜索结果</view>
+  <view wx:if="{{prenatalResults.length}}" class="search-prenatal motion-reveal">
+    <view class="title search-result-label">产前检查导读</view>
+    <view class="tab-list">
+      <navigator wx:for="{{prenatalResults}}" wx:key="key" class="tab-row motion-press"
+        url="/pages/prenatal/prenatal?key={{item.key}}" hover-class="pressed" hover-start-time="0" hover-stay-time="90">
+        <view class="tab-row-copy">
+          <view class="tab-row-title">{{item.title}}</view>
+          <view class="tab-row-caption">{{item.caption}}</view>
+        </view>
+        <text class="tab-chevron" aria-hidden="true">›</text>
+      </navigator>
+    </view>
+  </view>
+  <view wx:if="{{loading}}" class="search-status muted">正在查找公开资料…</view>
   <view wx:elif="{{error}}" class="card">
     <view>{{error}}</view>
     <button wx:if="{{submittedKeyword}}" class="btn" bindtap="retry">重试</button>
   </view>
-  <block wx:elif="{{submittedKeyword}}">
-    <view class="muted description">“{{submittedKeyword}}”的搜索结果</view>
-    <view wx:if="{{!items.length}}" class="card">
-      <view>没有找到匹配资料。可以更换关键词或按阶段查找。</view>
+  <view wx:elif="{{submittedKeyword}}" class="motion-reveal">
+    <view wx:if="{{items.length}}" class="title search-result-label">公开资料卡</view>
+    <view wx:elif="{{prenatalResults.length}}" class="muted">没有匹配的公开资料卡。</view>
+    <view wx:else class="card">
+      <view>没有找到匹配内容。可以换个关键词、放宽筛选，或按阶段查找。</view>
       <button class="btn secondary" bindtap="browseStages">按阶段浏览</button>
     </view>
     <template is="resourceCards" data="{{items}}" />
     <template is="pagination" data="{{page, hasNext, loading}}" />
-  </block>
+  </view>
 </view>

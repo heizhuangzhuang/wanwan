@@ -1,7 +1,7 @@
 .home-welcome { display: flex; align-items: center; gap: 20rpx; padding: 28rpx; background: #e2eee5; border: 1rpx solid #d0e3d6; border-radius: 28rpx; }
 .home-welcome-copy { flex: 1; min-width: 0; }
 .home-welcome .page-heading { color: #244a3b; font-size: 44rpx; }
-.home-welcome .description { margin: 12rpx 0 0; color: #43574a; font-size: 26rpx; }
+.home-welcome .description { margin: 12rpx 0 0; color: #43574a; font-size: 28rpx; line-height: 1.55; }
 .home-logo { flex: none; width: 116rpx; height: 116rpx; border: 1rpx solid #d3e6d9; border-radius: 28rpx; background: #f3fbf5; }
 .home-stages { border-color: #eadfd2; }
 .home-stages .home-stage { min-height: 104rpx; padding: 16rpx 22rpx; }

@@ -1,0 +1,77 @@
+<view class="container follow-page">
+  <view class="follow-hero">
+    <view class="follow-hero-title">支具随访</view>
+    <text>当前计划 · {{phase}}</text>
+    <view class="follow-metric">{{average}}</view>
+    <text>所选期间 · 有记录日均值</text>
+  </view>
+  <view class="follow-periods">
+    <button wx:for="{{periods}}" wx:key="key" class="follow-chip {{period === item.key ? 'follow-chip-on' : ''}}"
+      data-period="{{item.key}}" bindtap="setPeriod">{{item.label}}</button>
+  </view>
+  <view class="follow-range">
+    <text>{{from}} 至 {{to}}</text>
+    <picker mode="date" value="{{to}}" end="{{today}}" bindchange="setEnd"><view class="follow-link">选择截止日</view></picker>
+  </view>
+  <view class="follow-grid">
+    <view class="follow-kpi"><text>{{recorded}}</text><view>有记录天数</view></view>
+    <view class="follow-kpi"><text>{{below}}</text><view>记录低于目标</view></view>
+    <view class="follow-kpi"><text>{{missing}}</text><view>计划日无记录</view></view>
+    <view class="follow-kpi"><text>{{zero}}</text><view>确认未穿</view></view>
+  </view>
+  <view class="follow-card">
+    <view class="follow-title">穿戴趋势</view>
+    <view class="follow-muted">统计有记录日的平均时长 · 满格 24 小时</view>
+    <scroll-view scroll-x class="follow-scroll">
+      <view class="follow-chart">
+        <view wx:for="{{chart}}" wx:key="key" class="follow-column" aria-label="{{item.label}}，{{item.average}}">
+          <view class="follow-bar"><view wx:if="{{item.height}}" style="height: {{item.height}}%;" /></view>
+          <text>{{item.label}}</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+  <view class="follow-card">
+    <view class="follow-row"><view class="follow-title">待核对的记录</view><button class="follow-link" data-mode="zero" bindtap="openEditor">确认未穿</button></view>
+    <view class="follow-muted">只对已结束的日期归类。记录供复诊沟通，临床风险由医生评估。</view>
+    <view wx:if="{{!alerts.length}}" class="follow-muted">所选日期暂无待核对记录。</view>
+    <view wx:for="{{alerts}}" wx:key="day" class="follow-row follow-list"><text>{{item.day}}</text><text>{{item.label}}</text></view>
+  </view>
+  <view class="follow-card">
+    <view class="follow-row"><view class="follow-title">计划历史</view><button class="follow-link" data-mode="plan" bindtap="openEditor">修改计划</button></view>
+    <view wx:for="{{plans}}" wx:key="day" class="follow-row follow-list"><text>{{item.day}} 生效</text><text>{{item.label}}</text></view>
+    <view wx:if="{{!plans.length}}" class="follow-muted">按医生交代设定目标或切换为仅随访。</view>
+  </view>
+  <view class="follow-card">
+    <view class="follow-row"><view class="follow-title">复诊与调整</view><button class="follow-link" data-mode="visit" bindtap="openEditor">加记录</button></view>
+    <view wx:if="{{!visits.length}}" class="follow-muted">所选日期暂无随访记录。</view>
+    <view wx:for="{{visits}}" wx:key="id" class="follow-list">
+      <view class="follow-row"><text>{{item.day}} · {{item.kind}}</text><button class="follow-link" data-id="{{item.id}}" bindtap="removeVisit">删除</button></view>
+      <view wx:if="{{item.note}}" class="follow-muted">{{item.note}}</view>
+    </view>
+  </view>
+  <view class="follow-card">
+    <view class="follow-title">导出与换机</view>
+    <view class="follow-muted">Excel 用于查阅统计，JSON 备份用于换机和在 Web 恢复。</view>
+    <view class="follow-actions">
+      <button class="btn" data-type="xlsx" bindtap="exportFile">导出 Excel</button>
+      <button class="btn secondary" data-type="json" bindtap="exportFile">导出备份</button>
+      <button class="btn secondary" bindtap="importBackup">恢复备份</button>
+    </view>
+  </view>
+  <view wx:if="{{status && !mode}}" class="notice" aria-live="polite">{{status}}</view>
+  <view wx:if="{{mode}}" class="follow-overlay">
+    <view class="follow-scrim" bindtap="closeEditor" />
+    <view class="follow-sheet">
+      <view class="follow-title">{{mode === 'plan' ? '新增阶段计划' : mode === 'visit' ? '记录复诊或调整' : '确认过去某日未穿'}}</view>
+      <picker mode="date" value="{{day}}" end="{{mode === 'zero' ? today : ''}}" bindchange="changeDay"><view class="follow-field">{{day}} <text>选择日期</text></view></picker>
+      <picker wx:if="{{mode === 'plan'}}" range="{{planTypes}}" value="{{option}}" bindchange="changeOption"><view class="follow-field">{{planTypes[option]}}</view></picker>
+      <picker wx:if="{{mode === 'visit'}}" range="{{visitTypes}}" value="{{option}}" bindchange="changeOption"><view class="follow-field">{{visitTypes[option]}}</view></picker>
+      <input wx:if="{{mode === 'plan' && option === 0}}" class="follow-field" type="digit" value="{{input}}" bindinput="changeInput" placeholder="每天小时数，例 12.5" />
+      <input wx:if="{{mode === 'visit'}}" class="follow-field" value="{{input}}" maxlength="200" bindinput="changeInput" placeholder="备注（可选）" />
+      <view wx:if="{{status}}" class="notice">{{status}}</view>
+      <view class="follow-actions"><button class="btn secondary" bindtap="closeEditor">取消</button>
+        <button class="btn" bindtap="saveEditor">{{mode === 'zero' && dayConfirmed ? '取消此日确认' : '保存'}}</button></view>
+    </view>
+  </view>
+</view>

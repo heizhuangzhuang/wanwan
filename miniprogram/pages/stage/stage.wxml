@@ -1,18 +1,22 @@
 <import src="../../templates/public.wxml" />
 <view class="container">
-  <view class="page-intro"><view class="page-heading">{{heading}}</view><view class="description">{{intro}}</view></view>
+  <view class="page-intro stage-intro motion-reveal">
+    <view class="page-heading">{{heading}}</view>
+    <view class="description">{{intro}}</view>
+  </view>
   <block wx:if="{{guide}}">
     <view class="tab-list">
-      <navigator class="tab-row" url="{{prepareUrl}}" hover-class="pressed">
+      <navigator class="tab-row motion-press" url="{{prepareUrl}}" hover-class="pressed" hover-start-time="0" hover-stay-time="90">
         <view class="icon-tile icon-sage" aria-hidden="true"><image src="/assets/icons/clipboard-list.png" mode="aspectFit" /></view>
         <view class="tab-row-copy tab-row-title">这一阶段可以问医生什么</view>
         <text class="tab-chevron" aria-hidden="true">›</text>
       </navigator>
-      <navigator wx:for="{{guide.actions}}" wx:key="url" class="tab-row" url="{{item.url}}" hover-class="pressed">
+      <navigator wx:for="{{guide.actions}}" wx:key="url" class="tab-row motion-press" url="{{item.url}}"
+        hover-class="pressed" hover-start-time="0" hover-stay-time="90">
         <view class="tab-row-copy tab-row-title">{{item.title}}</view>
         <text class="tab-chevron" aria-hidden="true">›</text>
       </navigator>
-      <button class="tab-row" bindtap="copyGuideSource">
+      <button class="tab-row motion-press" bindtap="copyGuideSource" hover-class="pressed" hover-start-time="0" hover-stay-time="90">
         <view class="icon-tile icon-gold" aria-hidden="true"><image src="/assets/icons/link-2.png" mode="aspectFit" /></view>
         <view class="tab-row-copy">
           <view class="tab-row-title">复制参考来源链接</view>
@@ -22,12 +26,14 @@
     </view>
     <view class="section-heading">这一阶段的资料</view>
   </block>
+  <view wx:if="{{demoMode}}" class="notice">本地测试样本 · 虚构内容</view>
   <picker mode="selector" range="{{materials}}" range-key="label" value="{{typeIndex}}" disabled="{{loading}}" bindchange="onType">
     <view class="filter">{{materials[typeIndex].label}} ▾</view>
   </picker>
-  <view class="actions">
+  <view class="actions stage-tag">
     <input class="field" placeholder="按主题标签筛选" maxlength="50" value="{{tag}}" disabled="{{loading}}" bindinput="onTag" bindconfirm="applyTag" />
-    <button class="btn" disabled="{{loading}}" bindtap="applyTag">筛选</button>
+    <button class="btn motion-press" disabled="{{loading}}" bindtap="applyTag"
+      hover-class="pressed" hover-start-time="0" hover-stay-time="90">筛选</button>
   </view>
   <view wx:if="{{loading}}" class="muted">正在加载资料…</view>
   <view wx:elif="{{error}}" class="card">
@@ -35,7 +41,11 @@
     <button class="btn" bindtap="retry">重试</button>
   </view>
   <block wx:else>
-    <view wx:if="{{!items.length}}" class="card muted">没有符合当前条件的公开资料。</view>
+    <view wx:if="{{!items.length}}" class="card muted">
+      <text wx:if="{{typeIndex || submittedTag}}">没有符合当前筛选条件的资料，可以更换类型或标签。</text>
+      <text wx:elif="{{guide}}">这一阶段暂未收录公开资料。可先查看上方的就诊准备。</text>
+      <text wx:else>暂未收录公开资料。</text>
+    </view>
     <template is="resourceCards" data="{{items}}" />
     <template is="pagination" data="{{page, hasNext, loading}}" />
   </block>

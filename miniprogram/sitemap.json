@@ -5,6 +5,8 @@
     { "action": "disallow", "page": "pages/shelf/shelf" },
     { "action": "disallow", "page": "pages/saved-files/saved-files" },
     { "action": "disallow", "page": "pages/cast/cast" },
+    { "action": "disallow", "page": "pages/brace-wear/brace-wear" },
+    { "action": "disallow", "page": "pages/brace-dashboard/brace-dashboard" },
     { "action": "allow", "page": "*" }
   ]
 }

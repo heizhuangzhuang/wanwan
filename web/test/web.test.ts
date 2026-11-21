@@ -103,9 +103,11 @@ describe('web security & SSR', () => {
 
   it('uses the previous public API if the canonical route redirects to Halo login', async () => {
     const routes: string[] = []
+    const channels: Array<string | string[] | undefined> = []
     const server = createServer((req, res) => {
       const address = req.url || ''
       routes.push(address)
+      channels.push(req.headers['x-wanwan-client'])
       if (address.includes('api.wanwan.run')) {
         res.writeHead(200, { 'Content-Type': 'application/json' }).end('{"items":[]}')
       } else if (address.endsWith('/resources/withdrawn')) {
@@ -126,6 +128,7 @@ describe('web security & SSR', () => {
         '/apis/api.xiaojiaoya.run/v1alpha1/resources/withdrawn',
       ])
       assert.equal(new URL(routes[1], 'https://example.test').searchParams.get('keyword'), '足内翻')
+      assert.deepEqual(channels, ['web', 'web', 'web'])
     } finally {
       server.close()
     }
@@ -236,6 +239,39 @@ describe('web security & SSR', () => {
     assert.equal(home.status, 200)
     assert.match(home.body, /资料库正在准备中/)
     await assert.rejects(handleRequest('/wanwan/resources', client, pendingConfig), /BACKEND_API_BASE/)
+  })
+
+  it('keeps the home and stage guides usable when the configured API returns 404', async () => {
+    const failing = () => Promise.reject(new HttpStatusError(404, 'Backend HTTP 404'))
+    const client = { ...mockClient(), getStages: failing, listTopics: failing, listResources: failing, listPosts: failing }
+    const site = loadConfig({ SITE_BASE_PATH: '/xiaojiaoya' })
+
+    for (const path of ['/', '/stages']) {
+      const result = await handleRequest(`/xiaojiaoya${path}`, client, site)
+      assert.equal(result.status, 200)
+      assert.match(result.body, /href="\/xiaojiaoya\/stages\/JUST_FOUND"/)
+      assert.match(result.body, /href="\/xiaojiaoya\/stages\/LONG_TERM"/)
+    }
+
+    const stage = await handleRequest('/xiaojiaoya/stages/JUST_FOUND', client, site)
+    assert.equal(stage.status, 200)
+    assert.match(stage.body, /<h1>刚发现<\/h1>/)
+    assert.match(stage.body, /在线资料暂时无法加载/)
+    assert.match(stage.body, /href="\/xiaojiaoya\/prenatal"/)
+    assert.doesNotMatch(stage.body, /暂无已公开资料/)
+    assert.equal((await handleRequest('/xiaojiaoya/stages/UNKNOWN', client, site)).status, 404)
+    await assert.rejects(handleRequest('/xiaojiaoya/resources', client, site), /Backend HTTP 404/)
+  })
+
+  it('shows live MySQL-backed content again when the resources API responds', async () => {
+    const client = mockClient()
+    client.listTopics = async () => { throw new HttpStatusError(503, 'Backend HTTP 503') }
+    const home = await handleRequest('/', client, config)
+    assert.match(home.body, /href="\/resources\/r1"/)
+    assert.match(home.body, /导读一/)
+    const stage = await handleRequest('/stages/JUST_FOUND', client, config)
+    assert.match(stage.body, /href="\/resources\/r1"/)
+    assert.doesNotMatch(stage.body, /在线资料暂时无法加载/)
   })
 
   it('generates sitemap with only public entries', async () => {

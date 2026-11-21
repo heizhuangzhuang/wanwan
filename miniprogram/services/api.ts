@@ -114,6 +114,7 @@ function request<T>(path: string, query?: Record<string, string | number | undef
     const options = {
       method: body ? 'POST' : 'GET',
       data: body,
+      header: { 'X-Wanwan-Client': 'wechat-miniprogram' },
       success(res: { statusCode: number; data: unknown }) {
         const loginPage = typeof res.data === 'string'
           && /authentication_required|<title>[^<]*(登录|login)/i.test(res.data)
@@ -142,7 +143,7 @@ function request<T>(path: string, query?: Record<string, string | number | undef
         ...options,
         config: { env: globalData.cloudEnv },
         path: prefix + address,
-        header: { 'X-WX-SERVICE': globalData.cloudService },
+        header: { ...options.header, 'X-WX-SERVICE': globalData.cloudService },
       })
     } else {
       const base = legacy ? globalData.apiBase.replace(API_PREFIX, prefix) : globalData.apiBase

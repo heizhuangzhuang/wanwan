@@ -22,7 +22,8 @@ COPY deploy/cloudrun/entrypoint.sh /opt/wanwan/entrypoint.sh
 RUN chmod +x /opt/wanwan/entrypoint.sh
 
 ENV JVM_OPTS="-Xmx1024m -Xms512m" \
-    PORT="80"
+    PORT="80" \
+    WANWAN_REQUIRE_MYSQL="1"
 
 EXPOSE 80
 ENTRYPOINT ["/opt/wanwan/entrypoint.sh"]

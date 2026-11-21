@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
-import type { BackendClient, PageResult, ResourceView } from './api.js'
+import type { BackendClient, PageResult, ResourceView, StageView } from './api.js'
+import { braceScript, braceScriptHash, renderBraceDashboard } from './brace-dashboard.js'
 import type { WebConfig } from './config.js'
 import { appointmentScript, prenatalPaths, renderPrenatal, renderTools } from './tools.js'
 import {
@@ -23,6 +24,7 @@ export interface RouteResponse {
   location?: string
   contentDisposition?: string
   toolsScript?: boolean
+  scriptHash?: string
 }
 
 const TYPES = [
@@ -33,8 +35,27 @@ const TYPES = [
   { key: 'ORIGINAL', label: '本站原创' },
 ]
 
+// These match Halo's fixed stages and are used when its stage endpoint is unavailable.
+const FIXED_STAGES: StageView[] = [
+  { key: 'JUST_FOUND', label: '刚发现', order: 0 },
+  { key: 'PRENATAL', label: '产前了解与等待', order: 1 },
+  { key: 'POSTNATAL_TREATMENT', label: '出生后评估与治疗', order: 2 },
+  { key: 'BRACE_DAILY', label: '支具与日常生活', order: 3 },
+  { key: 'LONG_TERM', label: '长期随访与预后', order: 4 },
+]
+
 function htmlResponse(status: number, body: string): RouteResponse {
   return { status, contentType: 'text/html; charset=utf-8', body }
+}
+
+function renderStageGrid(stages: StageView[], basePath: string): string {
+  return `<div class="stage-grid">${stages.map(s =>
+    `<a class="stage-card" href="${basePath}/stages/${encodeURIComponent(s.key)}"><div class="stage-order">阶段 ${s.order + 1}</div><div class="stage-name">${escapeHtml(s.label)}</div></a>`,
+  ).join('')}</div>`
+}
+
+function renderUnavailableResources(basePath: string): string {
+  return `<p class="warn-bar">在线资料暂时无法加载。可以先查看<a href="${basePath}/prenatal">产前检查</a>和<a href="${basePath}/tools">家庭工具</a>。</p>`
 }
 
 function routeKey(path: string, prefix: string) {
@@ -173,6 +194,13 @@ export async function handleRequest(
 
   if (path === '/tools') return { ...htmlResponse(200, renderTools(config)), toolsScript: true }
 
+  if (path === '/tools/brace-followup') {
+    return { ...htmlResponse(200, renderBraceDashboard(config)), scriptHash: braceScriptHash }
+  }
+  if (path === '/tools/brace-dashboard.js') {
+    return { status: 200, contentType: 'text/javascript; charset=utf-8', body: braceScript }
+  }
+
   if (path === '/tools/appointment.js') {
     return { status: 200, contentType: 'text/javascript; charset=utf-8', body: appointmentScript }
   }
@@ -251,31 +279,28 @@ export async function handleRequest(
   }
 
   if (path === '/') {
-    const [stages, topics, recent, posts] = await Promise.all([
+    const [stages, topics, recent, posts] = await Promise.allSettled([
       client.getStages(),
       client.listTopics(1, 4),
       client.listResources({ page: 1, size: 6 }),
       client.listPosts(1, 4),
     ])
-    const stageHtml = stages
-      .map(
-        (s) =>
-          `<a class="stage-card" href="${basePath}/stages/${encodeURIComponent(s.key)}"><div class="stage-order">阶段 ${s.order + 1}</div><div class="stage-name">${escapeHtml(s.label)}</div></a>`,
-      )
-      .join('')
-    const topicHtml = topics.items.length
-      ? `<h2>精选专题</h2><div class="card-list">${topics.items
+    const stageHtml = renderStageGrid(stages.status === 'fulfilled' ? stages.value : FIXED_STAGES, basePath)
+    const topicHtml = topics.status === 'fulfilled' && topics.value.items.length
+      ? `<h2>精选专题</h2><div class="card-list">${topics.value.items
           .map(
             (t) =>
               `<article class="card"><h3 class="card-title"><a href="${basePath}/topics/${encodeURIComponent(t.name)}">${escapeHtml(t.title)}</a></h3><p class="card-intro">${escapeHtml(t.intro)}</p><div class="meta-row">含 ${t.resourceCount} 条资料</div></article>`,
           )
           .join('')}</div>`
       : ''
-    const recentHtml = recent.items.length
-      ? `<div class="card-list">${recent.items.map((item) => renderCard(item, config)).join('')}</div>`
-      : '<div class="warn-bar">暂未发布资料卡。运营者核对收录后将陆续公开。</div>'
-    const postHtml = posts.items.length
-      ? `<h2>本站原创导读</h2><div class="card-list">${posts.items
+    const recentHtml = recent.status === 'fulfilled'
+      ? recent.value.items.length
+        ? `<div class="card-list">${recent.value.items.map(item => renderCard(item, config)).join('')}</div>`
+        : '<div class="warn-bar">暂未发布资料卡。运营者核对收录后将陆续公开。</div>'
+      : renderUnavailableResources(basePath)
+    const postHtml = posts.status === 'fulfilled' && posts.value.items.length
+      ? `<h2>本站原创导读</h2><div class="card-list">${posts.value.items
           .map(
             (p) =>
               `<article class="card"><h3 class="card-title"><a href="${basePath}/posts/${encodeURIComponent(p.name)}">${escapeHtml(p.title)}</a></h3><p class="card-intro">${escapeHtml(p.excerpt)}</p>${p.author ? `<div class="meta-row">${escapeHtml(p.author)}</div>` : ''}</article>`,
@@ -294,7 +319,7 @@ export async function handleRequest(
   <button class="btn" type="submit">搜索</button>
 </form>
 <h2>按阶段开始浏览</h2>
-<div class="stage-grid">${stageHtml}</div>
+${stageHtml}
 ${topicHtml}
 <h2>近期整理资料</h2>
 ${recentHtml}
@@ -304,19 +329,13 @@ ${postHtml}`,
   }
 
   if (path === '/stages') {
-    const stages = await client.getStages()
-    const grid = stages
-      .map(
-        (s) =>
-          `<a class="stage-card" href="${basePath}/stages/${encodeURIComponent(s.key)}"><div class="stage-order">阶段 ${s.order + 1}</div><div class="stage-name">${escapeHtml(s.label)}</div></a>`,
-      )
-      .join('')
+    const stages = await client.getStages().catch(() => FIXED_STAGES)
     return htmlResponse(
       200,
       renderLayout(
         config,
         '按阶段浏览',
-        `<h1>按阶段浏览</h1><p class="notice-bar">阶段只是阅读资料的组织方式，不代表对任何家庭规定检查或治疗路线。</p><div class="stage-grid">${grid}</div>`,
+        `<h1>按阶段浏览</h1><p class="notice-bar">阶段只是阅读资料的组织方式，不代表对任何家庭规定检查或治疗路线。</p>${renderStageGrid(stages, basePath)}`,
       ),
     )
   }
@@ -324,13 +343,19 @@ ${postHtml}`,
   if (path.startsWith('/stages/')) {
     const key = routeKey(path, '/stages/').toUpperCase()
     if (!key) return notFoundResponse(config)
-    const stages = await client.getStages()
+    const stages = await client.getStages().catch(() => FIXED_STAGES)
     const stage = stages.find((s) => s.key === key)
     if (!stage) {
       return notFoundResponse(config)
     }
     const stagePath = `${basePath}/stages/${encodeURIComponent(stage.key)}`
     const list = await client.listResources({ stage: stage.key, type: selectedType || undefined, tag: selectedTag || undefined, page, size: 20 })
+      .catch(() => null)
+    if (!list) {
+      return htmlResponse(200, renderLayout(config, stage.label,
+        `<h1>${escapeHtml(stage.label)}</h1>${renderUnavailableResources(basePath)}`,
+      ))
+    }
     const cards = list.items.length
       ? `<div class="card-list">${list.items.map((item) => renderCard(item, config)).join('')}</div>`
       : '<div class="warn-bar">该筛选条件下暂无已公开资料。</div>'

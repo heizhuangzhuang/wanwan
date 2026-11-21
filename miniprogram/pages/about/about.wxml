@@ -19,6 +19,7 @@
     <view class="title">石膏记录与隐私</view>
     <view class="description">石膏记录开通后，须经本人或孩子的监护人单独同意。云端加密保存手填记录并绑定微信账户，用于回看和换机恢复。提醒授权单独申请，微信消息仅含通用提醒和时间。</view>
     <view class="description">可在石膏记录页删除单条记录，也可以撤回同意并清空当前云端记录和待发提醒。开通时会显示隐私联系邮箱。</view>
+    <view class="description">矫正鞋的穿戴时间和每日目标仅保存在本机。可以在穿戴记录页编辑或删除记录。</view>
     <navigator class="text-link" url="/pages/cast/cast">查看石膏记录与授权</navigator>
   </view>
 

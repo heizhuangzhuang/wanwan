@@ -112,7 +112,7 @@ export function createBackendClient(apiBase: string, timeoutMs = 5000): BackendC
     }
     const res = await fetch(url, {
       method: 'GET',
-      headers: { Accept: 'application/json' },
+      headers: { Accept: 'application/json', 'X-Wanwan-Client': 'web' },
       redirect: 'manual',
       signal: AbortSignal.timeout(timeoutMs),
     })

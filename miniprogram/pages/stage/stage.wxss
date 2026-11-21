@@ -1,0 +1,11 @@
+.stage-intro {
+  margin-bottom: 20rpx;
+  padding: 24rpx 26rpx;
+  background: #e2eee5;
+  border: 1rpx solid #d0e3d6;
+  border-radius: 24rpx;
+}
+
+.stage-intro .page-heading { color: #244a3b; }
+.stage-intro .description { margin: 12rpx 0 0; line-height: 1.65; }
+.stage-tag .btn { flex: 0 0 136rpx; }

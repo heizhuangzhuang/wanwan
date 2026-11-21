@@ -1,5 +1,6 @@
 <template name="resourceCards">
-  <button wx:for="{{items}}" wx:key="name" class="card resource-card" data-name="{{item.name}}" bindtap="openDetail" hover-class="pressed">
+  <button wx:for="{{items}}" wx:key="name" class="card resource-card motion-press" data-name="{{item.name}}" bindtap="openDetail"
+    hover-class="pressed" hover-start-time="0" hover-stay-time="90">
     <view class="title">{{item.title}}</view>
     <view class="description">{{item.intro}}</view>
     <view class="resource-meta"><text>{{item.materialLabel}}</text><text>{{item.sourceName}}</text></view>

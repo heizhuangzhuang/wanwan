@@ -1,4 +1,5 @@
 import { wanwanApi } from '../../services/api'
+import type { IAppOption } from '../../app'
 import { familyGuide } from '../../services/family-guide'
 import { decodeOption, materialTypes, openResource, resourceLabel } from '../../services/reading'
 
@@ -9,7 +10,7 @@ Page({
     stageKey: '', heading: '', intro: '', materials: materialTypes, typeIndex: 0, tag: '', submittedTag: '',
     guide: null as ReturnType<typeof familyGuide>, prepareUrl: '',
     items: [] as ReturnType<typeof resourceLabel>[],
-    page: 1, hasNext: false, loading: false, error: '', requestedPage: 1,
+    page: 1, hasNext: false, loading: false, error: '', requestedPage: 1, demoMode: false,
   },
   onLoad(options: Record<string, string | undefined>) {
     const key = decodeOption(options.key)
@@ -19,6 +20,7 @@ Page({
     this.setData({
       stageKey: key,
       heading,
+      demoMode: getApp<IAppOption>().globalData.demoMode,
       guide,
       prepareUrl: guide ? '/pages/preparation/preparation?stage=' + encodeURIComponent(key) : '',
       intro: guide?.summary ?? (key ? stageIntro(key) : '按资料类型和主题标签，找到想继续读的内容。'),

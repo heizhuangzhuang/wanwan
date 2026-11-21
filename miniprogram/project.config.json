@@ -26,14 +26,19 @@
     "miniprogram": {
       "list": [
         {
+          "name": "刚发现（本地 MySQL）",
+          "pathName": "pages/stage/stage",
+          "query": "key=JUST_FOUND&label=%E5%88%9A%E5%8F%91%E7%8E%B0&local=mysql"
+        },
+        {
           "name": "公众号专题入口（本地演示）",
           "pathName": "pages/reading/reading",
-          "query": "kind=topic&name=demo-start"
+          "query": "kind=topic&name=demo-start&demo=1"
         },
         {
           "name": "公众号导读入口（本地演示）",
           "pathName": "pages/reading/reading",
-          "query": "kind=guide&name=demo-guide"
+          "query": "kind=guide&name=demo-guide&demo=1"
         }
       ]
     }

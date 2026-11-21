@@ -4,14 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc -p tsconfig.json && esbuild client/brace-dashboard.ts --bundle --target=es2022 --platform=browser --outfile=dist/brace-client.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.brace.json",
     "test": "pnpm build && node --experimental-strip-types --test test/*.test.ts",
     "start": "node dist/server.js"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@types/sanitize-html": "2.16.2",
+    "esbuild": "0.28.2",
     "typescript": "^5.8.0"
   },
   "dependencies": {

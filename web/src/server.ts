@@ -29,8 +29,8 @@ const server = createServer(async (req, res) => {
       ...(result.location ? { Location: result.location } : {}),
       ...(result.contentDisposition ? { 'Content-Disposition': result.contentDisposition } : {}),
       ...responseHeaders,
-      ...(result.toolsScript ? {
-        'Content-Security-Policy': `${responseHeaders['Content-Security-Policy']}; script-src '${appointmentHash}'`,
+      ...(result.toolsScript || result.scriptHash ? {
+        'Content-Security-Policy': `${responseHeaders['Content-Security-Policy']}; script-src '${result.scriptHash ?? appointmentHash}'`,
       } : {}),
     })
     if (req.method === 'HEAD') {

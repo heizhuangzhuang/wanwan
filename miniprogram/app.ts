@@ -22,11 +22,15 @@ App<IAppOption>({
     contactEmail: '',
     demoMode: false,
   },
-  onLaunch() {
+  onLaunch(options) {
     const { appId, envVersion } = wx.getAccountInfoSync().miniProgram
-    if (envVersion === 'develop' && (!appId || appId === 'touristappid')) {
+    const guest = !appId || appId === 'touristappid'
+    const demo = options?.query?.demo === '1'
+    const localMysql = options?.query?.local === 'mysql'
+    if (envVersion === 'develop' && (guest || demo || localMysql)) {
       this.globalData.useCloudContainer = false
-      this.globalData.demoMode = !this.globalData.apiBase
+      if (localMysql) this.globalData.apiBase = 'http://127.0.0.1:18091/apis/api.xiaojiaoya.run/v1alpha1'
+      this.globalData.demoMode = !localMysql && (demo || !this.globalData.apiBase)
       return
     }
 

@@ -3,18 +3,35 @@ set -eu
 
 WORK_DIR="${HALO_WORK_DIR:-/root/.halo2}"
 set -- "--server.port=${PORT:-80}" "--halo.work-dir=${WORK_DIR}"
+db_source='Halo default configuration'
 
-if [ -n "${MYSQL_ADDRESS:-}" ]; then
-  : "${MYSQL_USERNAME:?Set MYSQL_USERNAME for the Cloud Run MySQL instance}"
-  : "${MYSQL_PASSWORD:?Set MYSQL_PASSWORD for the Cloud Run MySQL instance}"
-  DB_NAME="${MYSQL_DATABASE:-halo}"
-  set -- "$@" \
-    "--spring.r2dbc.url=r2dbc:pool:mysql://${MYSQL_ADDRESS}/${DB_NAME}" \
-    "--spring.r2dbc.username=${MYSQL_USERNAME}" \
-    "--spring.sql.init.platform=mysql"
-  export SPRING_R2DBC_PASSWORD="$MYSQL_PASSWORD"
-  unset MYSQL_PASSWORD
-fi
+case "${SPRING_R2DBC_URL:-}" in
+  r2dbc:mysql://*|r2dbc:pool:mysql://*)
+    # Preserve the configured data source when upgrading an existing Halo service.
+    set -- "$@" "--spring.sql.init.platform=mysql"
+    db_source='MySQL from SPRING_R2DBC_URL'
+    ;;
+  *)
+    if [ -n "${MYSQL_ADDRESS:-}" ] || [ "${WANWAN_REQUIRE_MYSQL:-0}" = "1" ]; then
+      missing=''
+      [ -n "${MYSQL_ADDRESS:-}" ] || missing="$missing MYSQL_ADDRESS"
+      [ -n "${MYSQL_USERNAME:-}" ] || missing="$missing MYSQL_USERNAME"
+      [ -n "${MYSQL_PASSWORD:-}" ] || missing="$missing MYSQL_PASSWORD"
+      if [ -n "$missing" ]; then
+        printf '[wanwan] MySQL configuration missing:%s. Check the environment variables of this Cloud Run version.\n' "$missing" >&2
+        exit 1
+      fi
+      DB_NAME="${MYSQL_DATABASE:-halo}"
+      set -- "$@" \
+        "--spring.r2dbc.url=r2dbc:pool:mysql://${MYSQL_ADDRESS}/${DB_NAME}" \
+        "--spring.r2dbc.username=${MYSQL_USERNAME}" \
+        "--spring.sql.init.platform=mysql"
+      export SPRING_R2DBC_PASSWORD="$MYSQL_PASSWORD"
+      unset MYSQL_PASSWORD
+      db_source='MySQL from MYSQL_ADDRESS'
+    fi
+    ;;
+esac
 
 mkdir -p "${WORK_DIR}/plugins"
 
@@ -33,6 +50,7 @@ for bundled in /opt/wanwan/plugins/plugin-wanwan-*.jar; do
       exit 1
     fi
   done
+  printf '[wanwan] Starting with %s using %s.\n' "$filename" "$db_source"
 done
 
 if [ -n "${HALO_EXTERNAL_URL:-}" ]; then

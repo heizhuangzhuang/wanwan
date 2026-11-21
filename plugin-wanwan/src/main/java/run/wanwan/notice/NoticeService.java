@@ -89,7 +89,8 @@ public class NoticeService {
     }
 
     public void observeResource(ResourceCard resource) {
-        if (Visibility.isListed(resource)) {
+        if (Visibility.isListed(resource) && resource.getMetadata() != null
+            && !isTestFixture(resource.getMetadata().getName())) {
             // A card has no first-publish timestamp. Capture the first public observation.
             observe(NoticePublication.Kind.RESOURCE, resource, Instant.now());
         }
@@ -185,6 +186,9 @@ public class NoticeService {
 
     private Optional<Target> target(NoticePublication event) {
         String name = event.getContentName();
+        if (event.getContentKind() == NoticePublication.Kind.RESOURCE && isTestFixture(name)) {
+            return Optional.empty();
+        }
         String key = UriUtils.encodeQueryParam(name, StandardCharsets.UTF_8);
         return switch (event.getContentKind()) {
             case RESOURCE -> client.fetch(ResourceCard.class, name)
@@ -199,6 +203,10 @@ public class NoticeService {
                 .filter(title -> !title.isBlank())
                 .map(title -> new Target(title, "pages/reading/reading?kind=guide&name=" + key));
         };
+    }
+
+    private static boolean isTestFixture(String name) {
+        return name != null && name.startsWith("fixture-just-found-");
     }
 
     private static String digest(String... values) {

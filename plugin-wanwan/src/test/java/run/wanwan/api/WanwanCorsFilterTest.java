@@ -22,6 +22,7 @@ class WanwanCorsFilterTest {
             MockServerHttpRequest.options("/apis/api.wanwan.run/v1alpha1/resources")
                 .header(HttpHeaders.ORIGIN, "https://www.wanwan.run")
                 .header(HttpHeaders.HOST, "api.wanwan.run")
+                .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "X-Wanwan-Client")
                 .build());
         filter.filter(exchange, PASS).block();
 
@@ -29,6 +30,41 @@ class WanwanCorsFilterTest {
         assertThat(exchange.getResponse().getHeaders().getAccessControlAllowOrigin())
             .isEqualTo("https://www.wanwan.run");
         assertThat(exchange.getResponse().getHeaders().getAccessControlAllowCredentials()).isFalse();
+        assertThat(exchange.getResponse().getHeaders().getAccessControlAllowHeaders())
+            .containsExactly("X-Wanwan-Client");
+        assertThat(exchange.getResponse().getHeaders().getAccessControlExposeHeaders())
+            .containsExactly("X-Wanwan-Client");
+    }
+
+    @Test
+    void reportsTheClientOnReadsAndWrites() {
+        var read = MockServerHttpRequest.get("/apis/api.xiaojiaoya.run/v1alpha1/stages");
+        var write = MockServerHttpRequest.post("/apis/api.xiaojiaoya.run/v1alpha1/cast-journal");
+        assertThat(channel(read.header("X-Wanwan-Client", "web"))).isEqualTo("web");
+        assertThat(channel(write.header("X-Wanwan-Client", "wechat-miniprogram")))
+            .isEqualTo("wechat-miniprogram");
+    }
+
+    @Test
+    void recognizesOlderWechatRequestsAndLeavesAmbiguousRequestsUnknown() {
+        String route = "/apis/api.wanwan.run/v1alpha1/stages";
+        assertThat(channel(MockServerHttpRequest.get(route).header("X-WX-SOURCE", "wx_client")))
+            .isEqualTo("wechat-miniprogram");
+        assertThat(channel(MockServerHttpRequest.get(route).header("X-WX-SOURCE", "wx_devtools")))
+            .isEqualTo("wechat-miniprogram");
+        assertThat(channel(MockServerHttpRequest.get(route))).isEqualTo("unknown");
+        assertThat(channel(MockServerHttpRequest.get(route).header("X-Wanwan-Client", "other")))
+            .isEqualTo("unknown");
+        assertThat(channel(MockServerHttpRequest.get(route)
+            .header("X-Wanwan-Client", "web", "wechat-miniprogram"))).isEqualTo("unknown");
+    }
+
+    private String channel(MockServerHttpRequest.BaseBuilder<?> request) {
+        var exchange = MockServerWebExchange.from(request.build());
+        new WanwanCorsFilter("").filter(exchange, PASS).block();
+        assertThat(exchange.getResponse().getHeaders().getVary())
+            .contains("X-Wanwan-Client", "X-WX-SOURCE");
+        return exchange.getResponse().getHeaders().getFirst("X-Wanwan-Client");
     }
 
     @Test
@@ -64,5 +100,6 @@ class WanwanCorsFilterTest {
                 .build());
         filter.filter(exchange, PASS).block();
         assertThat(exchange.getResponse().getHeaders().getAccessControlAllowOrigin()).isNull();
+        assertThat(exchange.getResponse().getHeaders().getFirst("X-Wanwan-Client")).isNull();
     }
 }

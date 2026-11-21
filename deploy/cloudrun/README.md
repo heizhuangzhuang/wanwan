@@ -8,12 +8,11 @@
    - 最小实例数必须设为 **1**（禁止缩容到 0，防止 Halo 启动与内存搜索索引重建超时）。
    - 建议规格：1C2G 或 2C4G（`JVM_OPTS=-Xmx1024m -Xms512m`）。
 3. **存储与数据库**：
-   - 可以先留空 `MYSQL_ADDRESS` 启动验证，此时继承 Halo 的数据源配置，新实例默认使用文件型 H2。通过 H2 试运行时保留单实例，重建或重启前确认 `/root/.halo2` 的持久化挂载。
-   - 使用云托管 MySQL 8.0 时，配置 `MYSQL_ADDRESS`、`MYSQL_USERNAME`、`MYSQL_PASSWORD`。已配置地址而缺少用户名或密码时，入口脚本会停止启动。
+   - 仓库构建和预构建上传包都要求 MySQL。使用云托管 MySQL 时，把 `MYSQL_ADDRESS`、`MYSQL_USERNAME`、`MYSQL_PASSWORD` 保存到本次发布的版本。启动日志会列出缺失的变量名。
    - 已运行的实例若尚未使用 MySQL，先核实数据所在位置并备份，确认迁移后的数据再切换流量。
    - 挂载 **CFS 文件存储** 到 `/root/.halo2`，保存 Halo 配置与原创附件。
 4. **环境变量**：
-   - `MYSQL_DATABASE=halo`
+   - `MYSQL_DATABASE` 填现有数据库名。仅当原库名是 `halo` 时使用 `halo`
    - `HALO_EXTERNAL_URL=https://你的后端域名`
    - `WANWAN_CORS_ALLOWED_ORIGINS` 在浏览器需要跨域调用时填写允许的来源，多个来源用逗号分隔。Web SSR 通过服务器间 HTTPS 请求读取接口
 5. **安全边界**：
@@ -28,7 +27,17 @@
 
 发布后检查 `/actuator/health/readiness`，并用连接记录核实目标 MySQL。第一次配置 Halo 时，在受控管理入口完成初始化，然后在「插件」上传同版本 JAR 并启用「弯弯知识导航」。镜像将 JAR 同步到工作目录；Halo 的插件安装记录仍由管理后台建立。已安装的实例如果更换插件版本，在管理后台执行升级。
 
+针对「Halo 已启动，应用 API 和插件静态文件都返回 404」的恢复包额外包含 `wanwan-plugin-recovery.yaml`，通过 Halo 的 `HALO_INITIAL_EXTENSION_LOCATIONS` 注册并启用该插件。恢复包只初始化此插件的登记。已有登记若带 `halo.run/do-not-overwrite` 标记，Halo 会保留它的管理状态。恢复后检查 `/stages` 与 `/resources` 的实际 JSON 响应。
+
+已有 MySQL `SPRING_R2DBC_URL` 的版本会沿用该连接和对应的 Spring 凭据。其他版本在当前服务版本的环境变量中填写原库的 `MYSQL_ADDRESS`（内网主机与端口）、`MYSQL_USERNAME`、`MYSQL_PASSWORD` 和 `MYSQL_DATABASE`。沿用原数据库和持久化挂载。新入口脚本以 `[wanwan] Starting with` 标识插件文件和数据源配置方式，随后还需要核对 Halo 实际连接成功及插件启用状态。
+
+测试资料通过[独立导入工具](../../content/import-test-fixtures.mjs)写入 Halo。先升级并启用新版插件，再向已核实使用 MySQL 的目标导入。测试卡在 Web 和小程序可读，按其保留的样本 ID 跳过微信新资料通知。
+
 匿名 `GET /apis/api.xiaojiaoya.run/v1alpha1/stages` 应返回 `200 application/json` 和阶段数组。若进程健康但此接口跳到登录页，在受控的 Halo 后台核对插件的安装、启用状态和启动日志，再联调 Web 和小程序。升级前保留原镜像、持久化目录备份和上一版插件 JAR。
+
+## API 请求来源
+
+Web 服务端发送 `X-Wanwan-Client: web`，微信小程序发送 `X-Wanwan-Client: wechat-miniprogram`。应用 API 在响应头返回识别结果。旧版小程序云请求可通过 `X-WX-SOURCE` 兼容识别，其他无法识别的请求返回 `unknown`。该标记仅用于排查调用来源，私有写入仍核验微信登录码。
 
 
 ## 小程序新资料订阅

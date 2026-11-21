@@ -14,7 +14,7 @@ declare namespace WechatMiniprogram {
   }
 }
 
-declare function App<T>(options: T & { onLaunch?(): void } & ThisType<T>): void
+declare function App<T>(options: T & { onLaunch?(options?: { query?: Record<string, string> }): void } & ThisType<T>): void
 declare function getApp<T = Record<string, unknown>>(): T
 declare function getCurrentPages(): { route?: string }[]
 interface TabBarHost {
@@ -35,6 +35,8 @@ declare function Page<T extends { data?: Record<string, unknown> }>(
 
 interface MiniProgramFailure { errMsg?: string }
 interface MiniProgramFileSystem {
+  readFileSync(path: string, encoding: 'utf8'): string
+  writeFileSync(path: string, data: string | ArrayBuffer, encoding?: 'utf8'): void
   access(options: { path: string; success: () => void; fail: (err: MiniProgramFailure) => void }): void
   writeFile(options: { filePath: string; data: string; encoding: 'base64';
     success: () => void; fail: (err: MiniProgramFailure) => void }): void
@@ -96,6 +98,8 @@ declare const wx: {
   setClipboardData(options: { data: string; success?: () => void; fail?: () => void }): void
   openOfficialAccountArticle?(options: { url: string; fail?: () => void }): void
   showToast(options: { title: string; icon?: string }): void
+  chooseMessageFile?(options: { count: number; type: 'file'; extension?: string[];
+    success: (result: { tempFiles: { path: string; size: number }[] }) => void; fail?: () => void }): void
   showModal(options: { title: string; content: string; confirmText?: string;
     success: (result: { confirm: boolean }) => void }): void
 }

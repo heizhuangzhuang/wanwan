@@ -50,9 +50,115 @@ const item = name => ({ name, title: name, originalTitle: name, sourceName: '资
   citationUrl: 'https://example.test/origin', entry: { type: 'CITATION_ONLY' } })
 const settle = () => new Promise(resolve => setImmediate(resolve))
 
+test('支具档案按历史计划区分漏记、低于目标、确认未穿和仅随访', () => {
+  const core = require(join(compiled, 'services/brace-ledger.js'))
+  const log = core.blankWearLog()
+  const at = (value) => core.parseLocalTime(...value.split(' '))
+  log.sessions.push({ id: 'overnight', start: at('2016-11-20 22:00'), end: at('2016-11-21 06:00') },
+    { id: 'overlap', start: at('2016-11-21 04:00'), end: at('2016-11-21 08:00') })
+  log.plans.push({ day: '2016-11-20', type: 'wear', minutes: 720 },
+    { day: '2016-11-21', type: 'wear', minutes: 480 },
+    { day: '2016-11-24', type: 'followup', minutes: null })
+  log.confirmedZero.push('2016-11-23')
+  const now = at('2026-11-20 13:00')
+  const days = core.dailyWear(core.parseBackup(core.serializeBackup(log)), '2016-11-20', '2026-11-20', now)
+  assert.equal(days.length, 3653)
+  assert.deepEqual(days.slice(0, 5).map(row => [row.state, row.recordedMinutes]),
+    [['below', 120], ['met', 480], ['unrecorded', null], ['zero', 0], ['followup', null]])
+  assert.equal(days[days.length - 1].state, 'today')
+  assert.deepEqual(core.summarizeWear(days), { recorded: 3, minutes: 600, below: 1, missing: 1, zero: 1, met: 1 })
+  assert.equal(core.chartWear(days).length, 11)
+})
+
+test('矫正鞋把过夜与午睡分别计入对应日期，重叠时间只计一次', () => {
+  const { dayWear, parseLocalTime, lastSevenDays } = require(join(compiled, 'services/brace-wear.js'))
+  const at = (day, time) => parseLocalTime(day, time)
+  const yesterday = '2026-11-20'
+  const today = '2026-11-21'
+  const state = {
+    sessions: [
+      { id: 'overnight', start: at(yesterday, '22:00'), end: at(today, '07:30') },
+      { id: 'duplicate', start: at(today, '06:00'), end: at(today, '07:45') },
+      { id: 'nap', start: at(today, '13:00'), end: at(today, '14:15') },
+    ],
+    activeStart: at(today, '21:15'), targetMinutes: null,
+  }
+  assert.equal(dayWear(state, yesterday, at(today, '21:30')).elapsed / 60_000, 120)
+  assert.equal(dayWear(state, today, at(today, '21:30')).elapsed / 60_000, 555)
+  assert.equal(dayWear(state, today, at(today, '21:30')).includesActive, true)
+  assert.equal(lastSevenDays(today).at(-1), '2026-11-15')
+  assert.ok(Number.isNaN(at('2026-02-30', '08:00')))
+  assert.ok(Number.isNaN(at(today, '24:00')))
+})
+
+test('矫正鞋页面离线计时跨重开，支持补记、编辑、删除与自填目标', () => {
+  const { parseLocalTime } = require(join(compiled, 'services/brace-wear.js'))
+  const originalNow = Date.now
+  const storage = new Map()
+  const day = '2026-11-21'
+  const event = dataset => ({ currentTarget: { dataset } })
+  const update = (page, field, value) => page.changeTime({ ...event({ field }), detail: { value } })
+  const pages = []
+  const open = () => {
+    const { page, requests } = openPage('brace-wear', () => assert.fail('穿戴记录不调用网络'), { storage })
+    pages.push(page)
+    page.onShow()
+    assert.deepEqual(requests, [])
+    return page
+  }
+  try {
+    Date.now = () => parseLocalTime(day, '08:00')
+    const first = open()
+    assert.equal(first.data.week[0].total, '无记录')
+    first.toggleWear()
+    assert.equal(first.data.active, true)
+    first.onHide()
+
+    Date.now = () => parseLocalTime(day, '09:30')
+    const page = open()
+    assert.equal(page.data.elapsed, '1 小时 30 分钟')
+    page.toggleWear()
+    assert.equal(page.data.active, false)
+    assert.equal(page.data.sessions.length, 1)
+    page.chooseDay(event({ day: '2026-11-20' }))
+    assert.equal(page.data.selectedLabel, '11月20日')
+    page.addToday()
+    assert.equal(page.data.selectedDay, '2026-11-20')
+    assert.equal(page.data.form.startDay, day)
+    page.closeForm()
+    page.chooseDay(event({ day }))
+    page.addSession()
+    update(page, 'startTime', '06:00')
+    update(page, 'endTime', '06:30')
+    page.saveSession()
+    assert.equal(page.data.elapsed, '2 小时 0 分钟')
+
+    const recorded = page.data.sessions.at(-1)
+    page.editSession(event({ id: recorded.id }))
+    update(page, 'endTime', '07:00')
+    page.saveSession()
+    assert.equal(page.data.elapsed, '2 小时 30 分钟')
+    wx.showModal = options => options.success({ confirm: true })
+    page.removeSession(event({ id: recorded.id }))
+    assert.equal(page.data.elapsed, '1 小时 30 分钟')
+
+    page.openTarget()
+    page.changeHours({ detail: { value: '12' } })
+    page.saveTarget()
+    assert.equal(page.data.target, '12 小时 0 分钟')
+    assert.equal(page.data.targetPercent, 12.5)
+    const restarted = open()
+    assert.equal(restarted.data.target, '12 小时 0 分钟')
+    assert.equal(restarted.data.elapsed, '1 小时 30 分钟')
+  } finally {
+    for (const page of pages) page.onUnload()
+    Date.now = originalNow
+  }
+})
+
 test('真实 AppID 连接弯弯云托管，游客继续使用本地联调地址', async () => {
   const path = join(compiled, 'app.js')
-  function launch(appId, envVersion) {
+  function launch(appId, envVersion, query) {
     let app
     const calls = []
     global.App = options => { app = options }
@@ -62,7 +168,7 @@ test('真实 AppID 连接弯弯云托管，游客继续使用本地联调地址'
     }
     delete require.cache[require.resolve(path)]
     require(path)
-    app.onLaunch()
+    app.onLaunch({ query })
     return { config: app.globalData, calls }
   }
   const cloud = launch('wx1234567890abcdef', 'develop')
@@ -73,6 +179,21 @@ test('真实 AppID 连接弯弯云托管，游客继续使用本地联调地址'
   assert.deepEqual(guest.calls, [])
   assert.equal(guest.config.useCloudContainer, false)
   assert.match(guest.config.apiBase, /^http:\/\/127\.0\.0\.1:18090\//)
+
+  const demo = launch('wx1234567890abcdef', 'develop', { demo: '1' })
+  assert.deepEqual(demo.calls, [])
+  assert.equal(demo.config.demoMode, true)
+  assert.equal(demo.config.useCloudContainer, false)
+  const local = launch('wx1234567890abcdef', 'develop', { local: 'mysql' })
+  assert.deepEqual(local.calls, [])
+  assert.equal(local.config.demoMode, false)
+  assert.equal(local.config.useCloudContainer, false)
+  assert.match(local.config.apiBase, /^http:\/\/127\.0\.0\.1:18091\//)
+  for (const envVersion of ['trial', 'release']) {
+    const live = launch('wx1234567890abcdef', envVersion, { demo: '1', local: 'mysql' })
+    assert.equal(live.config.demoMode, false)
+    assert.equal(live.config.useCloudContainer, true)
+  }
 })
 
 test('公众号专题入口按编辑顺序显示，返回前台后撤回内容不可见', async () => {
@@ -125,6 +246,54 @@ test('搜索翻页保留已提交的关键词、阶段、材料类型', async ()
   const params = new URL(requests.at(-1)).searchParams
   assert.deepEqual(Object.fromEntries(params), { keyword: '石膏', stage: 'BIRTH', type: 'PAPER', page: '2' })
   assert.equal(page.data.hasNext, false)
+})
+
+test('站内搜索命中内置检查简称，第二页只展示公开资料', async () => {
+  const { page } = openPage('search', url => ({
+    data: { page: Number(url.searchParams.get('page')), size: 20, total: 21, items: [item('公开资料')] },
+  }))
+
+  page.onInput({ detail: { value: 'ＣＭＡ' } })
+  page.doSearch()
+  assert.deepEqual(page.data.prenatalResults.map(guide => guide.key), ['chromosome'])
+  await settle()
+  assert.deepEqual(page.data.items.map(resource => resource.name), ['公开资料'])
+
+  page.nextPage()
+  await settle()
+  assert.equal(page.data.page, 2)
+  assert.deepEqual(page.data.prenatalResults, [])
+})
+
+test('公开接口不可用时仍能查到「羊穿」，内置导读遵循阶段和类型筛选', async () => {
+  const { page } = openPage('search', () => null)
+  await page.loadFilters()
+  page.onInput({ detail: { value: '羊穿' } })
+  page.doSearch()
+  await settle()
+  assert.match(page.data.error, /公开资料暂时不可用/)
+  assert.deepEqual(page.data.history, ['羊穿'])
+  assert.deepEqual(page.data.prenatalResults.map(guide => guide.key), ['amniocentesis'])
+
+  const postnatalIndex = page.data.stages.findIndex(stage => stage.key === 'POSTNATAL_TREATMENT')
+  page.onStage({ detail: { value: String(postnatalIndex) } })
+  await settle()
+  assert.deepEqual(page.data.prenatalResults, [])
+
+  const prenatalIndex = page.data.stages.findIndex(stage => stage.key === 'PRENATAL')
+  const paperIndex = page.data.materials.findIndex(type => type.key === 'PAPER')
+  page.onStage({ detail: { value: String(prenatalIndex) } })
+  await settle()
+  page.onType({ detail: { value: String(paperIndex) } })
+  await settle()
+  assert.deepEqual(page.data.prenatalResults, [])
+
+  const originalIndex = page.data.materials.findIndex(type => type.key === 'ORIGINAL')
+  page.onType({ detail: { value: String(originalIndex) } })
+  await settle()
+  assert.deepEqual(page.data.prenatalResults.map(guide => guide.key), ['amniocentesis'])
+  page.clearKeyword()
+  assert.deepEqual(page.data.prenatalResults, [])
 })
 
 test('阶段翻页保留已提交的主题标签和类型', async () => {
@@ -408,7 +577,9 @@ test('授权远程附件兼容 Office、图片和 ZIP，HTTP 错误不保存文�
 
 test('公开列表在新接口跳转登录时使用线上兼容路径，私有接口不降级', async () => {
   const cloud = { useCloudContainer: true, cloudEnv: 'test', cloudService: 'xiaojiaoya' }
-  const { page, requests } = openPage('index', url => {
+  const { page, requests } = openPage('index', (url, req) => {
+    assert.equal(req.header['X-Wanwan-Client'], 'wechat-miniprogram')
+    assert.equal(req.header['X-WX-SERVICE'], 'xiaojiaoya')
     if (url.pathname.includes('api.xiaojiaoya.run')) return { status: 302, data: '' }
     return { data: url.pathname.endsWith('/stages')
       ? [{ key: 'JUST_FOUND', label: '初次发现', order: 0 }]
@@ -419,11 +590,25 @@ test('公开列表在新接口跳转登录时使用线上兼容路径，私有�
   assert.equal(page.data.error, '')
   assert.ok(requests.includes('/apis/api.wanwan.run/v1alpha1/stages'))
 
-  const cast = openPage('cast', () => ({ status: 302, data: '' }), cloud)
+  const cast = openPage('cast', (_, req) => {
+    assert.equal(req.header['X-Wanwan-Client'], 'wechat-miniprogram')
+    return { status: 302, data: '' }
+  }, cloud)
   await cast.page.refresh()
   assert.deepEqual(cast.requests, ['/apis/api.xiaojiaoya.run/v1alpha1/cast-journal-config'])
   assert.equal(cast.page.data.config, null)
   assert.equal(cast.page.data.error, '')
+})
+
+test('直连后端的微信小程序请求也携带来源标记', async () => {
+  const channels = []
+  const { page } = openPage('index', (url, req) => {
+    channels.push(req.header['X-Wanwan-Client'])
+    return { data: url.pathname.endsWith('/stages') ? [] : { items: [] } }
+  })
+  await page.loadHome()
+  assert.ok(channels.length > 0)
+  assert.deepEqual([...new Set(channels)], ['wechat-miniprogram'])
 })
 
 test('石膏记录需要单独同意，微信拒绝提醒时不提交授权', async () => {

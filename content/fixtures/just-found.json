@@ -1,0 +1,158 @@
+[
+  {
+    "apiVersion": "wanwan.run/v1alpha1",
+    "kind": "ResourceCard",
+    "metadata": {
+      "name": "fixture-just-found-visit-memo"
+    },
+    "spec": {
+      "originalTitle": "【测试】第一次就诊沟通备忘录",
+      "displayTitle": "【测试】第一次就诊沟通备忘录",
+      "intro": "空白记录模板。依次填写想问的问题、需要带的资料、医院给出的安排，以及下次联系的科室。",
+      "sourceName": "联调样本 · 虚构内容",
+      "stages": [
+        "JUST_FOUND"
+      ],
+      "materialType": "ORIGINAL",
+      "tags": [
+        "就诊准备"
+      ],
+      "language": "ZH",
+      "access": "UNKNOWN",
+      "entryType": "CITATION_ONLY",
+      "linkStatus": "UNCHECKED",
+      "state": "PUBLISHED",
+      "priority": 10
+    }
+  },
+  {
+    "apiVersion": "wanwan.run/v1alpha1",
+    "kind": "ResourceCard",
+    "metadata": {
+      "name": "fixture-just-found-report-organizer"
+    },
+    "spec": {
+      "originalTitle": "【测试】超声报告整理表",
+      "displayTitle": "【测试】超声报告整理表",
+      "intro": "字段样例：检查日期【待填】、报告原文【待填】、需要核对的词语【待填】、复诊安排【待填】。",
+      "sourceName": "联调样本 · 虚构内容",
+      "stages": [
+        "JUST_FOUND"
+      ],
+      "materialType": "ORIGINAL",
+      "tags": [
+        "报告整理"
+      ],
+      "language": "ZH",
+      "access": "UNKNOWN",
+      "entryType": "CITATION_ONLY",
+      "linkStatus": "UNCHECKED",
+      "state": "PUBLISHED",
+      "priority": 20
+    }
+  },
+  {
+    "apiVersion": "wanwan.run/v1alpha1",
+    "kind": "ResourceCard",
+    "metadata": {
+      "name": "fixture-just-found-review-checklist"
+    },
+    "spec": {
+      "originalTitle": "【测试】第一次复查前的记录清单",
+      "displayTitle": "【测试】第一次复查前的记录清单",
+      "intro": "把门诊留的联系方式、约定的时间、要带的旧资料和未问完的问题整理在同一页。",
+      "sourceName": "联调样本 · 虚构内容",
+      "stages": [
+        "JUST_FOUND"
+      ],
+      "materialType": "ORIGINAL",
+      "tags": [
+        "就诊准备"
+      ],
+      "language": "ZH",
+      "access": "UNKNOWN",
+      "entryType": "CITATION_ONLY",
+      "linkStatus": "UNCHECKED",
+      "state": "PUBLISHED",
+      "priority": 30
+    }
+  },
+  {
+    "apiVersion": "wanwan.run/v1alpha1",
+    "kind": "ResourceCard",
+    "metadata": {
+      "name": "fixture-just-found-visit-directory"
+    },
+    "spec": {
+      "originalTitle": "【测试】产前门诊入口信息样例",
+      "displayTitle": "【测试】产前门诊入口信息样例",
+      "intro": "机构资料类型样例。预约入口、就诊地点和携带材料均待填。此卡片没有真实挂号链接。",
+      "sourceName": "联调样本 · 虚构内容",
+      "stages": [
+        "JUST_FOUND"
+      ],
+      "materialType": "INSTITUTION",
+      "tags": [
+        "就诊准备"
+      ],
+      "language": "ZH",
+      "access": "UNKNOWN",
+      "entryType": "CITATION_ONLY",
+      "linkStatus": "UNCHECKED",
+      "state": "PUBLISHED",
+      "priority": 40
+    }
+  },
+  {
+    "apiVersion": "wanwan.run/v1alpha1",
+    "kind": "ResourceCard",
+    "metadata": {
+      "name": "fixture-just-found-family-notes"
+    },
+    "spec": {
+      "originalTitle": "【测试】一个家庭如何整理第一次就诊的问题",
+      "displayTitle": "【测试】一个家庭如何整理第一次就诊的问题",
+      "intro": "虚构记录：家人各自写下最想问的两件事，合并成一页，留出空白写门诊回复。",
+      "sourceName": "联调样本 · 虚构内容",
+      "stages": [
+        "JUST_FOUND"
+      ],
+      "materialType": "FAMILY_STORY",
+      "tags": [
+        "家长经验"
+      ],
+      "language": "ZH",
+      "access": "UNKNOWN",
+      "entryType": "CITATION_ONLY",
+      "linkStatus": "UNCHECKED",
+      "state": "PUBLISHED",
+      "priority": 50
+    }
+  },
+  {
+    "apiVersion": "wanwan.run/v1alpha1",
+    "kind": "ResourceCard",
+    "metadata": {
+      "name": "fixture-just-found-citation-record"
+    },
+    "spec": {
+      "originalTitle": "【测试】产前超声研究题录样例",
+      "displayTitle": "【测试】产前超声研究题录样例",
+      "intro": "论文题录类型样例。题名、作者、期刊、发表日期和 DOI 均留空，供测试分类与出处显示。",
+      "sourceName": "联调样本 · 虚构内容",
+      "stages": [
+        "JUST_FOUND"
+      ],
+      "materialType": "PAPER",
+      "tags": [
+        "研究题录"
+      ],
+      "language": "ZH",
+      "access": "UNKNOWN",
+      "entryType": "CITATION_ONLY",
+      "linkStatus": "UNCHECKED",
+      "state": "PUBLISHED",
+      "priority": 60
+    }
+  }
+]

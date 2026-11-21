@@ -27,6 +27,9 @@ export function renderTools(config: WebConfig) {
   return renderLayout(config, '家庭工具', `
     <section class="tool-lead"><h1>家庭工具</h1><p>整理就诊问题、保存复诊时间，和家人一起回顾每个阶段。</p></section>
     <div class="card-list">
+      <article class="card"><h2 class="card-title">支具随访大屏</h2>
+        <p>记录矫正鞋穿戴时间、按年查看目标与随访、导出 Excel。</p>
+        <a class="btn" href="${base}/tools/brace-followup">打开随访大屏</a></article>
       <article class="card"><h2 class="card-title">石膏记录与微信提醒</h2>
         <p>在微信小程序记录每次打石膏的日期、医院交代事项和下次治疗时间。同一微信账户可换机恢复。</p>
         ${miniProgram}</article>

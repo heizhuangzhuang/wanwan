@@ -16,7 +16,7 @@ import reactor.core.publisher.Mono;
 import run.halo.app.security.BeforeSecurityWebFilter;
 
 /**
- * 公开接口 CORS 白名单过滤器。
+ * 公开接口的 CORS 与客户端来源标记。
  * 未配置允许来源时不返回任何跨域放行头；拒绝通配符与凭据复用。
  */
 @Component
@@ -25,6 +25,8 @@ public class WanwanCorsFilter implements BeforeSecurityWebFilter {
     private static final String API_PREFIX = "/apis/api.xiaojiaoya.run/";
     private static final String LEGACY_PREFIX = "/apis/api.wanwan.run/";
     private static final String ALLOWED_METHODS = "GET, HEAD, OPTIONS";
+    private static final String CLIENT_HEADER = "X-Wanwan-Client";
+    private static final String WECHAT_SOURCE_HEADER = "X-WX-SOURCE";
 
     private final Set<String> allowedOrigins;
 
@@ -48,6 +50,13 @@ public class WanwanCorsFilter implements BeforeSecurityWebFilter {
         if (!path.startsWith(API_PREFIX) && !path.startsWith(LEGACY_PREFIX)) {
             return chain.filter(exchange);
         }
+        HttpHeaders headers = exchange.getResponse().getHeaders();
+        headers.add(HttpHeaders.VARY, CLIENT_HEADER);
+        headers.add(HttpHeaders.VARY, WECHAT_SOURCE_HEADER);
+        if (request.getMethod() != HttpMethod.OPTIONS) {
+            headers.set(CLIENT_HEADER, clientChannel(request.getHeaders()));
+        }
+
         String origin = request.getHeaders().getOrigin();
         if (origin == null || origin.isBlank()) {
             return chain.filter(exchange);
@@ -63,16 +72,32 @@ public class WanwanCorsFilter implements BeforeSecurityWebFilter {
             }
             return chain.filter(exchange);
         }
-        HttpHeaders headers = exchange.getResponse().getHeaders();
         headers.set(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, normalized);
         headers.add(HttpHeaders.VARY, HttpHeaders.ORIGIN);
         headers.set(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, ALLOWED_METHODS);
+        headers.set(HttpHeaders.ACCESS_CONTROL_ALLOW_HEADERS, CLIENT_HEADER);
+        headers.set(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, CLIENT_HEADER);
         headers.set(HttpHeaders.ACCESS_CONTROL_MAX_AGE, "3600");
         if (request.getMethod() == HttpMethod.OPTIONS) {
             exchange.getResponse().setStatusCode(HttpStatus.NO_CONTENT);
             return exchange.getResponse().setComplete();
         }
         return chain.filter(exchange);
+    }
+
+    // A channel is diagnostic metadata. It never grants access or proves identity.
+    private static String clientChannel(HttpHeaders headers) {
+        var clients = headers.get(CLIENT_HEADER);
+        if (clients != null) {
+            if (clients.size() != 1) return "unknown";
+            return switch (clients.getFirst().trim().toLowerCase(Locale.ROOT)) {
+                case "web" -> "web";
+                case "wechat-miniprogram" -> "wechat-miniprogram";
+                default -> "unknown";
+            };
+        }
+        String source = headers.getFirst(WECHAT_SOURCE_HEADER);
+        return "wx_client".equals(source) || "wx_devtools".equals(source) ? "wechat-miniprogram" : "unknown";
     }
 
     private static boolean isSameOrigin(ServerHttpRequest request, String normalizedOrigin) {

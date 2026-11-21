@@ -13,6 +13,8 @@
     "pages/tools/tools",
     "pages/prenatal/prenatal",
     "pages/cast/cast",
+    "pages/brace-wear/brace-wear",
+    "pages/brace-dashboard/brace-dashboard",
     "pages/library/library",
     "pages/me/me",
     "pages/saved-files/saved-files",

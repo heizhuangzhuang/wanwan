@@ -10,8 +10,8 @@
   <view wx:if="{{demoMode}}" class="notice">当前展示示例资料。</view>
   <view class="section-heading">按阶段查找</view>
   <view class="tab-list home-stages">
-    <navigator wx:for="{{stages}}" wx:key="key" class="tab-row home-stage {{item.key === 'JUST_FOUND' ? 'home-stage-start' : ''}}"
-      hover-class="pressed" url="{{item.url}}">
+    <navigator wx:for="{{stages}}" wx:key="key" class="tab-row home-stage motion-press {{item.key === 'JUST_FOUND' ? 'home-stage-start' : ''}}"
+      hover-class="pressed" hover-start-time="0" hover-stay-time="90" url="{{item.url}}">
       <view class="icon-tile icon-{{item.icon.tone}}" aria-hidden="true">
         <image src="/assets/icons/{{item.icon.name}}.png" mode="aspectFit" />
       </view>
@@ -26,7 +26,8 @@
     <text>{{error}}</text>
     <button class="btn secondary compact" bindtap="loadHome" disabled="{{loading}}">重试</button>
   </view>
-  <navigator class="home-library" open-type="switchTab" url="/pages/library/library" hover-class="pressed">
+  <navigator class="home-library motion-press" open-type="switchTab" url="/pages/library/library"
+    hover-class="pressed" hover-start-time="0" hover-stay-time="90">
     <image class="home-library-icon" src="/assets/icons/book-open.png" mode="aspectFit" aria-hidden="true" />
     <text>进入资料库</text><text class="tab-chevron" aria-hidden="true">›</text>
   </navigator>

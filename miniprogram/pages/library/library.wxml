@@ -1,11 +1,12 @@
 <import src="../../templates/public.wxml" />
 <view class="container tab-page library">
-  <navigator class="search-entry" url="/pages/search/search" hover-class="pressed">
+  <navigator class="search-entry motion-press" url="/pages/search/search" hover-class="pressed" hover-start-time="0" hover-stay-time="90">
     <view class="search-mark" aria-hidden="true" />
     <text>标题、来源或关键词</text>
     <text class="search-action">搜索</text>
   </navigator>
-  <navigator class="tab-feature library-prenatal" url="/pages/prenatal/prenatal" hover-class="pressed">
+  <navigator class="tab-feature library-prenatal motion-press" url="/pages/prenatal/prenatal"
+    hover-class="pressed" hover-start-time="0" hover-stay-time="90">
     <view class="icon-tile" aria-hidden="true"><image src="/assets/icons/scan-heart.png" mode="aspectFit" /></view>
     <view class="tab-row-copy">
       <view class="tab-feature-title">产前检查专项</view>

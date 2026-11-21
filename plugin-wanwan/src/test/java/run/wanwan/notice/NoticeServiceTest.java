@@ -105,6 +105,22 @@ class NoticeServiceTest {
     }
 
     @Test
+    void testFixtureDoesNotSendOrQueueNotices() {
+        String name = "fixture-just-found-visit-memo";
+        var card = resource(CUTOFF.plusSeconds(1));
+        card.getMetadata().setName(name);
+        service.observeResource(card);
+        verifyNoInteractions(db, wechat);
+
+        var event = event();
+        event.setContentName(name);
+        service.dispatch(event);
+        assertThat(event.isCompleted()).isTrue();
+        verify(db).update(event);
+        verifyNoInteractions(wechat);
+    }
+
+    @Test
     void guidePublishesOnlyFromAPublicReleaseAndUsesGuideRoute() {
         var guide = new Post();
         var metadata = metadata("first-guide");

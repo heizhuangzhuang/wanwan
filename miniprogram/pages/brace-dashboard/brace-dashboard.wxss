@@ -1,0 +1,32 @@
+page { background: #f6f3ea; }
+.follow-page { color: #263f33; padding-top: 20rpx; }
+.follow-hero { padding: 26rpx 30rpx 32rpx; background: radial-gradient(ellipse at 100% 0%, #46644f, #1c3d31 75%); border-radius: 30rpx; color: #e9f0dd; font-size: 25rpx; }
+.follow-hero-title { font-size: 34rpx; font-weight: 700; margin-bottom: 12rpx; }
+.follow-metric { color: #fffdf4; font-size: 56rpx; font-weight: 750; margin-top: 14rpx; font-variant-numeric: tabular-nums; }
+.follow-periods { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6rpx; margin-top: 16rpx; }
+.follow-chip, .follow-link { max-width:none; width:auto; margin:0; padding:0 5rpx; background:transparent; color:#28543d; font-size:24rpx; min-height:72rpx; line-height:72rpx; font-weight:650; }
+.follow-page .follow-periods .follow-chip { width:100%; min-width:0; max-width:none; min-height:88rpx; line-height:88rpx; white-space:nowrap; }
+.follow-page .follow-row .follow-link { flex:none; width:auto; max-width:none; padding:0 8rpx; }
+.follow-chip::after,.follow-link::after { border:0; }
+.follow-chip-on { background:#dee9d0; border-radius:12rpx; }
+.follow-range,.follow-row { display:flex; justify-content:space-between; align-items:center; gap:14rpx; }
+.follow-range { color:#556858; font-size:23rpx; }
+.follow-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12rpx; margin-bottom:14rpx; }
+.follow-kpi,.follow-card { background:#fffdf6; border:1px solid #dce3d5; border-radius:22rpx; padding:16rpx 21rpx; }
+.follow-kpi { font-size:24rpx; color:#526354; }
+.follow-kpi text { font-size:39rpx; color:#234a37; font-weight:700; }
+.follow-card { margin:0 0 14rpx; }
+.follow-title { color:#243e32; font-size:30rpx; font-weight:700; }
+.follow-muted { font-size:24rpx; color:#5b685b; margin:6rpx 0; overflow-wrap:anywhere; }
+.follow-list { border-top:1px solid #e6e9df; padding:8rpx 0; font-size:25rpx; }
+.follow-scroll { white-space:nowrap; margin-top:15rpx; }
+.follow-chart { display:inline-flex; min-width:100%; }
+.follow-column { min-width:55rpx; flex:1; display:flex; flex-direction:column; align-items:center; gap:8rpx; font-size:20rpx; }
+.follow-bar { height:130rpx; border-bottom:1px solid #afc3b2; width:55%; display:flex; align-items:flex-end; justify-content:center; background:#eef1e8; border-radius:8rpx 8rpx 0 0; }
+.follow-bar view { width:100%; background:#5b866d; border-radius:6rpx 6rpx 0 0; }
+.follow-actions { display:flex; flex-wrap:wrap; gap:10rpx; margin-top:10rpx; }
+.follow-actions .btn { min-width:140rpx; max-width:none; flex:1; margin:0; min-height:82rpx; font-size:25rpx; }
+.follow-overlay,.follow-scrim { position:fixed; inset:0; z-index:10; }
+.follow-scrim { background:rgba(16,33,26,.55); }
+.follow-sheet { position:absolute; bottom:0; left:0; right:0; z-index:11; background:#fffdf6; border-radius:30rpx 30rpx 0 0; padding:30rpx 28rpx calc(26rpx + env(safe-area-inset-bottom)); }
+.follow-field { display:flex; align-items:center; justify-content:space-between; min-height:84rpx; margin:12rpx 0; padding:0 18rpx; border:1px solid #dce3d5; border-radius:14rpx; font-size:27rpx; }
