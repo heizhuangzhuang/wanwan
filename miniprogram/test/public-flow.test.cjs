@@ -50,6 +50,23 @@ const item = name => ({ name, title: name, originalTitle: name, sourceName: '资
   citationUrl: 'https://example.test/origin', entry: { type: 'CITATION_ONLY' } })
 const settle = () => new Promise(resolve => setImmediate(resolve))
 
+test('搜索结果能翻到没有资料卡的原创导读页，并打开对应导读', async () => {
+  const { page, navigations } = openPage('search', url => ({
+    data: { page: Number(url.searchParams.get('page')), size: 20, total: 0, items: [], guideTotal: 21,
+      guideItems: [{ name: 'guide-test', title: '公开原创导读' }] },
+  }))
+  page.setData({ keyword: 'CMA' })
+  page.doSearch()
+  await settle()
+  assert.equal(page.data.hasNext, true)
+  page.nextPage()
+  await settle()
+  assert.equal(page.data.page, 2)
+  assert.equal(page.data.hasNext, false)
+  page.openGuide({ currentTarget: { dataset: { name: page.data.guideItems[0].name } } })
+  assert.deepEqual(navigations, ['/pages/reading/reading?kind=guide&name=guide-test'])
+})
+
 test('支具档案按历史计划区分漏记、低于目标、确认未穿和仅随访', () => {
   const core = require(join(compiled, 'services/brace-ledger.js'))
   const log = core.blankWearLog()

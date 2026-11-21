@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -238,5 +239,32 @@ class PublicQueryServiceTest {
         assertThat(service.listPosts(Integer.MAX_VALUE, 50).block().items()).isEmpty();
         assertThat(service.listPosts(1, 20).block().items())
             .extracting(Dtos.PostSummary::author).containsExactly("公开署名");
+    }
+
+    @Test
+    void searchIncludesOnlyMatchingPublishedGuidesAndRespectsFilters() {
+        var client = mock(ReactiveExtensionClient.class);
+        var service = service(client, mock(PostContentService.class), new SearchIndex());
+        var title = post("a-title", true, Post.VisibleEnum.PUBLIC, false);
+        title.getSpec().setTitle("CMA 阅读指南");
+        var excerpt = post("b-excerpt", true, Post.VisibleEnum.PUBLIC, false);
+        excerpt.getStatusOrDefault().setExcerpt("准备 CMA 检查资料");
+        var draft = post("cma-draft", false, Post.VisibleEnum.PUBLIC, false);
+        var privatePost = post("cma-private", true, Post.VisibleEnum.PRIVATE, false);
+        var unrelated = post("other", true, Post.VisibleEnum.PUBLIC, false);
+        when(client.list(eq(Post.class), any(), any())).thenAnswer(call -> {
+            Predicate<Post> filter = call.getArgument(1);
+            return Flux.just(title, excerpt, draft, privatePost, unrelated).filter(filter);
+        });
+
+        var first = service.searchWithGuides(" cma ", null, null, 1, 1).block();
+        assertThat(first.total()).isZero();
+        assertThat(first.guideTotal()).isEqualTo(2);
+        assertThat(first.guideItems()).extracting(Dtos.PostSummary::name).containsExactly("a-title");
+        var second = service.searchWithGuides("CMA", null, MaterialType.ORIGINAL, 2, 1).block();
+        assertThat(second.guideItems()).extracting(Dtos.PostSummary::name).containsExactly("b-excerpt");
+        assertThat(service.searchWithGuides("CMA", Stage.PRENATAL, null, 1, 20).block().guideItems()).isEmpty();
+        assertThat(service.searchWithGuides("CMA", null, MaterialType.PAPER, 1, 20).block().guideItems()).isEmpty();
+        assertThat(service.searchWithGuides(" ", null, null, 1, 20).block().guideItems()).isEmpty();
     }
 }

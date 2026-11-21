@@ -4,6 +4,7 @@ import static run.halo.app.extension.index.query.Queries.equal;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
@@ -114,9 +115,16 @@ public class PublicQueryService {
 
     /** 本站原创导读列表：仅返回已发布且公开的文章。 */
     public Mono<Dtos.Page<Dtos.PostSummary>> listPosts(int page, int size) {
+        return pagePosts("", page, size);
+    }
+
+    private Mono<Dtos.Page<Dtos.PostSummary>> pagePosts(String keyword, int page, int size) {
         int p = normalizePage(page);
         int s = normalizeSize(size);
         return client.list(Post.class, Visibility::isPublicPost, POST_ORDER)
+            .filter(post -> keyword.isEmpty()
+                || containsKeyword(post.getSpec().getTitle(), keyword)
+                || (post.getStatus() != null && containsKeyword(post.getStatus().getExcerpt(), keyword)))
             .collectList()
             .flatMap(all -> Flux.fromIterable(pageSlice(all, p, s))
                 .flatMapSequential(post -> publicAuthor(post)
@@ -124,6 +132,10 @@ public class PublicQueryService {
                     .defaultIfEmpty(Dtos.PostSummary.of(post, null)), 4)
                 .collectList()
                 .map(items -> new Dtos.Page<>(p, s, all.size(), items)));
+    }
+
+    private static boolean containsKeyword(String text, String keyword) {
+        return text != null && text.toLowerCase(Locale.ROOT).contains(keyword);
     }
 
     /** 本站原创导读详情只读 releaseSnapshot。 */
@@ -163,6 +175,16 @@ public class PublicQueryService {
             .map(Dtos.ResourceView::of)
             .collectList()
             .map(items -> new Dtos.Page<>(p, s, names.size(), items));
+    }
+
+    public Mono<Dtos.SearchPage> searchWithGuides(String keyword, Stage stage, MaterialType type,
+                                                 int page, int size) {
+        String term = keyword.strip().toLowerCase(Locale.ROOT);
+        // Halo posts have no stage metadata, so stage-filtered results only include resource cards.
+        var guides = !term.isEmpty() && stage == null && (type == null || type == MaterialType.ORIGINAL)
+            ? pagePosts(term, page, size)
+            : Mono.just(new Dtos.Page<Dtos.PostSummary>(normalizePage(page), normalizeSize(size), 0, List.of()));
+        return Mono.zip(search(keyword, stage, type, page, size), guides, Dtos.SearchPage::of);
     }
 
     static int normalizePage(int page) {

@@ -27,7 +27,13 @@
 
 发布后检查 `/actuator/health/readiness`，并用连接记录核实目标 MySQL。第一次配置 Halo 时，在受控管理入口完成初始化，然后在「插件」上传同版本 JAR 并启用「弯弯知识导航」。镜像将 JAR 同步到工作目录；Halo 的插件安装记录仍由管理后台建立。已安装的实例如果更换插件版本，在管理后台执行升级。
 
-针对「Halo 已启动，应用 API 和插件静态文件都返回 404」的恢复包额外包含 `wanwan-plugin-recovery.yaml`，通过 Halo 的 `HALO_INITIAL_EXTENSION_LOCATIONS` 注册并启用该插件。恢复包只初始化此插件的登记。已有登记若带 `halo.run/do-not-overwrite` 标记，Halo 会保留它的管理状态。恢复后检查 `/stages` 与 `/resources` 的实际 JSON 响应。
+针对「Halo 已启动，应用 API 和插件静态文件都返回 404」的恢复包额外包含 `wanwan-plugin-recovery.yaml`，通过 Halo 的 `HALO_INITIAL_EXTENSION_LOCATIONS` 注册并启用该插件。用编译了 Console 的 JAR 生成上传包：
+
+```bash
+python3 deploy/cloudrun/package-backend.py plugin-wanwan/build/libs/plugin-wanwan-0.1.3.jar ./release
+```
+
+已有登记若带 `halo.run/do-not-overwrite` 标记，Halo 会保留它的管理状态。若登记的版本仍旧或已停用，通过 Halo Console 升级同版本 JAR 并启用。使用新版本预览流量检查 `/stages` 与 `/resources` 的实际 JSON 响应，再切正式流量。
 
 已有 MySQL `SPRING_R2DBC_URL` 的版本会沿用该连接和对应的 Spring 凭据。其他版本在当前服务版本的环境变量中填写原库的 `MYSQL_ADDRESS`（内网主机与端口）、`MYSQL_USERNAME`、`MYSQL_PASSWORD` 和 `MYSQL_DATABASE`。沿用原数据库和持久化挂载。新入口脚本以 `[wanwan] Starting with` 标识插件文件和数据源配置方式，随后还需要核对 Halo 实际连接成功及插件启用状态。
 
@@ -67,6 +73,7 @@ Web 服务端发送 `X-Wanwan-Client: web`，微信小程序发送 `X-Wanwan-Cli
 - `WANWAN_OPS_WEB_BASE_URL` 默认沿用弯弯访客 Web 地址，含 `/xiaojiaoya` 子路径。更换域名时填写 Web 站点基地址。
 - `WANWAN_OPS_HALO_BASE_URL` 默认沿用 `xiaojiaoya` 的 HTTPS 测试入口。使用正式域名后填写 Halo 基地址。
 - 探测从 Halo 服务端执行，首屏和刷新时触发。Web 探测包含原创导读页面，Halo API 探测包含匿名读取。真机记录按体验版与正式版分别保存，24 小时后待复核。
+- 资料运营统计展示公开可检索、待审核、撤回或原文下线，以及公开资料待核对链接的数量。读取失败时显示暂无法读取。
 
 发布后通过管理员账号访问总览，确认四个探测项与实际链路相符。检查正式版和体验版任一渠道后登记版本号，再刷新确认记录可读取。Halo 本身无法加载时，从微信云托管检查容器日志和版本。设计依据见 [ADR-006](../../docs/adr/ADR-006-Halo运营总览.md)。
 

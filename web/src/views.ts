@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs'
-import type { BackendClient, PageResult, ResourceView, StageView } from './api.js'
+import type { BackendClient, PageResult, PostSummary, ResourceView, StageView } from './api.js'
 import { braceScript, braceScriptHash, renderBraceDashboard } from './brace-dashboard.js'
 import type { WebConfig } from './config.js'
 import { appointmentScript, prenatalPaths, renderPrenatal, renderTools } from './tools.js'
@@ -92,6 +92,10 @@ function renderPagination<T>(path: string, result: PageResult<T>, query: URLSear
     <span>第 ${result.page} 页</span>
     ${hasNext ? link(result.page + 1, '下一页') : '<span></span>'}
   </nav>`
+}
+
+function renderGuideCard(guide: PostSummary, basePath: string) {
+  return `<article class="card"><h2 class="card-title"><a href="${basePath}/posts/${encodeURIComponent(guide.name)}">${escapeHtml(guide.title)}</a></h2><p class="card-intro">${escapeHtml(guide.excerpt)}</p>${guide.author ? `<div class="meta-row">${escapeHtml(guide.author)}</div>` : ''}</article>`
 }
 
 async function renderRelated(resource: ResourceView, client: BackendClient, config: WebConfig) {
@@ -440,12 +444,7 @@ ${cards}${renderPagination(stagePath, list, query)}`,
   if (path === '/posts') {
     const list = await client.listPosts(page, 20)
     const body = list.items.length
-      ? `<div class="card-list">${list.items
-          .map(
-            (p) =>
-              `<article class="card"><h2 class="card-title"><a href="${basePath}/posts/${encodeURIComponent(p.name)}">${escapeHtml(p.title)}</a></h2><p class="card-intro">${escapeHtml(p.excerpt)}</p>${p.author ? `<div class="meta-row">${escapeHtml(p.author)}</div>` : ''}</article>`,
-          )
-          .join('')}</div>`
+      ? `<div class="card-list">${list.items.map(guide => renderGuideCard(guide, basePath)).join('')}</div>`
       : '<div class="warn-bar">暂无已发布的原创导读。</div>'
     return htmlResponse(200, renderLayout(config, '本站原创导读', `<h1>本站原创导读</h1>${body}${renderPagination(`${basePath}${path}`, list, query)}`))
   }
@@ -480,10 +479,17 @@ ${cards}${renderPagination(stagePath, list, query)}`,
       resultHtml = '<div class="warn-bar">关键词超过 100 个字符限制，请缩短后重试。</div>'
     } else if (keyword) {
       const results = await client.search({ keyword, stage: stageFilter || undefined, type: selectedType || undefined, page, size: 20 })
+      const guideItems = results.guideItems ?? []
       resultHtml = results.items.length
-        ? `<p class="meta-row">共找到 ${results.total} 条匹配资料</p><div class="card-list">${results.items.map((item) => renderCard(item, config)).join('')}</div>`
-        : `<div class="warn-bar">没有找到匹配「${escapeHtml(keyword)}」的已公开资料。您可以尝试更换关键词，或<a href="${basePath}/stages">按阶段浏览</a>。</div>`
-      resultHtml += renderPagination(`${basePath}/search`, results, query)
+        ? `<h2>公开资料卡</h2><p class="meta-row">共 ${results.total} 条</p><div class="card-list">${results.items.map((item) => renderCard(item, config)).join('')}</div>`
+        : ''
+      if (guideItems.length) {
+        resultHtml += `<h2>本站原创导读</h2><p class="meta-row">共 ${results.guideTotal ?? guideItems.length} 篇</p><div class="card-list">${guideItems.map(guide => renderGuideCard(guide, basePath)).join('')}</div>`
+      }
+      if (!resultHtml) {
+        resultHtml = `<div class="warn-bar">本页没有匹配「${escapeHtml(keyword)}」的已公开内容。可以更换关键词，或<a href="${basePath}/stages">按阶段浏览</a>。</div>`
+      }
+      resultHtml += renderPagination(`${basePath}/search`, { ...results, total: Math.max(results.total, results.guideTotal ?? 0) }, query)
     }
     const stages = await client.getStages().catch(() => [])
     return htmlResponse(
@@ -492,7 +498,7 @@ ${cards}${renderPagination(stagePath, list, query)}`,
         config,
         '站内搜索',
         `<h1>站内搜索</h1>
-<p class="meta-row">仅搜索本站已发布资料卡的题录、本站介绍、来源与标签，不联网抓取原文，也不使用 AI 生成回答。</p>
+<p class="meta-row">搜索公开资料卡的题录、来源和标签，也可搜索本站原创导读的标题和摘要。原创导读适用「全部阶段」。</p>
 <form class="search-form" action="${basePath}/search" method="get">
   <input class="search-input" type="search" name="keyword" maxlength="100" value="${escapeHtml(keyword)}" placeholder="输入关键词（最多 100 字符）..." aria-label="搜索关键词" />
   <input type="hidden" name="stage" value="${escapeHtml(stageFilter)}" />

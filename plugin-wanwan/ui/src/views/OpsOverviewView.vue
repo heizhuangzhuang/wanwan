@@ -122,6 +122,17 @@ onMounted(load)
       <a :href="section.link" target="_blank" rel="noopener noreferrer">{{ section.action }} ↗</a>
     </section>
 
+    <section class="ops-row" aria-labelledby="content-report">
+      <h2 id="content-report">资料运营统计</h2>
+      <ul v-if="overview?.contentReport" class="ops-checks">
+        <li><span>公开可检索</span><strong>{{ overview.contentReport.publicCards }} 条</strong></li>
+        <li><span>待审核</span><strong>{{ overview.contentReport.pendingReview }} 条</strong></li>
+        <li><span>已撤回或原文下线</span><strong>{{ overview.contentReport.withdrawn }} 条</strong></li>
+        <li><span>公开资料待核对链接</span><strong>{{ overview.contentReport.linksToCheck }} 条</strong></li>
+      </ul>
+      <p v-else>{{ overview ? '资料统计暂无法读取。' : '等待读取资料统计' }}</p>
+    </section>
+
     <section class="ops-row" aria-labelledby="miniprogram-ops">
       <h2 id="miniprogram-ops">微信小程序</h2>
       <ul v-if="overview" class="ops-checks">

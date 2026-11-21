@@ -79,6 +79,11 @@ export interface PageResult<T> {
   items: T[]
 }
 
+interface SearchResult extends PageResult<ResourceView> {
+  guideTotal?: number
+  guideItems?: PostSummary[]
+}
+
 const API_PREFIX = '/apis/api.xiaojiaoya.run/v1alpha1'
 const LEGACY_PREFIX = '/apis/api.wanwan.run/v1alpha1'
 
@@ -169,7 +174,7 @@ export const wanwanApi = {
   listPosts: (page = 1, size = 20) => request<PageResult<PostSummary>>('/posts', { page, size }),
   getPost: (name: string) => request<PostView>(`/posts/${encodeURIComponent(name)}`),
   search: (params: { keyword: string; stage?: string; type?: string; page?: number; size?: number }) =>
-    request<PageResult<ResourceView>>('/search', params),
+    request<SearchResult>('/search', params),
 }
 
 export function requestFamilyJournal<T>(path: '/cast-journal-config' | '/cast-journal', body?: Record<string, unknown>) {

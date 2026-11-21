@@ -150,4 +150,12 @@ public final class Dtos {
 
     public record Page<T>(int page, int size, long total, List<T> items) {
     }
+
+    public record SearchPage(int page, int size, long total, List<ResourceView> items,
+                             long guideTotal, List<PostSummary> guideItems) {
+        public static SearchPage of(Page<ResourceView> resources, Page<PostSummary> guides) {
+            return new SearchPage(resources.page(), resources.size(), resources.total(),
+                resources.items(), guides.total(), guides.items());
+        }
+    }
 }

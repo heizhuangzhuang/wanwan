@@ -72,6 +72,11 @@ export interface PageResult<T> {
   items: T[]
 }
 
+interface SearchResult extends PageResult<ResourceView> {
+  guideTotal?: number
+  guideItems?: PostSummary[]
+}
+
 export interface BackendClient {
   getStages(): Promise<StageView[]>
   listResources(params: {
@@ -92,7 +97,7 @@ export interface BackendClient {
     type?: string
     page?: number
     size?: number
-  }): Promise<PageResult<ResourceView>>
+  }): Promise<SearchResult>
 }
 
 export function createBackendClient(apiBase: string, timeoutMs = 5000): BackendClient {
@@ -144,7 +149,7 @@ export function createBackendClient(apiBase: string, timeoutMs = 5000): BackendC
     getTopic: (name) => getJsonOrNull<TopicView>(`/topics/${encodeURIComponent(name)}`),
     listPosts: (page = 1, size = 20) => getJson<PageResult<PostSummary>>('/posts', { page, size }),
     getPost: (name) => getJsonOrNull<PostView>(`/posts/${encodeURIComponent(name)}`),
-    search: (p) => getJson<PageResult<ResourceView>>('/search', p),
+    search: (p) => getJson<SearchResult>('/search', p),
   }
 }
 

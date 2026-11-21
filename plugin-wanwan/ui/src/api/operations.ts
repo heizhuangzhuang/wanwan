@@ -37,6 +37,12 @@ export interface OpsOverview {
     haloPosts: Probe
   }
   miniProgramChecks: MiniProgramCheck[]
+  contentReport?: {
+    publicCards: number
+    pendingReview: number
+    withdrawn: number
+    linksToCheck: number
+  } | null
 }
 
 export async function getOpsOverview() {

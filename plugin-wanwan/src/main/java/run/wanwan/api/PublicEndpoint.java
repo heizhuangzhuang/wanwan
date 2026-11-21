@@ -98,11 +98,11 @@ public class PublicEndpoint implements CustomEndpoint {
         if (keyword.length() > SearchIndex.MAX_KEYWORD_LENGTH) {
             return ServerResponse.badRequest().bodyValue("keyword too long");
         }
-        return ServerResponse.ok().body(queryService.search(keyword,
+        return ServerResponse.ok().body(queryService.searchWithGuides(keyword,
             enumParam(req, "stage", Stage.class),
             enumParam(req, "type", MaterialType.class),
             intParam(req, "page", 1),
-            intParam(req, "size", 20)), Dtos.Page.class);
+            intParam(req, "size", 20)), Dtos.SearchPage.class);
     }
 
     private static <T> Mono<ServerResponse> okOrNotFound(Mono<T> body) {

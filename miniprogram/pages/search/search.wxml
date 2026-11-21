@@ -1,6 +1,6 @@
 <import src="../../templates/public.wxml" />
 <view class="container search-page">
-  <view class="page-intro"><view class="page-heading">找一找关心的资料</view><view class="description">可搜题名、来源、检查名或简称，比如「羊穿」。</view></view>
+  <view class="page-intro"><view class="page-heading">找一找关心的资料</view><view class="description">可搜题名、来源、检查简称和原创导读。</view></view>
   <view class="actions search-input-row">
     <view class="field search-keyword">
       <input class="search-keyword-input" placeholder="标题、来源或关键词" confirm-type="search"
@@ -50,12 +50,25 @@
   </view>
   <view wx:elif="{{submittedKeyword}}" class="motion-reveal">
     <view wx:if="{{items.length}}" class="title search-result-label">公开资料卡</view>
-    <view wx:elif="{{prenatalResults.length}}" class="muted">没有匹配的公开资料卡。</view>
+    <view wx:elif="{{prenatalResults.length || guideItems.length}}" class="muted">没有匹配的公开资料卡。</view>
     <view wx:else class="card">
       <view>没有找到匹配内容。可以换个关键词、放宽筛选，或按阶段查找。</view>
       <button class="btn secondary" bindtap="browseStages">按阶段浏览</button>
     </view>
     <template is="resourceCards" data="{{items}}" />
+    <view wx:if="{{guideItems.length}}" class="search-prenatal">
+      <view class="title search-result-label">本站原创导读</view>
+      <view class="tab-list">
+        <view wx:for="{{guideItems}}" wx:key="name" class="tab-row motion-press"
+          data-name="{{item.name}}" bindtap="openGuide" hover-class="pressed" aria-role="link">
+          <view class="tab-row-copy">
+            <view class="tab-row-title">{{item.title}}</view>
+            <view wx:if="{{item.excerpt}}" class="tab-row-caption">{{item.excerpt}}</view>
+          </view>
+          <text class="tab-chevron" aria-hidden="true">›</text>
+        </view>
+      </view>
+    </view>
     <template is="pagination" data="{{page, hasNext, loading}}" />
   </view>
 </view>

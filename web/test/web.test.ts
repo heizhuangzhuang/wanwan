@@ -60,6 +60,18 @@ function mockClient(resource: ResourceView | null = mockResource()): BackendClie
 describe('web security & SSR', () => {
   const config = loadConfig({ SITE_ORIGIN: 'https://wanwan.run' })
 
+  it('renders original-guide search results and paginates when only guides have more matches', async () => {
+    const client = mockClient(null)
+    client.search = async () => ({
+      page: 1, size: 20, total: 0, items: [], guideTotal: 23,
+      guideItems: [{ name: 'guide-1', title: '导读 <测试>', excerpt: '公开摘要' }],
+    })
+    const result = await handleRequest(new URL('https://wanwan.run/search?keyword=CMA&type=ORIGINAL'), client, config)
+    assert.equal(result.status, 200)
+    assert.match(String(result.body), /href="\/posts\/guide-1">导读 &lt;测试&gt;/)
+    assert.match(String(result.body), /keyword=CMA&amp;type=ORIGINAL&amp;page=2/)
+  })
+
   it('escapes HTML and rejects non-http URLs', () => {
     assert.equal(escapeHtml('<img onerror=1>'), '&lt;img onerror=1&gt;')
     assert.equal(safeHttpUrl('javascript:alert(1)'), null)
