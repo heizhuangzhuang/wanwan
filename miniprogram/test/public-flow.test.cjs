@@ -126,7 +126,8 @@ test('矫正鞋页面离线计时跨重开，支持补记、编辑、删除与�
   try {
     Date.now = () => parseLocalTime(day, '08:00')
     const first = open()
-    assert.equal(first.data.week[0].total, '无记录')
+    assert.equal(first.data.week.at(-1).day, day)
+    assert.equal(first.data.week.at(-1).total, '无记录')
     first.toggleWear()
     assert.equal(first.data.active, true)
     first.onHide()
@@ -134,6 +135,7 @@ test('矫正鞋页面离线计时跨重开，支持补记、编辑、删除与�
     Date.now = () => parseLocalTime(day, '09:30')
     const page = open()
     assert.equal(page.data.elapsed, '1 小时 30 分钟')
+    assert.equal(page.data.activeElapsed, '1 小时 30 分钟')
     page.toggleWear()
     assert.equal(page.data.active, false)
     assert.equal(page.data.sessions.length, 1)

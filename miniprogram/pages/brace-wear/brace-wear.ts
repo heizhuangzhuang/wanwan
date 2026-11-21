@@ -1,7 +1,9 @@
 import { blankWearLog, dateKey, dayWear, durationText, lastSevenDays, parseLocalTime, readWearLog,
   saveWearLog, timeKey, type WearLog } from '../../services/brace-wear'
 
-import { MINUTE, planOn, withPlan } from '../../services/brace-ledger'
+import { dayBoundary, MINUTE, planOn, withPlan } from '../../services/brace-ledger'
+
+const weekdays = ['日', '一', '二', '三', '四', '五', '六']
 type Field = 'startDay' | 'startTime' | 'endDay' | 'endTime'
 type TimeForm = Record<Field, string> & { id: string }
 
@@ -23,8 +25,9 @@ Page({
   ticker: null as ReturnType<typeof setInterval> | null,
   data: {
     ready: false, today: '', todayLabel: '', selectedDay: '', selectedLabel: '', elapsed: '',
-    hours: 0, minutes: '00', subMinute: false, active: false, startedAt: '', target: '', targetPercent: 0,
-    week: [] as { day: string; label: string; total: string; height: number }[],
+    hours: 0, minutes: '00', subMinute: false, active: false, startedAt: '', activeElapsed: '',
+    target: '', targetPercent: 0, targetCompletion: 0,
+    week: [] as { day: string; weekday: string; date: string; total: string; height: number }[],
     sessions: [] as { id: string; label: string }[], includesActive: false, hasDetails: false, selectedElapsed: '',
     form: null as TimeForm | null, targetOpen: false, targetHours: '', targetMinutes: '', message: '',
   },
@@ -55,6 +58,7 @@ Page({
     const selected = selectedDay === today ? current : dayWear(this.log, selectedDay, now)
     const { activeStart } = this.log
     const targetMinutes = planOn(this.log, today)?.minutes ?? null
+    const targetPercent = targetMinutes === null ? 0 : Math.min(100, current.elapsed / (targetMinutes * MINUTE) * 100)
     const todayMinutes = Math.floor(current.elapsed / MINUTE)
     this.setData({
       today, todayLabel: shortDate(today), selectedDay,
@@ -62,11 +66,13 @@ Page({
       elapsed: durationText(current.elapsed), hours: Math.floor(todayMinutes / 60),
       minutes: String(todayMinutes % 60).padStart(2, '0'), subMinute: current.elapsed > 0 && todayMinutes === 0,
       active: activeStart !== null, startedAt: activeStart === null ? '' : clockLabel(activeStart, today),
+      activeElapsed: activeStart === null ? '' : durationText(Math.max(0, now - activeStart)),
       target: targetMinutes === null ? '' : durationText(targetMinutes * MINUTE),
-      targetPercent: targetMinutes === null ? 0 : Math.min(100, current.elapsed / (targetMinutes * MINUTE) * 100),
-      week: lastSevenDays(today).map(day => {
+      targetPercent, targetCompletion: Math.floor(targetPercent),
+      week: lastSevenDays(today).reverse().map(day => {
         const { elapsed, sessions, includesActive } = dayWear(this.log, day, now)
-        return { day, label: day === today ? '今天' : day.slice(5).replace('-', '.'),
+        return { day, weekday: day === today ? '今天' : '周' + weekdays[new Date(dayBoundary(day)).getDay()],
+          date: day.slice(5).replace('-', '/'),
           total: sessions.length || includesActive ? durationText(elapsed) : '无记录',
           height: Math.min(100, elapsed / (1440 * MINUTE) * 100) }
       }),

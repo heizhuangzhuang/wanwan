@@ -1,62 +1,50 @@
 <page-meta page-style="{{form || targetOpen ? 'overflow: hidden;' : ''}}" />
-<view class="container wear-page">
+<view class="container wear-page {{ready && message && !form && !targetOpen ? 'wear-page-with-message' : ''}}">
   <block wx:if="{{ready}}">
     <view class="wear-summary">
       <view class="wear-summary-top">
-        <text class="wear-summary-date">今天 · {{todayLabel}}</text>
-        <view class="wear-state {{active ? 'wear-state-running' : ''}}">
+        <view>
+          <view class="wear-heading">今日穿戴</view>
+          <text class="wear-summary-date">{{todayLabel}}</text>
+        </view>
+        <view class="wear-state {{active ? 'wear-state-running' : ''}}" aria-live="polite">
           <view class="wear-state-dot" aria-hidden="true" />
           <text>{{active ? '计时中' : '未计时'}}</text>
         </view>
       </view>
-      <view class="wear-summary-label">穿戴累计</view>
-      <view class="wear-total" aria-label="今日穿戴累计 {{elapsed}}">
-        <block wx:if="{{subMinute}}">
-          <text class="wear-unit wear-unit-prefix">不足</text><text class="wear-number">1</text><text class="wear-unit">分钟</text>
-        </block>
-        <block wx:else>
-          <text class="wear-number">{{hours}}</text><text class="wear-unit">小时</text>
-          <text class="wear-number">{{minutes}}</text><text class="wear-unit">分钟</text>
-        </block>
-      </view>
-      <view wx:if="{{active}}" class="wear-started">本次 {{startedAt}} 开始</view>
-      <view class="wear-goal">
-        <view wx:if="{{target}}" class="wear-goal-caption">
-          <text>每日目标 · {{target}}</text>
-          <progress percent="{{targetPercent}}" stroke-width="4" border-radius="3" activeColor="#D8E9AB" backgroundColor="#456454" />
+      <view class="wear-metrics">
+        <view class="wear-total" aria-label="今日累计 {{elapsed}}">
+          <view class="wear-total-label">累计穿戴</view>
+          <view class="wear-figures">
+            <block wx:if="{{subMinute}}">
+              <text class="wear-unit">不足</text><text class="wear-number">1</text><text class="wear-unit">分钟</text>
+            </block>
+            <block wx:else>
+              <view class="wear-quantity"><text class="wear-number">{{hours}}</text><text class="wear-unit">小时</text></view>
+              <view class="wear-quantity"><text class="wear-number">{{minutes}}</text><text class="wear-unit">分</text></view>
+            </block>
+          </view>
         </view>
-        <button wx:else class="wear-button wear-goal-trigger" bindtap="openTarget" hover-class="wear-pressed">
-          设置每日目标 <text class="wear-chevron" aria-hidden="true">›</text>
+        <button class="wear-button wear-goal" bindtap="openTarget" hover-class="wear-pressed"
+          aria-label="{{target ? '调整每日目标，当前 ' + target : '设置每日穿戴目标'}}">
+          <view class="wear-goal-ring {{target ? '' : 'wear-goal-empty'}}" style="--wear-goal-progress: {{targetPercent}}%;" aria-hidden="true">
+            <view class="wear-goal-center">
+              <text wx:if="{{target}}">{{targetCompletion}}%</text>
+              <view wx:else class="wear-plus" />
+            </view>
+          </view>
+          <text>{{target ? '目标 ' + target : '设定目标'}}</text>
         </button>
-        <button wx:if="{{target}}" class="wear-button wear-goal-trigger wear-goal-edit" bindtap="openTarget"
-          aria-label="修改每日目标" hover-class="wear-pressed">调整目标</button>
+      </view>
+      <view wx:if="{{active}}" class="wear-started">
+        <text>本次 {{activeElapsed}}</text><text>{{startedAt}} 开始</text>
       </view>
     </view>
 
-    <view class="wear-primary-actions">
-      <button class="wear-button wear-toggle {{active ? 'wear-toggle-running' : ''}}" bindtap="toggleWear"
-        hover-class="wear-pressed" hover-start-time="0" hover-stay-time="100">
-        <view class="{{active ? 'wear-stop' : 'wear-play'}}" aria-hidden="true" />
-        <text>{{active ? '脱下并保存' : '穿上，开始计时'}}</text>
-      </button>
-      <button class="wear-button wear-add" bindtap="addToday" aria-label="补记今天的穿戴时间"
-        hover-class="wear-pressed" hover-start-time="0" hover-stay-time="100">
-        <view class="wear-plus" aria-hidden="true" />
-        <text>补记</text>
-      </button>
-    </view>
-  </block>
-
-  <view wx:if="{{message && !form && !targetOpen}}" class="wear-message" aria-live="polite">{{message}}</view>
-
-  <block wx:if="{{ready}}">
-    <navigator url="/pages/brace-dashboard/brace-dashboard" class="wear-dashboard-link" hover-class="wear-pressed">
-      <view><view>支具随访大屏</view><text>长期趋势、计划历史与 Excel</text></view><text aria-hidden="true">›</text>
-    </navigator>
-    <view class="wear-section wear-week">
+    <view class="wear-history">
       <view class="wear-section-header">
-        <view class="wear-section-title">近 7 天</view>
-        <picker class="wear-date-picker" mode="date" value="{{selectedDay}}" end="{{today}}" bindchange="pickDay">
+        <view class="wear-section-title">最近 7 天</view>
+        <picker class="wear-date-picker" mode="date" value="{{selectedDay}}" end="{{today}}" bindchange="pickDay" aria-label="选择历史日期">
           <view class="wear-date-button">
             <image src="/assets/icons/calendar-days.png" mode="aspectFit" aria-hidden="true" />
             <text>选日期</text>
@@ -65,7 +53,7 @@
       </view>
       <view class="wear-chart">
         <view class="wear-axis" aria-hidden="true">
-          <text>24 小时</text><text>12 小时</text><text>0</text>
+          <text>24时</text><text>12时</text><text>0时</text>
         </view>
         <view class="wear-plot">
           <view class="wear-guides" aria-hidden="true"><view /><view /><view /></view>
@@ -78,35 +66,61 @@
                 <view wx:if="{{item.height > 0}}" class="wear-column-fill" style="height: {{item.height}}%;" />
                 <view wx:else class="wear-column-empty" />
               </view>
-              <text class="wear-column-label">{{item.label}}</text>
+              <text class="wear-weekday">{{item.weekday}}</text>
+              <text class="wear-column-date">{{item.date}}</text>
             </button>
           </view>
         </view>
       </view>
+
+      <view class="wear-detail">
+        <view class="wear-section-header">
+          <view>
+            <view class="wear-detail-title">{{selectedLabel}}明细</view>
+            <view wx:if="{{hasDetails}}" class="wear-detail-total">合计 {{selectedElapsed}}</view>
+          </view>
+          <button class="wear-button wear-link" bindtap="addSession" hover-class="wear-pressed">补记这天</button>
+        </view>
+        <block wx:if="{{hasDetails}}">
+          <view wx:if="{{includesActive}}" class="wear-session wear-session-active">
+            <view class="wear-timeline-dot" aria-hidden="true" />
+            <text>含正在计时的一段</text>
+          </view>
+          <view wx:for="{{sessions}}" wx:key="id" class="wear-session">
+            <view class="wear-timeline-dot" aria-hidden="true" />
+            <text class="wear-session-time">{{item.label}}</text>
+            <button class="wear-button wear-link" data-id="{{item.id}}" bindtap="editSession"
+              aria-label="编辑 {{item.label}}" hover-class="wear-pressed">编辑</button>
+          </view>
+        </block>
+        <view wx:else class="wear-empty">这天还没有穿戴记录</view>
+      </view>
     </view>
 
-    <view class="wear-section wear-detail">
-      <view class="wear-section-header">
-        <view class="wear-section-title">{{selectedLabel}}明细</view>
-        <button class="wear-button wear-link" bindtap="addSession" hover-class="wear-pressed">补记这天</button>
+    <navigator url="/pages/brace-dashboard/brace-dashboard" class="wear-dashboard-link" hover-class="wear-pressed">
+      <view class="wear-trend-icon" aria-hidden="true"><view /><view /><view /></view>
+      <view class="wear-dashboard-text"><view>长期随访</view><text>穿戴趋势、计划历史与 Excel 导出</text></view>
+      <text class="wear-chevron" aria-hidden="true">›</text>
+    </navigator>
+    <view class="wear-foot">记录保存在本机</view>
+
+    <view wx:if="{{!form && !targetOpen}}" class="wear-dock">
+      <view wx:if="{{message}}" class="wear-message wear-dock-message" aria-live="polite">{{message}}</view>
+      <view class="wear-primary-actions">
+        <button class="wear-button wear-toggle {{active ? 'wear-toggle-running' : ''}}" bindtap="toggleWear"
+          hover-class="wear-pressed" hover-start-time="0" hover-stay-time="100">
+          <view class="{{active ? 'wear-stop' : 'wear-play'}}" aria-hidden="true" />
+          <text>{{active ? '脱下并保存' : '穿上，开始计时'}}</text>
+        </button>
+        <button class="wear-button wear-add" bindtap="addToday" aria-label="补记今天的穿戴时间"
+          hover-class="wear-pressed" hover-start-time="0" hover-stay-time="100">
+          <view class="wear-plus" aria-hidden="true" />
+          <text>补记今天</text>
+        </button>
       </view>
-      <block wx:if="{{hasDetails}}">
-        <view class="wear-detail-total">当天累计 {{selectedElapsed}}</view>
-        <view wx:if="{{includesActive}}" class="wear-session wear-session-active">
-          <view class="wear-timeline-dot" aria-hidden="true" />
-          <text>含正在计时的一段</text>
-        </view>
-        <view wx:for="{{sessions}}" wx:key="id" class="wear-session">
-          <view class="wear-timeline-dot" aria-hidden="true" />
-          <text class="wear-session-time">{{item.label}}</text>
-          <button class="wear-button wear-link" data-id="{{item.id}}" bindtap="editSession"
-            aria-label="编辑 {{item.label}}" hover-class="wear-pressed">编辑</button>
-        </view>
-      </block>
-      <view wx:else class="wear-empty">这天还没有穿戴记录。</view>
     </view>
-    <view class="wear-foot">本机保存 · 跨日分开累计，重叠时间只计一次</view>
   </block>
+  <view wx:elif="{{message}}" class="wear-message" aria-live="polite">{{message}}</view>
 
   <view wx:if="{{form || targetOpen}}" class="wear-overlay">
     <view wx:if="{{form}}" class="wear-scrim" bindtap="closeForm" aria-hidden="true" />
