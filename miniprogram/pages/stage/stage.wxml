@@ -3,9 +3,14 @@
   <view class="stage-intro motion-reveal">
     <view class="stage-intro-head">
       <view class="page-heading">{{heading}}</view>
-      <text wx:if="{{guide}}" class="stage-help-link" bindtap="showFormatHelp">形态说明 ?</text>
+      <view wx:if="{{guide}}" class="stage-focus-pill" role="button" bindtap="openStageFocus">本阶段重点 ›</view>
     </view>
     <view class="description clamp-2">{{intro}}</view>
+    <view wx:if="{{guide && focusSummaryText}}" class="stage-focus-strip" role="button" bindtap="openStageFocus">
+      <text class="stage-focus-strip-label">重点</text>
+      <text class="stage-focus-strip-text clamp-1">{{focusSummaryText}}</text>
+      <text class="stage-focus-strip-more">详解 ›</text>
+    </view>
   </view>
 
   <block wx:if="{{stageTools.length}}">
@@ -23,10 +28,13 @@
     </view>
   </block>
 
-  <view wx:if="{{guide}}" class="sticky-tabs" role="tablist">
-    <view class="sticky-tab {{activeTab === 'all' ? 'active' : ''}}" data-tab="all" bindtap="selectTab">全部内容</view>
-    <view class="sticky-tab {{activeTab === 'guides' ? 'active' : ''}}" data-tab="guides" bindtap="selectTab">原创导读</view>
-    <view class="sticky-tab {{activeTab === 'resources' ? 'active' : ''}}" data-tab="resources" bindtap="selectTab">资料卡</view>
+  <view wx:if="{{guide}}" class="stage-tabs-wrap">
+    <view class="sticky-tabs" role="tablist">
+      <view class="sticky-tab {{activeTab === 'all' ? 'active' : ''}}" data-tab="all" bindtap="selectTab">全部内容</view>
+      <view class="sticky-tab {{activeTab === 'guides' ? 'active' : ''}}" data-tab="guides" bindtap="selectTab">原创导读</view>
+      <view class="sticky-tab {{activeTab === 'resources' ? 'active' : ''}}" data-tab="resources" bindtap="selectTab">资料卡</view>
+    </view>
+    <view class="stage-format-hint" role="button" bindtap="showFormatHelp">导读与资料卡有什么区别？</view>
   </view>
 
   <block wx:if="{{guide && (activeTab === 'all' || activeTab === 'guides')}}">
@@ -109,5 +117,44 @@
 
   <view wx:if="{{guide}}" class="stage-source-foot" bindtap="copyGuideSource">
     参考出处：{{guide.source.title}}（点击复制链接）
+  </view>
+
+  <view wx:if="{{guide && showFocusModal}}" class="stage-focus-mask" catchtap="closeStageFocus" catchtouchmove="noop">
+    <view class="stage-focus-sheet" catchtap="noop" role="dialog" aria-modal="true">
+      <view class="stage-focus-handle" aria-hidden="true"></view>
+      <view class="stage-focus-sheet-head">
+        <view>
+          <view class="stage-focus-sheet-kicker">本阶段重点工作</view>
+          <view class="stage-focus-sheet-title">{{heading}}</view>
+        </view>
+        <view class="stage-focus-close" role="button" aria-label="关闭" bindtap="closeStageFocus">×</view>
+      </view>
+      <scroll-view scroll-y class="stage-focus-scroll">
+        <view class="stage-focus-goal">
+          <view class="stage-focus-goal-label">这一阶段最核心的目标</view>
+          <view class="stage-focus-goal-text">{{guide.focus.goal}}</view>
+        </view>
+        <view class="stage-focus-list">
+          <view wx:for="{{guide.focus.items}}" wx:key="title" class="stage-focus-item">
+            <view class="stage-focus-num">0{{index + 1}}</view>
+            <view class="stage-focus-item-body">
+              <view class="stage-focus-item-title">{{item.title}}</view>
+              <view class="stage-focus-item-detail">{{item.detail}}</view>
+            </view>
+          </view>
+        </view>
+        <view class="stage-focus-reminder">
+          <view class="stage-focus-reminder-label">安心提示与边界</view>
+          <view class="stage-focus-reminder-text">{{guide.focus.reminder}}</view>
+        </view>
+        <view class="stage-focus-source" bindtap="copyGuideSource">
+          参考出处：{{guide.source.title}}（点击复制链接）
+        </view>
+      </scroll-view>
+      <view class="stage-focus-footer">
+        <button wx:if="{{prepareUrl}}" class="btn stage-focus-cta" bindtap="goPrepareFromModal">打开本阶段问医生清单</button>
+        <button class="btn secondary stage-focus-ok" bindtap="closeStageFocus">我知道了</button>
+      </view>
+    </view>
   </view>
 </view>

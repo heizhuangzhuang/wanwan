@@ -100,6 +100,36 @@
       if (statusEl) {
         statusEl.textContent = allChecked ? '已取消全选。' : '已全选 ' + allBoxes.length + ' 条问题。'
       }
+      return
+    }
+
+    var openBtn = target.closest('[data-dialog-open]')
+    if (openBtn) {
+      var dialogId = openBtn.getAttribute('data-dialog-open')
+      var dialog = dialogId ? document.getElementById(dialogId) : null
+      if (dialog && typeof dialog.showModal === 'function') {
+        dialog.showModal()
+      }
+      return
+    }
+
+    var closeBtn = target.closest('[data-dialog-close]')
+    if (closeBtn) {
+      var parentDialog = closeBtn.closest('dialog')
+      if (parentDialog && typeof parentDialog.close === 'function') {
+        parentDialog.close()
+      }
+      return
+    }
+
+    if (target.tagName === 'DIALOG' && typeof target.close === 'function') {
+      var rect = target.getBoundingClientRect()
+      var inside =
+        event.clientX >= rect.left &&
+        event.clientX <= rect.right &&
+        event.clientY >= rect.top &&
+        event.clientY <= rect.bottom
+      if (!inside) target.close()
     }
   })
 })()

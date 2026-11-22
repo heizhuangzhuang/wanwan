@@ -13,14 +13,52 @@
 }
 .stage-intro .page-heading { color: #244a3b; font-size: 38rpx; }
 .stage-intro .description { margin: 8rpx 0 0; line-height: 1.5; font-size: 26rpx; color: #43574a; }
-.stage-help-link {
+.stage-focus-pill {
   flex: none;
   font-size: 23rpx;
-  font-weight: 600;
-  color: #2c5a49;
-  background: rgba(255, 253, 249, 0.78);
-  padding: 6rpx 14rpx;
+  font-weight: 700;
+  color: #fffdf9;
+  background: #2c5a49;
+  padding: 8rpx 18rpx;
   border-radius: 999rpx;
+}
+.stage-focus-strip {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-top: 14rpx;
+  padding: 12rpx 16rpx;
+  background: rgba(255, 253, 249, 0.85);
+  border: 1rpx solid #c8ddd0;
+  border-radius: 14rpx;
+}
+.stage-focus-strip-label {
+  flex: none;
+  font-size: 20rpx;
+  font-weight: 700;
+  color: #244a3b;
+  background: #d7e9dd;
+  padding: 2rpx 10rpx;
+  border-radius: 8rpx;
+}
+.stage-focus-strip-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 23rpx;
+  color: #2e4539;
+}
+.stage-focus-strip-more {
+  flex: none;
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #2c5a49;
+}
+.stage-tabs-wrap { margin-bottom: 6rpx; }
+.stage-format-hint {
+  text-align: right;
+  font-size: 22rpx;
+  color: #5e6d64;
+  padding: 4rpx 6rpx 6rpx;
 }
 
 .stage-section-label {
@@ -97,3 +135,164 @@
   color: #6a7266;
   text-decoration: underline;
 }
+
+.stage-focus-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(23, 38, 31, 0.52);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.stage-focus-sheet {
+  background: #fffdf9;
+  border-radius: 32rpx 32rpx 0 0;
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  padding: 16rpx 28rpx calc(22rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+.stage-focus-handle {
+  width: 72rpx;
+  height: 8rpx;
+  border-radius: 999rpx;
+  background: #d5dcd4;
+  margin: 0 auto 14rpx;
+}
+.stage-focus-sheet-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding-bottom: 14rpx;
+  border-bottom: 1rpx solid #ece5db;
+}
+.stage-focus-sheet-kicker {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #376052;
+  margin-bottom: 4rpx;
+}
+.stage-focus-sheet-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #1f3329;
+  line-height: 1.25;
+}
+.stage-focus-close {
+  flex: none;
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 50%;
+  background: #f1ede4;
+  color: #3e4c44;
+  font-size: 38rpx;
+  line-height: 58rpx;
+  text-align: center;
+}
+.stage-focus-scroll {
+  max-height: 56vh;
+  padding: 18rpx 0;
+  box-sizing: border-box;
+}
+.stage-focus-goal {
+  padding: 18rpx 20rpx;
+  border-radius: 18rpx;
+  background: #e5f0e8;
+  border: 1rpx solid #cfe2d5;
+  margin-bottom: 18rpx;
+}
+.stage-focus-goal-label {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #244a3b;
+  margin-bottom: 6rpx;
+}
+.stage-focus-goal-text {
+  font-size: 27rpx;
+  line-height: 1.55;
+  color: #22352c;
+}
+.stage-focus-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+  margin-bottom: 18rpx;
+}
+.stage-focus-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14rpx;
+  padding: 16rpx 18rpx;
+  border-radius: 18rpx;
+  background: #f8f5ef;
+  border: 1rpx solid #ebe3d7;
+}
+.stage-focus-num {
+  flex: none;
+  width: 46rpx;
+  height: 46rpx;
+  border-radius: 12rpx;
+  background: #2c5a49;
+  color: #fffdf9;
+  font-size: 23rpx;
+  font-weight: 700;
+  line-height: 46rpx;
+  text-align: center;
+}
+.stage-focus-item-body { flex: 1; min-width: 0; }
+.stage-focus-item-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #1f3329;
+  line-height: 1.35;
+  margin-bottom: 4rpx;
+}
+.stage-focus-item-detail {
+  font-size: 25rpx;
+  line-height: 1.55;
+  color: #4b5951;
+}
+.stage-focus-reminder {
+  padding: 16rpx 20rpx;
+  border-radius: 18rpx;
+  background: #fcf3de;
+  border: 1rpx solid #ebd9ae;
+}
+.stage-focus-reminder-label {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: #7c511d;
+  margin-bottom: 6rpx;
+}
+.stage-focus-reminder-text {
+  font-size: 25rpx;
+  line-height: 1.55;
+  color: #5e411d;
+}
+.stage-focus-source {
+  margin-top: 16rpx;
+  padding: 8rpx 4rpx;
+  font-size: 22rpx;
+  color: #6a7266;
+  text-decoration: underline;
+}
+.stage-focus-footer {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  padding-top: 14rpx;
+  border-top: 1rpx solid #ece5db;
+}
+.stage-focus-footer .btn {
+  width: auto !important;
+  min-width: 0;
+  margin: 0 !important;
+  min-height: 82rpx;
+  font-size: 27rpx;
+  padding: 0 22rpx;
+}
+.stage-focus-cta { flex: 1.45; }
+.stage-focus-ok { flex: 1; }

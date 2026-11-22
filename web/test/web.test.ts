@@ -440,8 +440,12 @@ describe('web security & SSR', () => {
 
     const stageRes = await handleRequest('/stages/JUST_FOUND', mockClient(), config)
     assert.equal(stageRes.status, 200)
+    assert.ok(stageRes.scriptHash?.startsWith('sha256-'))
     assert.match(String(stageRes.body), /本阶段常用工具与准备/)
     assert.match(String(stageRes.body), /\/tools\/preparation\?stage=JUST_FOUND/)
+    assert.match(String(stageRes.body), /data-dialog-open="stage-focus-dialog"/)
+    assert.match(String(stageRes.body), /id="stage-focus-dialog"/)
+    assert.match(String(stageRes.body), /保留原始报告与图像/)
   })
 
   it('matches all 6 prenatal guides by alias, supports /prenatal?q=, and returns offline matches on 503 search', async () => {

@@ -1334,3 +1334,31 @@ test('微信好友分享全链路：文章/专题/资料卡/阶段转发与好�
   tp.page.onLoad({ kind: 'guide', stage: 'JUST_FOUND' })
   assert.equal(tp.page.onShareAppMessage().path, '/pages/topics/topics?kind=guide&stage=JUST_FOUND')
 })
+
+test('阶段页为五大阶段提供重点工作摘要与二级弹出详解', () => {
+  const { familyGuide } = require(join(compiled, 'services/family-guide.js'))
+  for (const key of ['JUST_FOUND', 'PRENATAL', 'POSTNATAL_TREATMENT', 'BRACE_DAILY', 'LONG_TERM']) {
+    const guide = familyGuide(key)
+    assert.ok(guide && guide.focus, `missing focus for ${key}`)
+    assert.ok(guide.focus.goal.length > 10)
+    assert.equal(guide.focus.tags.length, 3)
+    assert.equal(guide.focus.items.length, 3)
+    assert.ok(guide.focus.reminder.length > 10)
+  }
+
+  const { page, navigations } = openPage('stage', () => ({ data: { page: 1, size: 20, total: 0, items: [] } }))
+  page.onLoad({ key: 'PRENATAL', label: '产前了解与等待' })
+  assert.equal(page.data.showFocusModal, false)
+  assert.match(page.data.focusSummaryText, /按日期归档报告/)
+
+  page.openStageFocus()
+  assert.equal(page.data.showFocusModal, true)
+
+  page.goPrepareFromModal()
+  assert.equal(page.data.showFocusModal, false)
+  assert.deepEqual(navigations, ['/pages/preparation/preparation?stage=PRENATAL'])
+
+  page.openStageFocus()
+  page.closeStageFocus()
+  assert.equal(page.data.showFocusModal, false)
+})

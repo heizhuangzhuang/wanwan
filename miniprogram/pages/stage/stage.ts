@@ -63,6 +63,8 @@ Page({
     stageKey: '', heading: '', intro: '', materials: materialTypes, typeIndex: 0, tag: '', submittedTag: '',
     activeTab: 'all' as 'all' | 'guides' | 'resources',
     showTagFilter: false,
+    showFocusModal: false,
+    focusSummaryText: '',
     stageTools: [] as StageToolTile[],
     guide: null as ReturnType<typeof familyGuide>, prepareUrl: '',
     articles: [] as PostSummary[], articlesUrl: '', moreArticles: false,
@@ -82,6 +84,8 @@ Page({
       heading,
       demoMode: getApp<IAppOption>().globalData.demoMode,
       guide,
+      showFocusModal: false,
+      focusSummaryText: guide ? guide.focus.tags.join(' · ') : '',
       stageTools: stageToolMap[key] ?? [],
       activeTab: guide ? 'all' : 'resources',
       prepareUrl: guide ? '/pages/preparation/preparation?stage=' + encodeURIComponent(key) : '',
@@ -115,6 +119,20 @@ Page({
       fail: () => wx.showToast({ title: '复制失败，请重试', icon: 'none' }),
     })
   },
+  openStageFocus() {
+    if (!this.data.guide) return
+    this.setData({ showFocusModal: true })
+  },
+  closeStageFocus() {
+    if (!this.data.showFocusModal) return
+    this.setData({ showFocusModal: false })
+  },
+  goPrepareFromModal() {
+    const url = this.data.prepareUrl
+    this.setData({ showFocusModal: false })
+    if (url) wx.navigateTo({ url })
+  },
+  noop() {},
   showFormatHelp() {
     wx.showModal({
       title: '导读与资料卡有什么区别？',

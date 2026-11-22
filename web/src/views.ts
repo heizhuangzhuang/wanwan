@@ -505,19 +505,23 @@ export async function handleRequest(
       ? `<section class="stage-guides"><h2>这一阶段的原创导读</h2><div class="card-list">${posts.items.map(guide => renderGuideCard(guide, basePath, 'h3')).join('')}</div>
 ${posts.total > posts.items.length ? `<a href="${basePath}/posts?stage=${encodeURIComponent(stage.key)}">查看本阶段全部导读</a>` : ''}</section>`
       : ''
-    const stageToolsHtml = renderStageToolsSection(stage.key, basePath)
+    const stageToolsHtml = renderStageToolsSection(stage.key, basePath, pageActionsHash)
     if (!list) {
-      return htmlResponse(200, renderPage(stage.label,
-        `<h1>${escapeHtml(stage.label)}</h1>${stageToolsHtml}${stageGuides}${renderUnavailableResources(basePath)}`,
-      ))
+      return {
+        ...htmlResponse(200, renderPage(stage.label,
+          `<h1>${escapeHtml(stage.label)}</h1>${stageToolsHtml}${stageGuides}${renderUnavailableResources(basePath)}`,
+        )),
+        scriptHash: pageActionsHash,
+      }
     }
     const cards = list.items.length
       ? `<div class="card-list">${list.items.map((item) => renderCard(item, config)).join('')}</div>`
       : '<div class="warn-bar">该筛选条件下暂无已公开资料。</div>'
-    return htmlResponse(
-      200,
-      renderPage(stage.label,
-        `<h1>${escapeHtml(stage.label)}</h1>
+    return {
+      ...htmlResponse(
+        200,
+        renderPage(stage.label,
+          `<h1>${escapeHtml(stage.label)}</h1>
 ${stageToolsHtml}
 <p class="notice-bar">以下为手动核对后收录的公开资料。按编辑推荐阅读顺序排列，不构成个体医学建议。</p>
 ${stageGuides}
@@ -528,8 +532,10 @@ ${renderFilterBar(stagePath, selectedType, query.toString())}
 <input class="search-input" name="tag" maxlength="50" value="${escapeHtml(selectedTag)}" placeholder="主题标签" aria-label="主题标签" />
 <button type="submit" class="btn">筛选</button></form>
 ${cards}${renderPagination(stagePath, list, query)}`,
+        ),
       ),
-    )
+      scriptHash: pageActionsHash,
+    }
   }
 
   if (path === '/resources') {
