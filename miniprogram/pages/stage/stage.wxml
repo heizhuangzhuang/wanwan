@@ -1,66 +1,90 @@
 <import src="../../templates/public.wxml" />
 <view class="container">
-  <view class="page-intro stage-intro motion-reveal">
-    <view class="page-heading">{{heading}}</view>
-    <view class="description">{{intro}}</view>
+  <view class="stage-intro motion-reveal">
+    <view class="stage-intro-head">
+      <view class="page-heading">{{heading}}</view>
+      <text wx:if="{{guide}}" class="stage-help-link" bindtap="showFormatHelp">形态说明 ?</text>
+    </view>
+    <view class="description clamp-2">{{intro}}</view>
   </view>
-  <block wx:if="{{guide}}">
-    <view class="tab-list">
-      <navigator class="tab-row motion-press" url="{{prepareUrl}}" hover-class="pressed" hover-start-time="0" hover-stay-time="90">
-        <view class="icon-tile icon-sage" aria-hidden="true"><image src="/assets/icons/clipboard-list.png" mode="aspectFit" /></view>
-        <view class="tab-row-copy tab-row-title">这一阶段可以问医生什么</view>
-        <text class="tab-chevron" aria-hidden="true">›</text>
-      </navigator>
-      <navigator wx:for="{{guide.actions}}" wx:key="url" class="tab-row motion-press" url="{{item.url}}"
-        hover-class="pressed" hover-start-time="0" hover-stay-time="90">
-        <view class="tab-row-copy tab-row-title">{{item.title}}</view>
-        <text class="tab-chevron" aria-hidden="true">›</text>
-      </navigator>
-      <button class="tab-row motion-press" bindtap="copyGuideSource" hover-class="pressed" hover-start-time="0" hover-stay-time="90">
-        <view class="icon-tile icon-gold" aria-hidden="true"><image src="/assets/icons/link-2.png" mode="aspectFit" /></view>
-        <view class="tab-row-copy">
-          <view class="tab-row-title">复制参考来源链接</view>
-          <view class="tab-row-caption">{{guide.source.title}}</view>
+
+  <block wx:if="{{stageTools.length}}">
+    <view class="stage-section-label">本阶段常用工具与准备</view>
+    <view class="stage-tool-grid">
+      <navigator wx:for="{{stageTools}}" wx:key="title" class="stage-tool-tile motion-press" url="{{item.url}}" hover-class="pressed">
+        <view class="icon-tile icon-{{item.tone}}" aria-hidden="true">
+          <image src="/assets/icons/{{item.icon}}.png" mode="aspectFit" />
         </view>
-      </button>
-    </view>
-  </block>
-  <block wx:if="{{articles.length}}">
-    <view class="section-heading">这一阶段的原创导读</view>
-    <view class="tab-list">
-      <navigator wx:for="{{articles}}" wx:key="name" class="tab-row" hover-class="pressed"
-        url="/pages/reading/reading?kind=guide&amp;name={{item.name}}">
-        <view class="tab-row-copy">
-          <view class="tab-row-title">{{item.title}}</view>
-          <view wx:if="{{item.excerpt}}" class="tab-row-caption stage-article-excerpt">{{item.excerpt}}</view>
+        <view class="stage-tool-copy">
+          <view class="stage-tool-title clamp-1">{{item.title}}</view>
+          <view class="stage-tool-sub clamp-1">{{item.sub}}</view>
         </view>
-        <text class="tab-chevron" aria-hidden="true">›</text>
       </navigator>
     </view>
-    <navigator wx:if="{{moreArticles}}" class="text-link" url="{{articlesUrl}}">查看本阶段全部导读 ›</navigator>
   </block>
-  <view wx:if="{{guide}}" class="section-heading">这一阶段的资料卡</view>
-  <view wx:if="{{demoMode}}" class="notice">本地测试样本 · 虚构内容</view>
-  <picker mode="selector" range="{{materials}}" range-key="label" value="{{typeIndex}}" disabled="{{loading}}" bindchange="onType">
-    <view class="filter">{{materials[typeIndex].label}} ▾</view>
-  </picker>
-  <view class="actions stage-tag">
-    <input class="field" placeholder="按主题标签筛选" maxlength="50" value="{{tag}}" disabled="{{loading}}" bindinput="onTag" bindconfirm="applyTag" />
-    <button class="btn motion-press" disabled="{{loading}}" bindtap="applyTag"
-      hover-class="pressed" hover-start-time="0" hover-stay-time="90">筛选</button>
+
+  <view wx:if="{{guide}}" class="sticky-tabs" role="tablist">
+    <view class="sticky-tab {{activeTab === 'all' ? 'active' : ''}}" data-tab="all" bindtap="selectTab">全部内容</view>
+    <view class="sticky-tab {{activeTab === 'guides' ? 'active' : ''}}" data-tab="guides" bindtap="selectTab">原创导读</view>
+    <view class="sticky-tab {{activeTab === 'resources' ? 'active' : ''}}" data-tab="resources" bindtap="selectTab">资料卡</view>
   </view>
-  <view wx:if="{{loading}}" class="muted">正在加载资料…</view>
-  <view wx:elif="{{error}}" class="card">
-    <view>{{error}}</view>
-    <button class="btn" bindtap="retry">重试</button>
-  </view>
-  <block wx:else>
-    <view wx:if="{{!items.length}}" class="card muted">
-      <text wx:if="{{typeIndex || submittedTag}}">没有符合当前筛选条件的资料，可以更换类型或标签。</text>
-      <text wx:elif="{{guide}}">这一阶段暂未收录公开资料。可先查看上方的就诊准备。</text>
-      <text wx:else>暂未收录公开资料。</text>
+
+  <block wx:if="{{guide && (activeTab === 'all' || activeTab === 'guides')}}">
+    <block wx:if="{{articles.length}}">
+      <view wx:if="{{activeTab === 'all'}}" class="stage-bar">
+        <text class="stage-section-label">本阶段原创导读</text>
+        <navigator wx:if="{{moreArticles}}" class="stage-more-inline" url="{{articlesUrl}}">全部导读 ›</navigator>
+      </view>
+      <navigator wx:for="{{articles}}" wx:key="name" class="card guide-card motion-press" hover-class="pressed"
+        url="/pages/reading/reading?kind=guide&name={{item.name}}">
+        <view class="guide-card-head">
+          <text class="badge badge-sage">📖 原创导读</text>
+          <text class="muted">分节阅读 ›</text>
+        </view>
+        <view class="resource-card-title clamp-2">{{item.title}}</view>
+        <view wx:if="{{item.excerpt}}" class="resource-card-intro clamp-2">{{item.excerpt}}</view>
+      </navigator>
+      <navigator wx:if="{{activeTab === 'guides' && moreArticles}}" class="text-link stage-more-link" url="{{articlesUrl}}">查看本阶段全部导读 ›</navigator>
+    </block>
+    <view wx:elif="{{activeTab === 'guides'}}" class="card muted">
+      这一阶段暂未发布原创导读，可查看上方的阶段工具或切换到「资料卡」。
     </view>
-    <template is="resourceCards" data="{{items}}" />
-    <template is="pagination" data="{{page, hasNext, loading}}" />
   </block>
+
+  <block wx:if="{{!guide || activeTab === 'all' || activeTab === 'resources'}}">
+    <view wx:if="{{guide && activeTab === 'all'}}" class="stage-section-label">本阶段精选资料卡</view>
+    <view wx:if="{{demoMode}}" class="notice">本地测试样本 · 虚构内容</view>
+    <view class="stage-filter-bar">
+      <scroll-view scroll-x class="filter-chips-scroll" show-scrollbar="{{false}}">
+        <view class="filter-chips">
+          <view wx:for="{{materials}}" wx:key="key" class="filter-chip {{typeIndex === index ? 'active' : ''}}"
+            role="button" data-index="{{index}}" bindtap="selectType">{{item.label}}</view>
+        </view>
+      </scroll-view>
+      <text class="stage-tag-toggle" bindtap="toggleTagFilter">{{showTagFilter ? '收起 ▴' : '标签 ▾'}}</text>
+    </view>
+    <view wx:if="{{showTagFilter}}" class="actions stage-tag">
+      <input class="field" placeholder="按主题标签筛选" maxlength="50" value="{{tag}}" disabled="{{loading}}" bindinput="onTag" bindconfirm="applyTag" />
+      <button class="btn motion-press" disabled="{{loading}}" bindtap="applyTag"
+        hover-class="pressed" hover-start-time="0" hover-stay-time="90">筛选</button>
+    </view>
+    <view wx:if="{{loading}}" class="muted">正在加载资料…</view>
+    <view wx:elif="{{error}}" class="card">
+      <view>{{error}}</view>
+      <button class="btn" bindtap="retry">重试</button>
+    </view>
+    <block wx:else>
+      <view wx:if="{{!items.length}}" class="card muted">
+        <text wx:if="{{typeIndex || submittedTag}}">没有符合当前筛选条件的资料，可以更换类型或标签。</text>
+        <text wx:elif="{{guide}}">这一阶段暂未收录资料卡，可先使用上方工具或查看原创导读。</text>
+        <text wx:else>暂未收录公开资料。</text>
+      </view>
+      <template is="resourceCards" data="{{items}}" />
+      <template is="pagination" data="{{page, hasNext, loading}}" />
+    </block>
+  </block>
+
+  <view wx:if="{{guide}}" class="stage-source-foot" bindtap="copyGuideSource">
+    参考出处：{{guide.source.title}}（点击复制链接）
+  </view>
 </view>

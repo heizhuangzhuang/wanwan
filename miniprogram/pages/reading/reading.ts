@@ -1,10 +1,18 @@
-import { guideNodes, type GuideNode } from '../../services/guide-html'
+import { buildGuideOutline, guideNodes, type GuideNode, type GuideSection } from '../../services/guide-html'
 import { HttpError, wanwanApi } from '../../services/api'
 import { decodeOption, openResource, resourceLabel } from '../../services/reading'
 
 Page({
   data: {
-    kind: '', name: '', title: '', intro: '', date: '', author: '', body: [] as GuideNode[],
+    kind: '', name: '', title: '', intro: '', date: '', author: '',
+    body: [] as GuideNode[],
+    sections: [] as GuideSection[],
+    toc: [] as { id: string; title: string }[],
+    highlights: [] as string[],
+    readMinutes: 0,
+    openSections: {} as Record<string, boolean>,
+    expandAll: false,
+    showToc: false,
     items: [] as ReturnType<typeof resourceLabel>[],
     loading: true, error: '', retryable: false,
   },
@@ -16,7 +24,11 @@ Page({
   },
   async load() {
     const { kind, name } = this.data
-    this.setData({ loading: true, error: '', retryable: false, title: '', items: [], body: [], date: '', author: '' })
+    this.setData({
+      loading: true, error: '', retryable: false, title: '', items: [],
+      body: [], sections: [], toc: [], highlights: [], readMinutes: 0,
+      openSections: {}, expandAll: false, showToc: false, date: '', author: '',
+    })
     if (!name || (kind !== 'topic' && kind !== 'guide')) {
       this.setData({ loading: false, error: '入口缺少有效的专题或导读。' })
       return
@@ -27,10 +39,31 @@ Page({
         this.setData({ title: topic.title, intro: topic.intro, items: topic.resources.map(resourceLabel) })
       } else {
         const guide = await wanwanApi.getPost(name)
+        const nodes = guideNodes(guide.content || '', guide.title)
+        const outline = buildGuideOutline(nodes)
+        const openSections: Record<string, boolean> = {}
+        // Default open: intro block (if untitled) + first titled chapter only, so long articles never overwhelm small screens.
+        let openedChapter = false
+        for (const sec of outline.sections) {
+          if (!sec.title) {
+            openSections[sec.id] = true
+          } else if (!openedChapter) {
+            openSections[sec.id] = true
+            openedChapter = true
+          } else {
+            openSections[sec.id] = false
+          }
+        }
         this.setData({
           title: guide.title, intro: '', date: guide.publishTime?.slice(0, 10) ?? '',
           author: guide.author || '',
-          body: guideNodes(guide.content || '', guide.title),
+          body: nodes,
+          sections: outline.sections,
+          toc: outline.toc,
+          highlights: outline.highlights,
+          readMinutes: outline.readMinutes,
+          openSections,
+          expandAll: outline.toc.length <= 1,
         })
       }
     } catch (error) {
@@ -39,6 +72,35 @@ Page({
     } finally {
       this.setData({ loading: false })
     }
+  },
+  toggleSection(e: WechatMiniprogram.TouchEvent) {
+    const { id } = e.currentTarget.dataset as { id?: string }
+    if (!id) return
+    const next = { ...this.data.openSections, [id]: !this.data.openSections[id] }
+    const expandAll = this.data.toc.every(item => !!next[item.id])
+    this.setData({ openSections: next, expandAll })
+  },
+  toggleExpandAll() {
+    const nextState = !this.data.expandAll
+    const openSections: Record<string, boolean> = {}
+    for (const sec of this.data.sections) {
+      openSections[sec.id] = !sec.title ? true : nextState
+    }
+    this.setData({ openSections, expandAll: nextState })
+  },
+  toggleToc() {
+    this.setData({ showToc: !this.data.showToc })
+  },
+  noop() {},
+  jumpToSection(e: WechatMiniprogram.TouchEvent) {
+    const { id } = e.currentTarget.dataset as { id?: string }
+    if (!id) {
+      this.setData({ showToc: false })
+      return
+    }
+    const openSections = { ...this.data.openSections, [id]: true }
+    this.setData({ showToc: false, openSections })
+    wx.pageScrollTo?.({ selector: `#${id}`, duration: 240 })
   },
   openDetail: openResource,
   onShareAppMessage() {

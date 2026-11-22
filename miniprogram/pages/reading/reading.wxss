@@ -1,8 +1,80 @@
+.reading-header-card { margin-bottom: 14rpx; padding: 24rpx; }
+.reading-title { font-size: 40rpx; line-height: 1.35; }
+.reading-meta-line { margin-top: 10rpx; font-size: 24rpx; }
+.reading-expand-toggle { font-size: 24rpx; font-weight: 600; color: #376052; padding: 4rpx 10rpx; }
+.reading-toc-scroll { width: 100%; height: 76rpx; white-space: nowrap; margin-bottom: 10rpx; }
+.reading-body-card { padding: 26rpx 24rpx; }
+
+.chapter-card { padding: 20rpx 24rpx; margin-bottom: 14rpx; }
+.chapter-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+.chapter-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 30rpx;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #1f3c31;
+}
+.chapter-arrow {
+  flex: none;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #376052;
+  background: #edf4ef;
+  padding: 6rpx 14rpx;
+  border-radius: 999rpx;
+}
+.chapter-body {
+  margin-top: 14rpx;
+  padding-top: 14rpx;
+  border-top: 1rpx solid #efe6da;
+}
+
 .guide-article {
   display: block;
-  margin-top: 28rpx;
   color: #25332c;
   font-size: 30rpx;
-  line-height: 1.75;
+  line-height: 1.8;
   overflow-wrap: anywhere;
 }
+
+.toc-mask {
+  position: fixed;
+  left: 0; right: 0; top: 0; bottom: 0;
+  z-index: 60;
+  background: rgba(25, 36, 30, 0.42);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+.toc-sheet {
+  background: #fffdf9;
+  border-radius: 28rpx 28rpx 0 0;
+  padding: 28rpx;
+  padding-bottom: calc(28rpx + env(safe-area-inset-bottom));
+  max-height: 68vh;
+}
+.toc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 18rpx;
+  border-bottom: 1rpx solid #ece3d7;
+}
+.toc-scroll { max-height: 52vh; margin-top: 10rpx; }
+.toc-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+  padding: 20rpx 8rpx;
+  border-bottom: 1rpx solid #f3ede4;
+  font-size: 29rpx;
+  color: #24382e;
+}
+.toc-index { color: #376052; font-weight: 700; flex: none; }
+.toc-label { flex: 1; min-width: 0; }

@@ -1047,7 +1047,7 @@ test('首页选择穿戴阶段后可直接开始并保存计时', () => {
     Date.now = () => core.parseLocalTime('2026-11-22', '09:00')
     page.onShow()
     assert.equal(page.data.phase, 0)
-    page.choosePhase({ detail: { value: '3' } })
+    page.choosePhase({ detail: { value: '4' } })
     assert.equal(page.data.wearTime, '今天还没记录')
     page.toggleWear()
     assert.equal(page.data.active, true)
@@ -1103,4 +1103,56 @@ test('同步在云端已改变时阻止直接上传，本机记录仍可用', as
   assert.equal(page.data.conflict, true)
   assert.match(page.data.message, /另一台设备/)
   assert.equal(storage.get('wanwan-wear-cloud-revision'), 'v1')
+})
+
+
+test('导读目录与重点速览、资料卡折叠出处、阶段分栏与首页快捷选阶段正常联动', async () => {
+  const reading = openPage('reading', () => ({
+    data: {
+      name: 'g1',
+      title: '全景综述',
+      content: '<h1>全景综述</h1><h2>一、病因与诊断</h2><p>正文一</p><h2>二、Ponseti 治疗</h2><p>正文二</p>',
+      publishTime: '2026-11-22T10:00:00Z',
+    },
+  }))
+  const scrolled = []
+  wx.pageScrollTo = opts => scrolled.push(opts.selector)
+  reading.page.onLoad({ kind: 'guide', name: 'g1' })
+  await reading.page.load()
+  assert.deepEqual(reading.page.data.highlights, ['一、病因与诊断', '二、Ponseti 治疗'])
+  assert.equal(reading.page.data.toc.length, 2)
+  assert.equal(reading.page.data.openSections[reading.page.data.toc[0].id], true)
+  assert.equal(reading.page.data.openSections[reading.page.data.toc[1].id], false)
+  assert.ok(reading.page.data.readMinutes >= 1)
+  reading.page.toggleToc()
+  assert.equal(reading.page.data.showToc, true)
+  reading.page.jumpToSection({ currentTarget: { dataset: { id: reading.page.data.toc[1].id } } })
+  assert.equal(reading.page.data.showToc, false)
+  assert.equal(reading.page.data.openSections[reading.page.data.toc[1].id], true)
+  assert.deepEqual(scrolled, [`#${reading.page.data.toc[1].id}`])
+
+  const detail = openPage('detail', () => ({ data: item('r-meta') }))
+  detail.page.onLoad({ name: 'r-meta' })
+  await detail.page.loadDetail()
+  assert.equal(detail.page.data.metaExpanded, false)
+  assert.equal(detail.page.data.resource.entryLabel, '出处题录')
+  detail.page.toggleMeta()
+  assert.equal(detail.page.data.metaExpanded, true)
+
+  const stage = openPage('stage', () => ({ data: { items: [item('r1')], page: 1, size: 20, total: 1 } }))
+  stage.page.onLoad({ key: 'JUST_FOUND' })
+  stage.page.selectTab({ currentTarget: { dataset: { tab: 'guides' } } })
+  assert.equal(stage.page.data.activeTab, 'guides')
+  stage.page.selectType({ currentTarget: { dataset: { index: '2' } } })
+  await settle()
+  assert.equal(stage.page.data.typeIndex, 2)
+
+  const home = openPage('index', () => ({ data: [] }))
+  home.page.selectPhase({ currentTarget: { dataset: { phase: '1' } } })
+  assert.equal(home.page.data.phase, 1)
+  assert.ok(home.page.data.quickTiles.some(tile => tile.title.includes('超声复查清单')))
+  assert.ok(!home.page.data.quickTiles.some(tile => tile.title.includes('穿戴') || tile.title.includes('石膏')))
+  home.page.selectPhase({ currentTarget: { dataset: { phase: '4' } } })
+  assert.equal(home.page.data.phase, 4)
+  assert.ok(home.page.data.quickTiles.some(tile => tile.title.includes('穿戴')))
 })

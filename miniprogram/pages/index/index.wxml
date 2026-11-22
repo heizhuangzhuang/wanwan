@@ -1,39 +1,71 @@
+<import src="../../templates/public.wxml" />
 <view class="container tab-page home">
-  <view wx:if="{{phase === 0}}" class="home-welcome">
+  <view class="home-welcome">
     <view class="home-welcome-copy">
-      <view class="page-heading">一步一步了解足内翻</view>
-      <view class="description">从超声提示疑似足内翻，到出生后治疗和随访，每一步都有就诊准备和资料可查。</view>
+      <view class="page-heading">小脚丫步步指南</view>
+      <view class="description clamp-2">{{welcomeCopy}}</view>
     </view>
     <image class="home-logo" src="/assets/logo.png" mode="aspectFit" aria-hidden="true" />
   </view>
 
-  <view class="home-task {{phase ? 'home-task-active' : ''}}">
-    <picker class="home-phase" range="{{phases}}" value="{{phase}}" bindchange="choosePhase" aria-label="切换当前阶段">
-      <view>{{phase ? phases[phase] : '设置我的当前阶段'}} <text aria-hidden="true">⌄</text></view>
-    </picker>
-    <block wx:if="{{phase === 1}}">
-      <view class="tab-row-title">准备下次就诊</view>
+  <scroll-view scroll-x class="home-journey-scroll" show-scrollbar="{{false}}">
+    <view class="home-journey">
+      <navigator wx:for="{{stages}}" wx:key="key" class="journey-pill {{phase === index + 1 ? 'journey-pill-active' : (item.key === 'JUST_FOUND' && phase === 0 ? 'journey-pill-start' : '')}}" url="{{item.url}}" hover-class="pressed">
+        <text class="journey-step">{{index + 1}}</text>
+        <text class="journey-label">{{item.label}}</text>
+      </navigator>
+    </view>
+  </scroll-view>
+
+  <view class="home-task {{phase ? 'home-task-active' : 'home-task-onboard'}}">
+    <view class="home-task-head">
+      <text class="home-task-badge">{{phase ? '当前阶段 · ' + phases[phase] : '第一步 · 选当前阶段'}}</text>
+      <picker class="home-phase" range="{{phases}}" value="{{phase}}" bindchange="choosePhase" aria-label="切换当前阶段">
+        <view>{{phase ? '切换 ⌄' : '选择阶段 ⌄'}}</view>
+      </picker>
+    </view>
+
+    <block wx:if="{{phase === 0}}">
+      <view class="tab-row-title">宝宝现在处于哪一步？选好后首页只留最常用的工具</view>
+      <button class="phase-pick-btn phase-pick-start" data-phase="1" bindtap="selectPhase">刚拿到超声提示 · 刚发现</button>
+      <view class="home-phase-grid">
+        <button class="phase-pick-btn" data-phase="2" bindtap="selectPhase">产前了解与准备</button>
+        <button class="phase-pick-btn" data-phase="3" bindtap="selectPhase">出生后石膏治疗</button>
+        <button class="phase-pick-btn" data-phase="4" bindtap="selectPhase">矫正鞋穿戴期</button>
+        <button class="phase-pick-btn" data-phase="5" bindtap="selectPhase">长期随访复查</button>
+      </view>
+    </block>
+    <block wx:elif="{{phase === 1}}">
+      <view class="tab-row-title">先定心：先看全景综述，再带清单去复查</view>
+      <navigator class="btn home-action" url="/pages/stage/stage?key=JUST_FOUND&label=%E5%88%9A%E5%8F%91%E7%8E%B0">打开「刚发现」指南与导读</navigator>
+      <view class="home-task-links">
+        <navigator url="/pages/downloads/downloads">超声复查清单 ›</navigator>
+        <navigator url="/pages/prenatal/prenatal">产前检查专项 ›</navigator>
+      </view>
+    </block>
+    <block wx:elif="{{phase === 2}}">
+      <view class="tab-row-title">准备下次产前就诊与遗传咨询</view>
       <navigator class="btn home-action" url="/pages/preparation/preparation?stage=PRENATAL">整理就诊问题</navigator>
       <view class="home-task-links">
         <navigator url="/pages/downloads/downloads">超声复查清单 ›</navigator>
         <navigator url="/pages/shelf/shelf?kind=saved">我的收藏 ›</navigator>
       </view>
     </block>
-    <block wx:elif="{{phase === 2}}">
-      <view class="tab-row-title">石膏治疗记录</view>
+    <block wx:elif="{{phase === 3}}">
+      <view class="tab-row-title">石膏治疗记录与复诊提醒</view>
       <view wx:if="{{castVisit}}" class="tab-row-caption">下次就诊 {{castVisit}}（北京时间）</view>
       <view wx:if="{{castCare}}" class="tab-row-caption">上次交代 {{castCare}}</view>
       <navigator class="btn home-action" url="/pages/cast/cast?add=1">记一次石膏</navigator>
     </block>
-    <block wx:elif="{{phase === 3}}">
+    <block wx:elif="{{phase === 4}}">
       <view class="tab-row-title">今日穿戴 <text class="home-wear-state" wx:if="{{active}}">计时中</text></view>
       <view class="home-wear-total" aria-live="polite">{{wearTime}}</view>
       <view wx:if="{{wearGoal}}" class="tab-row-caption">每日目标 {{wearGoal}}</view>
       <button class="btn home-action" bindtap="toggleWear">{{active ? '脱下并保存' : '穿上，开始计时'}}</button>
       <navigator class="home-task-link" url="/pages/brace-wear/brace-wear">查看 7 天记录与补记 ›</navigator>
     </block>
-    <block wx:elif="{{phase === 4}}">
-      <view class="tab-row-title">长期随访</view>
+    <block wx:elif="{{phase === 5}}">
+      <view class="tab-row-title">长期随访与复查准备</view>
       <navigator class="btn home-action" url="/pages/followup/followup">准备复诊摘要</navigator>
       <navigator class="home-task-link" url="/pages/brace-dashboard/brace-dashboard">穿戴趋势与复诊 ›</navigator>
     </block>
@@ -41,7 +73,20 @@
   </view>
 
   <view wx:if="{{demoMode}}" class="notice">当前展示示例资料。</view>
-  <view class="section-heading">按阶段查找</view>
+
+  <view class="section-heading">{{phase ? phases[phase] + ' · 常用直达' : '常用直达'}}</view>
+  <view class="home-quick-grid">
+    <navigator wx:for="{{quickTiles}}" wx:key="title" class="quick-tile motion-press"
+      open-type="{{item.openType || 'navigate'}}" url="{{item.url}}" hover-class="pressed">
+      <view class="icon-tile icon-{{item.tone}}" aria-hidden="true">
+        <image src="/assets/icons/{{item.icon}}.png" mode="aspectFit" />
+      </view>
+      <view class="quick-tile-title clamp-1">{{item.title}}</view>
+      <view class="quick-tile-sub clamp-1">{{item.sub}}</view>
+    </navigator>
+  </view>
+
+  <view class="section-heading">按阶段看资料</view>
   <view class="tab-list home-stages">
     <navigator wx:for="{{stages}}" wx:key="key" class="tab-row home-stage motion-press {{item.key === 'JUST_FOUND' ? 'home-stage-start' : ''}}"
       hover-class="pressed" hover-start-time="0" hover-stay-time="90" url="{{item.url}}">
@@ -50,7 +95,7 @@
       </view>
       <view class="tab-row-copy">
         <view class="tab-row-title">{{item.label}}</view>
-        <view class="tab-row-caption">{{item.intro}}</view>
+        <view class="tab-row-caption clamp-1">{{item.intro}}</view>
       </view>
       <text class="tab-chevron" aria-hidden="true">›</text>
     </navigator>
@@ -59,9 +104,4 @@
     <text>{{error}}</text>
     <button class="home-sync-retry" bindtap="loadHome" disabled="{{loading}}">重试</button>
   </view>
-  <navigator class="home-library motion-press" open-type="switchTab" url="/pages/library/library"
-    hover-class="pressed" hover-start-time="0" hover-stay-time="90">
-    <image class="home-library-icon" src="/assets/icons/book-open.png" mode="aspectFit" aria-hidden="true" />
-    <text>进入资料库</text><text class="tab-chevron" aria-hidden="true">›</text>
-  </navigator>
 </view>

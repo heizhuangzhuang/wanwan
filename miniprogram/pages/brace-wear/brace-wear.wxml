@@ -104,7 +104,7 @@
       <text class="wear-chevron" aria-hidden="true">›</text>
     </navigator>
     <view class="wear-secondary-links">
-      <navigator url="/pages/followup/followup?observe=1&amp;day={{selectedDay}}">记录穿戴困难 ›</navigator>
+      <navigator url="/pages/followup/followup?observe=1&day={{selectedDay}}">记录穿戴困难 ›</navigator>
       <navigator url="/pages/brace-sync/brace-sync">档案同步 ›</navigator>
     </view>
 

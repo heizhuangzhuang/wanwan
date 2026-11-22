@@ -1,0 +1,66 @@
+.detail-hero-card { padding: 26rpx 24rpx; }
+
+.detail-takeaway {
+  margin: 22rpx 0 18rpx;
+  padding: 20rpx 22rpx;
+  border-radius: 18rpx;
+  background: #edf4ef;
+  border-left: 6rpx solid #376052;
+}
+.detail-takeaway-title {
+  font-size: 27rpx;
+  font-weight: 700;
+  color: #214738;
+  margin-bottom: 8rpx;
+}
+.detail-takeaway-body {
+  font-size: 29rpx;
+  line-height: 1.65;
+  color: #25332c;
+}
+
+.detail-meta-box {
+  background: #f9f5ee;
+  border: 1rpx solid #e7ddd2;
+  border-radius: 16rpx;
+  padding: 16rpx 18rpx;
+  margin-bottom: 16rpx;
+}
+.detail-meta-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+.detail-meta-brief {
+  flex: 1;
+  min-width: 0;
+  font-size: 25rpx;
+  color: #535a50;
+}
+.detail-meta-toggle {
+  flex: none;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #376052;
+}
+.detail-meta-list {
+  margin-top: 14rpx;
+  padding-top: 12rpx;
+  border-top: 1rpx dashed #dfd4c7;
+  font-size: 25rpx;
+  line-height: 1.7;
+  color: #595f54;
+}
+
+.detail-cite-tip {
+  font-size: 25rpx;
+  color: #5a6358;
+  margin: 10rpx 0 4rpx;
+}
+.detail-feedback-link {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: #6b7268;
+  text-decoration: underline;
+}

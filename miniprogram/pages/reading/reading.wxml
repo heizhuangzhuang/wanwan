@@ -1,5 +1,5 @@
 <import src="../../templates/public.wxml" />
-<view class="container">
+<view class="container bottom-bar-space">
   <view wx:if="{{loading}}" class="muted">加载中…</view>
   <view wx:elif="{{error}}" class="card">
     <view>{{error}}</view>
@@ -9,23 +9,77 @@
     </view>
   </view>
   <block wx:else>
-    <view class="card">
-      <view class="page-heading">{{title}}</view>
+    <view class="card reading-header-card">
+      <view class="badge-row">
+        <text class="badge {{kind === 'guide' ? 'badge-sage' : 'badge-gold'}}">{{kind === 'guide' ? '原创导读' : '精选专题'}}</text>
+        <text wx:if="{{kind === 'guide' && readMinutes}}" class="badge badge-outline">约 {{readMinutes}} 分钟</text>
+        <text wx:if="{{kind === 'guide' && toc.length > 1}}" class="reading-expand-toggle badge-right" bindtap="toggleExpandAll">{{expandAll ? '折叠章节' : '展开全文'}}</text>
+        <text wx:elif="{{date}}" class="muted badge-right">{{date}}</text>
+      </view>
+      <view class="page-heading reading-title">{{title}}</view>
       <view wx:if="{{intro}}" class="description">{{intro}}</view>
-      <view wx:if="{{author}}" class="muted">作者 {{author}}</view>
-      <view wx:if="{{date}}" class="muted">发布于 {{date}}</view>
-      <block wx:if="{{kind === 'guide'}}">
-        <rich-text wx:if="{{body.length}}" class="guide-article" nodes="{{body}}" user-select />
-        <view wx:else class="description">暂无可显示的正文。</view>
-      </block>
+      <view wx:if="{{author || date}}" class="muted reading-meta-line">
+        <text wx:if="{{author}}">{{author}}</text>
+        <text wx:if="{{author && date}}"> · </text>
+        <text wx:if="{{date}}">{{date}}</text>
+      </view>
     </view>
+
+    <scroll-view wx:if="{{kind === 'guide' && toc.length > 1}}" scroll-x class="reading-toc-scroll" show-scrollbar="{{false}}">
+      <view class="filter-chips">
+        <view wx:for="{{toc}}" wx:key="id" class="filter-chip {{openSections[item.id] ? 'active' : ''}}"
+          role="button" data-id="{{item.id}}" bindtap="jumpToSection">{{item.title}}</view>
+      </view>
+    </scroll-view>
+
+    <block wx:if="{{kind === 'guide'}}">
+      <block wx:if="{{sections.length}}">
+        <view wx:for="{{sections}}" wx:key="id" id="{{item.id}}" class="card chapter-card">
+          <view wx:if="{{item.title}}" class="chapter-head" data-id="{{item.id}}" bindtap="toggleSection">
+            <text class="chapter-title">{{item.title}}</text>
+            <text class="chapter-arrow">{{openSections[item.id] ? '收起 ▴' : '展开 ▾'}}</text>
+          </view>
+          <view wx:if="{{!item.title || openSections[item.id]}}" class="chapter-body">
+            <rich-text class="guide-article" nodes="{{item.nodes}}" user-select />
+          </view>
+        </view>
+      </block>
+      <view wx:elif="{{body.length}}" class="card reading-body-card">
+        <rich-text class="guide-article" nodes="{{body}}" user-select />
+      </view>
+      <view wx:else class="card description">暂无可显示的正文。</view>
+    </block>
+
     <block wx:if="{{kind === 'topic'}}">
       <template wx:if="{{items.length}}" is="resourceCards" data="{{items}}" />
       <view wx:else class="card muted">该专题暂无公开资料。</view>
     </block>
-    <view class="actions">
-      <button class="btn" open-type="share">分享{{kind === 'guide' ? '导读' : '专题'}}</button>
-      <button class="btn secondary" bindtap="backToLibrary">查看全部资料</button>
-    </view>
   </block>
+
+  <view wx:if="{{showToc}}" class="toc-mask" bindtap="toggleToc">
+    <view class="toc-sheet" catchtap="noop">
+      <view class="toc-head">
+        <text class="title">按章节跳转（共 {{toc.length}} 节）</text>
+        <text class="muted" bindtap="toggleToc">收起</text>
+      </view>
+      <scroll-view scroll-y class="toc-scroll">
+        <view wx:for="{{toc}}" wx:key="id" class="toc-row" data-id="{{item.id}}" bindtap="jumpToSection">
+          <text class="toc-index">{{index + 1}}.</text>
+          <text class="toc-label">{{item.title}}</text>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <view wx:if="{{!loading && !error}}" class="bottom-bar">
+    <button wx:if="{{kind === 'guide' && toc.length}}" class="bottom-bar-icon-btn" bindtap="toggleToc">
+      <image src="/assets/icons/clipboard-list.png" mode="aspectFit" aria-hidden="true" />
+      <text>目录</text>
+    </button>
+    <button class="bottom-bar-icon-btn" bindtap="backToLibrary">
+      <image src="/assets/icons/book-open.png" mode="aspectFit" aria-hidden="true" />
+      <text>资料库</text>
+    </button>
+    <button class="btn bottom-bar-primary" open-type="share">分享{{kind === 'guide' ? '导读' : '专题'}}给家人</button>
+  </view>
 </view>

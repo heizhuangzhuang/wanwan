@@ -6,22 +6,35 @@ interface ElementNode {
 }
 export type GuideNode = TextNode | ElementNode
 
+export interface GuideSection {
+  id: string
+  title: string
+  nodes: GuideNode[]
+}
+
+export interface GuideOutline {
+  sections: GuideSection[]
+  toc: { id: string; title: string }[]
+  highlights: string[]
+  readMinutes: number
+}
+
 const styles: Record<string, string> = {
-  h1: 'font-size:21px;font-weight:bold;line-height:1.45;margin:22px 0 10px',
-  h2: 'font-size:19px;font-weight:bold;line-height:1.5;margin:21px 0 9px',
-  h3: 'font-size:17px;font-weight:bold;line-height:1.5;margin:17px 0 8px',
-  h4: 'font-size:16px;font-weight:bold;margin:14px 0 6px',
-  p: 'margin:0 0 11px',
-  ol: 'padding-left:24px;margin:6px 0 14px;list-style-type:decimal',
-  ul: 'padding-left:22px;margin:6px 0 14px;list-style-type:disc',
-  li: 'margin:0 0 7px',
-  blockquote: 'border-left:3px solid #678b76;padding:3px 0 3px 12px;margin:12px 0;color:#405b4d',
-  hr: 'border:0;border-top:1px solid #dce3d8;margin:15px 0',
-  pre: 'padding:10px;background:#eef3ec;white-space:pre-wrap;word-break:break-all',
-  code: 'font-family:monospace;background:#eef3ec',
-  table: 'width:100%;border-collapse:collapse;table-layout:fixed;font-size:14px;margin:10px 0 14px',
-  th: 'border:1px solid #ccdace;padding:6px;background:#edf3ec;word-break:break-all',
-  td: 'border:1px solid #ccdace;padding:6px;word-break:break-all',
+  h1: 'font-size:21px;font-weight:bold;line-height:1.45;color:#1d3a2f;margin:24px 0 12px',
+  h2: 'font-size:18px;font-weight:bold;line-height:1.45;color:#1d3a2f;border-left:4px solid #376052;padding-left:10px;margin:26px 0 12px',
+  h3: 'font-size:16px;font-weight:bold;line-height:1.5;color:#285143;margin:18px 0 8px',
+  h4: 'font-size:15px;font-weight:bold;color:#2b302a;margin:14px 0 6px',
+  p: 'margin:0 0 13px;line-height:1.8',
+  ol: 'padding-left:22px;margin:6px 0 16px;list-style-type:decimal',
+  ul: 'padding-left:20px;margin:6px 0 16px;list-style-type:disc',
+  li: 'margin:0 0 8px;line-height:1.75',
+  blockquote: 'border-left:4px solid #376052;background:#f3f7f4;border-radius:6px;padding:10px 12px;margin:14px 0;color:#324a3e',
+  hr: 'border:0;border-top:1px solid #e2dcd2;margin:20px 0',
+  pre: 'padding:12px;background:#eef3ec;border-radius:8px;white-space:pre-wrap;word-break:break-all;margin:12px 0',
+  code: 'font-family:monospace;background:#eef3ec;padding:1px 4px;border-radius:4px',
+  table: 'width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px;margin:12px 0 16px',
+  th: 'border:1px solid #ccdace;padding:7px 6px;background:#edf3ec;color:#1d3a2f;text-align:left;word-break:break-all',
+  td: 'border:1px solid #ccdace;padding:7px 6px;word-break:break-all',
 }
 const allowed = new Set([...Object.keys(styles), 'h5', 'h6', 'br', 'strong', 'b', 'em', 'i', 's',
   'del', 'sup', 'sub', 'div', 'span', 'thead', 'tbody', 'tfoot', 'tr', 'a'])
@@ -97,4 +110,37 @@ export function guideNodes(html: string, title: string): GuideNode[] {
     if (next && 'name' in next && next.name === 'hr') root.children.shift()
   }
   return root.children
+}
+
+export function buildGuideOutline(nodes: GuideNode[]): GuideOutline {
+  const sections: GuideSection[] = []
+  let current: GuideSection = { id: 'sec-0', title: '', nodes: [] }
+  const highlights: string[] = []
+  let totalChars = 0
+
+  for (const node of nodes) {
+    const text = ('text' in node ? node.text : nodeText(node.children)).trim()
+    totalChars += text.length
+    if ('name' in node && node.name === 'h2' && text) {
+      if (current.nodes.length || current.title) sections.push(current)
+      current = { id: `sec-${sections.length + 1}`, title: text, nodes: [] }
+      if (highlights.length < 3) highlights.push(text)
+    } else {
+      current.nodes.push(node)
+    }
+  }
+  if (current.nodes.length || current.title) sections.push(current)
+
+  if (!highlights.length) {
+    for (const node of nodes) {
+      if ('name' in node && (node.name === 'h3' || node.name === 'blockquote')) {
+        const text = nodeText(node.children).trim()
+        if (text && highlights.length < 3) highlights.push(text.slice(0, 48))
+      }
+    }
+  }
+
+  const toc = sections.filter(sec => sec.title).map(sec => ({ id: sec.id, title: sec.title }))
+  const readMinutes = Math.max(1, Math.round(totalChars / 350))
+  return { sections, toc, highlights, readMinutes }
 }

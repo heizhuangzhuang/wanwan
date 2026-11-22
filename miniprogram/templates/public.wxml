@@ -1,10 +1,13 @@
 <template name="resourceCards">
   <button wx:for="{{items}}" wx:key="name" class="card resource-card motion-press" data-name="{{item.name}}" bindtap="openDetail"
     hover-class="pressed" hover-start-time="0" hover-stay-time="90">
-    <view class="title">{{item.title}}</view>
-    <view class="description">{{item.intro}}</view>
-    <view class="resource-meta"><text>{{item.materialLabel}}</text><text>{{item.sourceName}}</text></view>
-    <view wx:if="{{item.accessLabel}}" class="muted">{{item.accessLabel}}</view>
+    <view class="badge-row">
+      <text class="badge badge-{{item.materialTone || 'sage'}}">{{item.materialLabel}}</text>
+      <text class="muted clamp-1">{{item.sourceName}}</text>
+      <text wx:if="{{item.entryLabel}}" class="badge badge-outline badge-right">{{item.entryLabel}}</text>
+    </view>
+    <view class="resource-card-title clamp-2">{{item.title}}</view>
+    <view wx:if="{{item.intro}}" class="resource-card-intro clamp-2">{{item.intro}}</view>
   </button>
 </template>
 

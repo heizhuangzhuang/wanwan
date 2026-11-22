@@ -91,7 +91,7 @@ declare const wx: {
   login(options: { success: (result: { code?: string }) => void; fail: (err: unknown) => void }): void
   navigateTo(options: { url: string }): void
   navigateBack(): void
-  pageScrollTo?(options: { scrollTop: number; duration?: number }): void
+  pageScrollTo?(options: { scrollTop?: number; selector?: string; duration?: number }): void
   redirectTo(options: { url: string }): void
   switchTab(options: { url: string }): void
   reLaunch(options: { url: string }): void
@@ -102,6 +102,6 @@ declare const wx: {
   showToast(options: { title: string; icon?: string }): void
   chooseMessageFile?(options: { count: number; type: 'file'; extension?: string[];
     success: (result: { tempFiles: { path: string; size: number }[] }) => void; fail?: () => void }): void
-  showModal(options: { title: string; content: string; confirmText?: string;
-    success: (result: { confirm: boolean }) => void; fail?: () => void }): void
+  showModal(options: { title: string; content: string; showCancel?: boolean; confirmText?: string;
+    success?: (result: { confirm: boolean }) => void; fail?: () => void }): void
 }

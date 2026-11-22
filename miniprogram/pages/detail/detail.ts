@@ -5,9 +5,12 @@ import { rememberResource, removeFromShelf, shelfNames, toggleSaved } from '../.
 Page({
   data: {
     name: '', resource: null as ReturnType<typeof resourceLabel> | null,
-    loading: true, error: '', retryable: false, entryError: '', saved: false,
+    loading: true, error: '', retryable: false, entryError: '', saved: false, metaExpanded: false,
     related: [] as ReturnType<typeof resourceLabel>[],
     allowArticle: false, allowMiniProgram: false,
+  },
+  toggleMeta() {
+    this.setData({ metaExpanded: !this.data.metaExpanded })
   },
   onLoad(options: Record<string, string | undefined>) {
     this.setData({ name: decodeOption(options.name) })

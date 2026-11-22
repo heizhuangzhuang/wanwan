@@ -1,43 +1,70 @@
 <import src="../../templates/public.wxml" />
-<view class="container">
+<view class="container bottom-bar-space">
   <view wx:if="{{loading}}" class="muted">加载中...</view>
   <view wx:elif="{{error}}" class="card">
     <view>{{error}}</view>
     <button wx:if="{{retryable}}" class="btn" bindtap="loadDetail">重试</button>
   </view>
-  <view wx:elif="{{resource}}" class="card">
-    <view class="page-heading">{{resource.title}}</view>
-    <view wx:if="{{resource.originalTitle !== resource.title}}" class="muted" style="margin-bottom: 12rpx;">
-      原标题：{{resource.originalTitle}}
+  <block wx:elif="{{resource}}">
+    <view class="card detail-hero-card">
+      <view class="badge-row">
+        <text class="badge badge-{{resource.materialTone || 'sage'}}">{{resource.materialLabel}}</text>
+        <text class="badge badge-outline">{{resource.accessLabel}}</text>
+        <text wx:if="{{resource.entryLabel}}" class="badge badge-outline badge-right">{{resource.entryLabel}}</text>
+      </view>
+      <view class="page-heading">{{resource.title}}</view>
+
+      <view class="detail-takeaway">
+        <view class="detail-takeaway-title">💡 这条资料讲了什么</view>
+        <view class="detail-takeaway-body">{{resource.intro}}</view>
+      </view>
+
+      <view class="detail-meta-box">
+        <view class="detail-meta-summary" bindtap="toggleMeta">
+          <view class="detail-meta-brief clamp-1">来源：{{resource.sourceName}} · {{resource.publishedDate || '日期未注明'}}</view>
+          <text class="detail-meta-toggle">{{metaExpanded ? '收起出处详情 ▴' : '展开出处与核对 ▾'}}</text>
+        </view>
+        <view wx:if="{{metaExpanded}}" class="detail-meta-list">
+          <view wx:if="{{resource.originalTitle !== resource.title}}">原标题：{{resource.originalTitle}}</view>
+          <view wx:if="{{resource.author}}">作者/机构：{{resource.author}}</view>
+          <view>原文日期：{{resource.publishedDate || '未注明'}}</view>
+          <view wx:if="{{resource.lastVerifiedDate}}">最后核对：{{resource.lastVerifiedDate}}</view>
+          <view wx:if="{{resource.doi}}">DOI：{{resource.doi}}</view>
+          <view wx:if="{{resource.pmid}}">PMID：{{resource.pmid}}</view>
+          <view wx:if="{{resource.storyContext}}">经历背景：{{resource.storyContext}}</view>
+        </view>
+      </view>
+
+      <view wx:if="{{resource.linkStatus === 'SOURCE_RETRACTED'}}" class="notice">原文已撤回，以下仅保留出处。</view>
+      <view wx:elif="{{resource.linkStatus !== 'OK'}}" class="notice">原文入口待核对，可以查看并复制题录。</view>
+      <view wx:elif="{{!allowArticle && !allowMiniProgram && !(resource.attachment && resource.linkStatus === 'OK')}}" class="detail-cite-tip">
+        该资料仅收录权威出处，可点击下方「复制出处」自行检索原文。
+      </view>
+      <view wx:if="{{entryError}}" class="notice">{{entryError}}</view>
+
+      <button class="plain-button detail-feedback-link" bindtap="openFeedback">内容有误或链接失效？反馈这条资料 ›</button>
     </view>
 
-    <view class="notice"><view class="title">本站介绍</view>{{resource.intro}}</view>
+    <view wx:if="{{related.length}}" class="section-heading">还可以了解</view>
+    <template wx:if="{{related.length}}" is="resourceCards" data="{{items: related}}" />
+  </block>
 
-    <view class="muted" style="margin-bottom: 16rpx;">
-      <view>{{resource.materialLabel}} · {{resource.accessLabel}}</view>
-      <view>来源：{{resource.sourceName}}</view>
-      <view wx:if="{{resource.author}}">作者/机构：{{resource.author}}</view>
-      <view>原文日期：{{resource.publishedDate || '未注明'}}</view>
-      <view wx:if="{{resource.lastVerifiedDate}}">最后核对：{{resource.lastVerifiedDate}}</view>
-      <view wx:if="{{resource.doi}}">DOI：{{resource.doi}}</view>
-      <view wx:if="{{resource.pmid}}">PMID：{{resource.pmid}}</view>
-      <view wx:if="{{resource.storyContext}}">经历背景：{{resource.storyContext}}</view>
-    </view>
-
-    <view wx:if="{{resource.linkStatus === 'SOURCE_RETRACTED'}}" class="notice">原文已撤回，以下仅保留出处。</view>
-    <view wx:elif="{{resource.linkStatus !== 'OK'}}" class="notice">原文入口待核对，可以查看并复制题录。</view>
-    <view wx:elif="{{!allowArticle && !allowMiniProgram}}" class="muted description">复制出处后可查找原文。</view>
-    <view wx:if="{{entryError}}" class="notice">{{entryError}}</view>
-    <view class="actions">
-      <button wx:if="{{allowArticle}}" class="btn" bindtap="openOfficialAccountArticle">打开公众号原文</button>
-      <button wx:if="{{allowMiniProgram}}" class="btn" bindtap="openOtherMiniProgram">打开来源小程序</button>
-      <button wx:if="{{resource.attachment && resource.linkStatus === 'OK'}}" class="btn secondary" bindtap="openDownload">下载附件</button>
-      <button class="btn secondary" bindtap="copyCitation">复制出处</button>
-    </view>
-    <button wx:if="{{resource.linkStatus !== 'SOURCE_RETRACTED'}}" class="btn secondary" bindtap="toggleFavorite">{{saved ? '已收藏 · 点击取消' : '收藏这条资料'}}</button>
-    <button class="btn secondary" open-type="share">分享这条资料</button>
-    <button class="plain-button site-footer" bindtap="openFeedback">反馈这条资料</button>
+  <view wx:if="{{!loading && !error && resource}}" class="bottom-bar">
+    <button wx:if="{{resource.linkStatus !== 'SOURCE_RETRACTED'}}" class="bottom-bar-icon-btn" bindtap="toggleFavorite">
+      <image src="/assets/icons/book-open.png" mode="aspectFit" aria-hidden="true" />
+      <text>{{saved ? '已收藏' : '收藏'}}</text>
+    </button>
+    <button class="bottom-bar-icon-btn" bindtap="copyCitation">
+      <image src="/assets/icons/link-2.png" mode="aspectFit" aria-hidden="true" />
+      <text>复制出处</text>
+    </button>
+    <button class="bottom-bar-icon-btn" open-type="share">
+      <image src="/assets/icons/files.png" mode="aspectFit" aria-hidden="true" />
+      <text>分享</text>
+    </button>
+    <button wx:if="{{allowArticle}}" class="btn bottom-bar-primary" bindtap="openOfficialAccountArticle">打开公众号原文</button>
+    <button wx:elif="{{allowMiniProgram}}" class="btn bottom-bar-primary" bindtap="openOtherMiniProgram">打开来源小程序</button>
+    <button wx:elif="{{resource.attachment && resource.linkStatus === 'OK'}}" class="btn bottom-bar-primary" bindtap="openDownload">下载附件</button>
+    <button wx:else class="btn bottom-bar-primary" bindtap="copyCitation">复制出处去查找</button>
   </view>
-  <view wx:if="{{resource && related.length}}" class="section-heading">还可以了解</view>
-  <template wx:if="{{resource && related.length}}" is="resourceCards" data="{{items: related}}" />
 </view>
