@@ -1,7 +1,7 @@
 <import src="../../templates/public.wxml" />
 <view class="container">
-  <view class="page-intro"><view class="page-heading">跟着主题慢慢读</view><view class="description">从一组资料或一篇导读开始。</view></view>
-  <view class="actions">
+  <view class="page-intro"><view class="page-heading">{{stageLabel ? stageLabel + ' · 原创导读' : '跟着主题慢慢读'}}</view><view wx:if="{{!stageLabel}}" class="description">从一组资料或一篇导读开始。</view></view>
+  <view wx:if="{{!stageLabel}}" class="actions">
     <button class="btn {{kind === 'topic' ? '' : 'secondary'}}" disabled="{{loading}}" data-kind="topic" bindtap="selectKind">精选专题</button>
     <button class="btn {{kind === 'guide' ? '' : 'secondary'}}" disabled="{{loading}}" data-kind="guide" bindtap="selectKind">原创导读</button>
   </view>

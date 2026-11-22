@@ -56,6 +56,7 @@ public class PublicEndpoint implements CustomEndpoint {
             .GET("posts", req -> ServerResponse.ok()
                 .body(queryService.listPosts(intParam(req, "page", 1), intParam(req, "size", 20)),
                     Dtos.Page.class))
+            .GET("stage-posts", this::listStagePosts)
             .GET("posts/{name}", req -> okOrNotFound(
                 queryService.getPost(req.pathVariable("name"))))
             .GET("search", this::search)
@@ -82,6 +83,14 @@ public class PublicEndpoint implements CustomEndpoint {
             .flatMap(command -> Mono.fromCallable(() -> journals.access(command)).subscribeOn(Schedulers.boundedElastic()))
             .flatMap(result -> ServerResponse.ok().cacheControl(CacheControl.noStore()).bodyValue(result))
             .switchIfEmpty(ServerResponse.badRequest().build());
+    }
+
+    private Mono<ServerResponse> listStagePosts(ServerRequest req) {
+        Stage stage = enumParam(req, "stage", Stage.class);
+        if (stage == null) return ServerResponse.badRequest().build();
+        return ServerResponse.ok().body(
+            queryService.listStagePosts(stage, intParam(req, "page", 1), intParam(req, "size", 20)),
+            Dtos.Page.class);
     }
 
     private Mono<ServerResponse> listResources(ServerRequest req) {

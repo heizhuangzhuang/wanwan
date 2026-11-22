@@ -17,6 +17,7 @@ import reactor.core.publisher.Mono;
 import run.halo.app.content.ContentWrapper;
 import run.halo.app.content.PostContentService;
 import run.halo.app.core.extension.User;
+import run.halo.app.core.extension.content.Category;
 import run.halo.app.core.extension.content.Post;
 import run.halo.app.extension.ListResult;
 import run.halo.app.extension.Metadata;
@@ -252,6 +253,21 @@ class PublicQueryServiceTest {
         var draft = post("cma-draft", false, Post.VisibleEnum.PUBLIC, false);
         var privatePost = post("cma-private", true, Post.VisibleEnum.PRIVATE, false);
         var unrelated = post("other", true, Post.VisibleEnum.PUBLIC, false);
+        var category = new Category();
+        var metadata = new Metadata();
+        metadata.setName("category-generated-id");
+        category.setMetadata(metadata);
+        var spec = new Category.CategorySpec();
+        spec.setDisplayName("刚发现");
+        spec.setSlug("gang-fa-xian");
+        category.setSpec(spec);
+        for (var classified : List.of(title, draft, privatePost)) {
+            classified.getSpec().setCategories(List.of("category-generated-id"));
+        }
+        when(client.list(eq(Category.class), any(), any())).thenAnswer(call -> {
+            Predicate<Category> filter = call.getArgument(1);
+            return Flux.just(category).filter(filter);
+        });
         when(client.list(eq(Post.class), any(), any())).thenAnswer(call -> {
             Predicate<Post> filter = call.getArgument(1);
             return Flux.just(title, excerpt, draft, privatePost, unrelated).filter(filter);
@@ -263,6 +279,10 @@ class PublicQueryServiceTest {
         assertThat(first.guideItems()).extracting(Dtos.PostSummary::name).containsExactly("a-title");
         var second = service.searchWithGuides("CMA", null, MaterialType.ORIGINAL, 2, 1).block();
         assertThat(second.guideItems()).extracting(Dtos.PostSummary::name).containsExactly("b-excerpt");
+        assertThat(service.listStagePosts(Stage.JUST_FOUND, 1, 3).block().items())
+            .extracting(Dtos.PostSummary::name).containsExactly("a-title");
+        assertThat(service.searchWithGuides("CMA", Stage.JUST_FOUND, null, 1, 20).block().guideItems())
+            .extracting(Dtos.PostSummary::name).containsExactly("a-title");
         assertThat(service.searchWithGuides("CMA", Stage.PRENATAL, null, 1, 20).block().guideItems()).isEmpty();
         assertThat(service.searchWithGuides("CMA", null, MaterialType.PAPER, 1, 20).block().guideItems()).isEmpty();
         assertThat(service.searchWithGuides(" ", null, null, 1, 20).block().guideItems()).isEmpty();

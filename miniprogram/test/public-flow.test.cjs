@@ -236,16 +236,45 @@ test('公众号专题入口按编辑顺序显示，返回前台后撤回内容�
   assert.equal(page.data.retryable, false)
 })
 
-test('原创导读仅显示发布快照的文字内容', async () => {
+test('原创导读保留发布快照层级和列表，并过滤可执行内容', async () => {
   const { page } = openPage('reading', url => {
     assert.equal(url.pathname, '/api/posts/guide-a')
     return { data: { title: '导读', publishTime: '2026-11-19T00:00:00Z',
-      content: '<p>正文 &amp; &#x8d44;&#26009;</p><script>alert(1)</script><img src="https://example.test/pixel"><ul><li>出处</li></ul>' } }
+      content: '<h1>导读</h1><hr><h2 id="intro">小标题</h2><p>正文 &amp; &#x8d44;&#26009;</p><script>alert(1)</script><img src="https://example.test/pixel"><ul><li>\n<p onclick="evil()"><strong>出处</strong></p>\n</li></ul>' } }
   })
   page.onLoad({ kind: 'guide', name: 'guide-a' })
   await page.load()
-  assert.equal(page.data.body, '正文 & 资料\n\n• 出处')
+  const [heading, paragraph, list] = page.data.body
+  assert.equal(heading.name, 'h2')
+  assert.equal(paragraph.children[0].text, '正文 & 资料')
+  assert.equal(list.name, 'ul')
+  assert.equal(list.children[0].children[0].children[0].name, 'strong')
+  assert.doesNotMatch(JSON.stringify(page.data.body), /alert|onclick|https:/)
   assert.equal(page.data.date, '2026-11-19')
+})
+
+test('阶段页加载归类文章，更多入口保留阶段并单独分页', async () => {
+  const summary = { name: 'guide-a', title: '刚发现导读', excerpt: '摘要' }
+  const respond = (url) => {
+    if (url.pathname.endsWith('/stage-posts')) {
+      assert.equal(url.searchParams.get('stage'), 'JUST_FOUND')
+      return { data: { page: 1, size: 3, total: 4, items: [summary] } }
+    }
+    assert.ok(url.pathname.endsWith('/resources'))
+    return { data: { page: 1, size: 20, total: 0, items: [] } }
+  }
+  const { page } = openPage('stage', respond)
+  page.onLoad({ key: 'JUST_FOUND' })
+  page.onShow()
+  await settle()
+  assert.equal(page.data.heading, '刚发现')
+  assert.equal(page.data.articles[0].title, '刚发现导读')
+  assert.equal(page.data.moreArticles, true)
+  const { page: topics } = openPage('topics', respond)
+  topics.onLoad({ kind: 'guide', stage: 'JUST_FOUND' })
+  await topics.fetch(1)
+  assert.equal(topics.data.items[0].name, 'guide-a')
+  assert.equal(topics.data.hasNext, true)
 })
 
 test('搜索翻页保留已提交的关键词、阶段、材料类型', async () => {

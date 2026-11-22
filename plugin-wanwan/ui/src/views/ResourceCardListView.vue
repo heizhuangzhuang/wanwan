@@ -280,6 +280,10 @@ onMounted(load)
   </VPageHeader>
 
   <div class="m-4">
+    <p class="mb-3 text-sm text-gray-600">
+      自己写的长文章可在 <a class="font-medium underline" href="/console/posts">Halo 文章</a> 中编辑。
+      公开发布前，在「设置 → 分类目录」选择「刚发现」等阶段，即可进入对应阶段的原创导读。
+    </p>
     <VCard :body-class="['!p-0']">
       <template #header>
         <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3">

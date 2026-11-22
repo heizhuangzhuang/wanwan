@@ -94,8 +94,8 @@ function renderPagination<T>(path: string, result: PageResult<T>, query: URLSear
   </nav>`
 }
 
-function renderGuideCard(guide: PostSummary, basePath: string) {
-  return `<article class="card"><h2 class="card-title"><a href="${basePath}/posts/${encodeURIComponent(guide.name)}">${escapeHtml(guide.title)}</a></h2><p class="card-intro">${escapeHtml(guide.excerpt)}</p>${guide.author ? `<div class="meta-row">${escapeHtml(guide.author)}</div>` : ''}</article>`
+function renderGuideCard(guide: PostSummary, basePath: string, heading: 'h2' | 'h3' = 'h2') {
+  return `<article class="card"><${heading} class="card-title"><a href="${basePath}/posts/${encodeURIComponent(guide.name)}">${escapeHtml(guide.title)}</a></${heading}><p class="card-intro">${escapeHtml(guide.excerpt)}</p>${guide.author ? `<div class="meta-row">${escapeHtml(guide.author)}</div>` : ''}</article>`
 }
 
 async function renderRelated(resource: ResourceView, client: BackendClient, config: WebConfig) {
@@ -353,11 +353,17 @@ ${postHtml}`,
       return notFoundResponse(config)
     }
     const stagePath = `${basePath}/stages/${encodeURIComponent(stage.key)}`
-    const list = await client.listResources({ stage: stage.key, type: selectedType || undefined, tag: selectedTag || undefined, page, size: 20 })
-      .catch(() => null)
+    const [list, posts] = await Promise.all([
+      client.listResources({ stage: stage.key, type: selectedType || undefined, tag: selectedTag || undefined, page, size: 20 }).catch(() => null),
+      client.listStagePosts(stage.key, 1, 3).catch(() => null),
+    ])
+    const stageGuides = posts?.items.length
+      ? `<section class="stage-guides"><h2>这一阶段的原创导读</h2><div class="card-list">${posts.items.map(guide => renderGuideCard(guide, basePath, 'h3')).join('')}</div>
+${posts.total > posts.items.length ? `<a href="${basePath}/posts?stage=${encodeURIComponent(stage.key)}">查看本阶段全部导读</a>` : ''}</section>`
+      : ''
     if (!list) {
       return htmlResponse(200, renderLayout(config, stage.label,
-        `<h1>${escapeHtml(stage.label)}</h1>${renderUnavailableResources(basePath)}`,
+        `<h1>${escapeHtml(stage.label)}</h1>${stageGuides}${renderUnavailableResources(basePath)}`,
       ))
     }
     const cards = list.items.length
@@ -365,11 +371,11 @@ ${postHtml}`,
       : '<div class="warn-bar">该筛选条件下暂无已公开资料。</div>'
     return htmlResponse(
       200,
-      renderLayout(
-        config,
-        stage.label,
+      renderLayout(config, stage.label,
         `<h1>${escapeHtml(stage.label)}</h1>
 <p class="notice-bar">以下为手动核对后收录的公开资料。按编辑推荐阅读顺序排列，不构成个体医学建议。</p>
+${stageGuides}
+<h2>这一阶段的资料卡</h2>
 ${renderFilterBar(stagePath, selectedType, query.toString())}
 <form class="search-form" action="${stagePath}" method="get">
 <input type="hidden" name="type" value="${escapeHtml(selectedType)}" />
@@ -442,11 +448,14 @@ ${cards}${renderPagination(stagePath, list, query)}`,
   }
 
   if (path === '/posts') {
-    const list = await client.listPosts(page, 20)
+    const stage = FIXED_STAGES.find(item => item.key === stageFilter)
+    if (stageFilter && !stage) return notFoundResponse(config)
+    const title = stage ? stage.label + ' · 原创导读' : '本站原创导读'
+    const list = await (stage ? client.listStagePosts(stage.key, page, 20) : client.listPosts(page, 20))
     const body = list.items.length
       ? `<div class="card-list">${list.items.map(guide => renderGuideCard(guide, basePath)).join('')}</div>`
       : '<div class="warn-bar">暂无已发布的原创导读。</div>'
-    return htmlResponse(200, renderLayout(config, '本站原创导读', `<h1>本站原创导读</h1>${body}${renderPagination(`${basePath}${path}`, list, query)}`))
+    return htmlResponse(200, renderLayout(config, title, `<h1>${escapeHtml(title)}</h1>${body}${renderPagination(`${basePath}${path}`, list, query)}`))
   }
 
   if (path.startsWith('/posts/')) {
@@ -498,7 +507,7 @@ ${cards}${renderPagination(stagePath, list, query)}`,
         config,
         '站内搜索',
         `<h1>站内搜索</h1>
-<p class="meta-row">搜索公开资料卡的题录、来源和标签，也可搜索本站原创导读的标题和摘要。原创导读适用「全部阶段」。</p>
+<p class="meta-row">搜索公开资料卡的题录、来源和标签，也可搜索本站原创导读的标题和摘要。</p>
 <form class="search-form" action="${basePath}/search" method="get">
   <input class="search-input" type="search" name="keyword" maxlength="100" value="${escapeHtml(keyword)}" placeholder="输入关键词（最多 100 字符）..." aria-label="搜索关键词" />
   <input type="hidden" name="stage" value="${escapeHtml(stageFilter)}" />

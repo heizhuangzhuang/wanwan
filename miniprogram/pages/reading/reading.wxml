@@ -14,7 +14,10 @@
       <view wx:if="{{intro}}" class="description">{{intro}}</view>
       <view wx:if="{{author}}" class="muted">作者 {{author}}</view>
       <view wx:if="{{date}}" class="muted">发布于 {{date}}</view>
-      <text wx:if="{{kind === 'guide'}}" class="article-body description" selectable>{{body || '暂无可显示的文字正文。'}}</text>
+      <block wx:if="{{kind === 'guide'}}">
+        <rich-text wx:if="{{body.length}}" class="guide-article" nodes="{{body}}" user-select />
+        <view wx:else class="description">暂无可显示的正文。</view>
+      </block>
     </view>
     <block wx:if="{{kind === 'topic'}}">
       <template wx:if="{{items.length}}" is="resourceCards" data="{{items}}" />

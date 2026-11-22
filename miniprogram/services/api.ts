@@ -172,6 +172,8 @@ export const wanwanApi = {
   listTopics: (page = 1, size = 20) => request<PageResult<TopicSummary>>('/topics', { page, size }),
   getTopic: (name: string) => request<TopicView>(`/topics/${encodeURIComponent(name)}`),
   listPosts: (page = 1, size = 20) => request<PageResult<PostSummary>>('/posts', { page, size }),
+  listStagePosts: (stage: string, page = 1, size = 20) =>
+    request<PageResult<PostSummary>>('/stage-posts', { stage, page, size }),
   getPost: (name: string) => request<PostView>(`/posts/${encodeURIComponent(name)}`),
   search: (params: { keyword: string; stage?: string; type?: string; page?: number; size?: number }) =>
     request<SearchResult>('/search', params),

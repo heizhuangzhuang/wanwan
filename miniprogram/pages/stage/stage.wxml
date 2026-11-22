@@ -24,8 +24,22 @@
         </view>
       </button>
     </view>
-    <view class="section-heading">这一阶段的资料</view>
   </block>
+  <block wx:if="{{articles.length}}">
+    <view class="section-heading">这一阶段的原创导读</view>
+    <view class="tab-list">
+      <navigator wx:for="{{articles}}" wx:key="name" class="tab-row" hover-class="pressed"
+        url="/pages/reading/reading?kind=guide&amp;name={{item.name}}">
+        <view class="tab-row-copy">
+          <view class="tab-row-title">{{item.title}}</view>
+          <view wx:if="{{item.excerpt}}" class="tab-row-caption stage-article-excerpt">{{item.excerpt}}</view>
+        </view>
+        <text class="tab-chevron" aria-hidden="true">›</text>
+      </navigator>
+    </view>
+    <navigator wx:if="{{moreArticles}}" class="text-link" url="{{articlesUrl}}">查看本阶段全部导读 ›</navigator>
+  </block>
+  <view wx:if="{{guide}}" class="section-heading">这一阶段的资料卡</view>
   <view wx:if="{{demoMode}}" class="notice">本地测试样本 · 虚构内容</view>
   <picker mode="selector" range="{{materials}}" range-key="label" value="{{typeIndex}}" disabled="{{loading}}" bindchange="onType">
     <view class="filter">{{materials[typeIndex].label}} ▾</view>

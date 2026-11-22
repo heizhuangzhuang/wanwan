@@ -12,6 +12,7 @@ import reactor.core.publisher.Mono;
 import run.wanwan.model.Enums.EntryType;
 import run.wanwan.model.Enums.LinkStatus;
 import run.wanwan.model.Enums.PublishState;
+import run.wanwan.model.Stage;
 import run.wanwan.notice.NoticeService;
 import run.wanwan.notice.CastJournalService;
 
@@ -26,6 +27,8 @@ class PublicEndpointTest {
                 PublicQueryServiceTest.card("ok", PublishState.PUBLISHED, LinkStatus.OK))));
         when(queryService.listPosts(1, 20)).thenReturn(Mono.just(new Dtos.Page<>(1, 20, 1,
             List.of(new Dtos.PostSummary("g1", "导读一", "摘要", Instant.parse("2026-11-17T00:00:00Z"), "公开署名")))));
+        when(queryService.listStagePosts(Stage.JUST_FOUND, 1, 3)).thenReturn(Mono.just(new Dtos.Page<>(1, 3, 1,
+            List.of(new Dtos.PostSummary("g1", "刚发现导读", "", null, null)))));
         when(queryService.getPost("missing")).thenReturn(Mono.empty());
 
         var client = WebTestClient.bindToRouterFunction(new PublicEndpoint(queryService, mock(NoticeService.class), mock(CastJournalService.class)).endpoint())
@@ -55,6 +58,11 @@ class PublicEndpointTest {
             .expectBody()
             .jsonPath("$.items[0].name").isEqualTo("g1")
             .jsonPath("$.items[0].author").isEqualTo("公开署名");
+
+        client.get().uri("/stage-posts?stage=JUST_FOUND&size=3")
+            .exchange().expectStatus().isOk().expectBody().jsonPath("$.items[0].name").isEqualTo("g1");
+        client.get().uri("/stage-posts?stage=UNKNOWN")
+            .exchange().expectStatus().isBadRequest();
 
         client.get().uri("/posts/missing")
             .exchange()

@@ -22,7 +22,6 @@ page {
 .actions > .btn, .pagination > .btn { padding: 0 12rpx; }
 .filter, .field { display: block; box-sizing: border-box; background: #fffdf9; border: 1px solid #d9cdbf; border-radius: 16rpx; padding: 16rpx; min-height: 88rpx; }
 .field { min-width: 0; }
-.article-body { display: block; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.85; }
 .pressed { opacity: .76; }
 
 .page-heading { font-family: "Songti SC", "Noto Serif CJK SC", serif; font-size: 46rpx; font-weight: 700; line-height: 1.3; overflow-wrap: anywhere; }

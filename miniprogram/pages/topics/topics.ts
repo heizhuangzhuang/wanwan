@@ -1,14 +1,16 @@
 import { wanwanApi } from '../../services/api'
+import { fixedStages } from '../../services/stages'
 
 type ReadingLink = { name: string; title: string; intro: string; date?: string; resourceCount?: number }
 
 Page({
   data: {
-    kind: 'topic', items: [] as ReadingLink[], page: 1, hasNext: false,
+    kind: 'topic', stage: '', stageLabel: '', items: [] as ReadingLink[], page: 1, hasNext: false,
     loading: false, error: '', requestedPage: 1,
   },
   onLoad(options: Record<string, string | undefined>) {
-    this.setData({ kind: options.kind === 'guide' ? 'guide' : 'topic' })
+    const stage = options.kind === 'guide' ? fixedStages.find(stage => stage.key === options.stage) : undefined
+    this.setData({ kind: options.kind === 'guide' ? 'guide' : 'topic', stage: stage?.key ?? '', stageLabel: stage?.label ?? '' })
   },
   onShow() {
     void this.fetch(this.data.page)
@@ -27,7 +29,7 @@ Page({
         const res = await wanwanApi.listTopics(page)
         this.setData({ items: res.items, page: res.page, hasNext: res.page * res.size < res.total })
       } else {
-        const res = await wanwanApi.listPosts(page)
+        const res = await (this.data.stage ? wanwanApi.listStagePosts(this.data.stage, page) : wanwanApi.listPosts(page))
         this.setData({
           items: res.items.map(post => ({
             name: post.name, title: post.title, intro: post.excerpt ?? '', date: post.publishTime?.slice(0, 10),

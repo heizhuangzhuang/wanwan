@@ -1,9 +1,10 @@
+import { guideNodes, type GuideNode } from '../../services/guide-html'
 import { HttpError, wanwanApi } from '../../services/api'
-import { decodeOption, openResource, plainGuideBody, resourceLabel } from '../../services/reading'
+import { decodeOption, openResource, resourceLabel } from '../../services/reading'
 
 Page({
   data: {
-    kind: '', name: '', title: '', intro: '', date: '', author: '', body: '',
+    kind: '', name: '', title: '', intro: '', date: '', author: '', body: [] as GuideNode[],
     items: [] as ReturnType<typeof resourceLabel>[],
     loading: true, error: '', retryable: false,
   },
@@ -15,7 +16,7 @@ Page({
   },
   async load() {
     const { kind, name } = this.data
-    this.setData({ loading: true, error: '', retryable: false, title: '', items: [], body: '', date: '', author: '' })
+    this.setData({ loading: true, error: '', retryable: false, title: '', items: [], body: [], date: '', author: '' })
     if (!name || (kind !== 'topic' && kind !== 'guide')) {
       this.setData({ loading: false, error: '入口缺少有效的专题或导读。' })
       return
@@ -29,7 +30,7 @@ Page({
         this.setData({
           title: guide.title, intro: '', date: guide.publishTime?.slice(0, 10) ?? '',
           author: guide.author || '',
-          body: plainGuideBody(guide.content),
+          body: guideNodes(guide.content || '', guide.title),
         })
       }
     } catch (error) {

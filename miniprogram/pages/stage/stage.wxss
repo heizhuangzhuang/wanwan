@@ -9,3 +9,10 @@
 .stage-intro .page-heading { color: #244a3b; }
 .stage-intro .description { margin: 12rpx 0 0; line-height: 1.65; }
 .stage-tag .btn { flex: 0 0 136rpx; }
+
+.stage-article-excerpt {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}

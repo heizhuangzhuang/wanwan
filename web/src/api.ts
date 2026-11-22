@@ -90,6 +90,7 @@ export interface BackendClient {
   listTopics(page?: number, size?: number): Promise<PageResult<TopicSummary>>
   getTopic(name: string): Promise<TopicView | null>
   listPosts(page?: number, size?: number): Promise<PageResult<PostSummary>>
+  listStagePosts(stage: string, page?: number, size?: number): Promise<PageResult<PostSummary>>
   getPost(name: string): Promise<PostView | null>
   search(params: {
     keyword: string
@@ -148,6 +149,7 @@ export function createBackendClient(apiBase: string, timeoutMs = 5000): BackendC
     listTopics: (page = 1, size = 20) => getJson<PageResult<TopicSummary>>('/topics', { page, size }),
     getTopic: (name) => getJsonOrNull<TopicView>(`/topics/${encodeURIComponent(name)}`),
     listPosts: (page = 1, size = 20) => getJson<PageResult<PostSummary>>('/posts', { page, size }),
+    listStagePosts: (stage, page = 1, size = 20) => getJson<PageResult<PostSummary>>('/stage-posts', { stage, page, size }),
     getPost: (name) => getJsonOrNull<PostView>(`/posts/${encodeURIComponent(name)}`),
     search: (p) => getJson<SearchResult>('/search', p),
   }

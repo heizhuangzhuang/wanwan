@@ -48,6 +48,9 @@ function mockClient(resource: ResourceView | null = mockResource()): BackendClie
     async listPosts() {
       return { page: 1, size: 20, total: 1, items: [{ name: 'p1', title: '导读一', excerpt: '摘要' }] }
     },
+    async listStagePosts() {
+      return { page: 1, size: 20, total: 0, items: [] }
+    },
     async getPost() {
       return { name: 'p1', title: '导读一', content: '<p>正文</p><script>bad()</script>' }
     },
@@ -242,6 +245,22 @@ describe('web security & SSR', () => {
     const result = await handleRequest('/resources?stage=JUST_FOUND&type=PAPER&tag=石膏&page=2', client, config)
     assert.equal(result.status, 200)
     assert.match(String(result.body), /stage=JUST_FOUND&amp;type=PAPER&amp;tag=%E7%9F%B3%E8%86%8F&amp;page=3/)
+  })
+
+  it('shows categorized Halo posts on the stage page despite unavailable resource cards', async () => {
+    const client = mockClient()
+    client.listResources = async () => { throw new HttpStatusError(503, 'unavailable') }
+    client.listStagePosts = async (stage, page, size) => {
+      assert.equal(stage, 'JUST_FOUND')
+      return { page: page!, size: size!, total: 4, items: [{ name: 'guide', title: '阶段导读', excerpt: '' }] }
+    }
+    const stage = await handleRequest('/stages/JUST_FOUND', client, config)
+    assert.match(String(stage.body), /这一阶段的原创导读/)
+    assert.match(String(stage.body), /href="\/posts\/guide">阶段导读/)
+    assert.match(String(stage.body), /href="\/posts\?stage=JUST_FOUND"/)
+    const articles = await handleRequest('/posts?stage=JUST_FOUND', client, config)
+    assert.match(String(articles.body), /刚发现 · 原创导读/)
+    assert.match(String(articles.body), /阶段导读/)
   })
 
   it('serves the homepage while the deployment awaits a backend', async () => {

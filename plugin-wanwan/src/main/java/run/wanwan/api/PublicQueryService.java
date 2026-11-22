@@ -12,6 +12,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import run.halo.app.content.PostContentService;
 import run.halo.app.core.extension.User;
+import run.halo.app.core.extension.content.Category;
 import run.halo.app.core.extension.content.Post;
 import run.halo.app.extension.ExtensionOperator;
 import run.halo.app.extension.ListOptions;
@@ -115,13 +116,17 @@ public class PublicQueryService {
 
     /** 本站原创导读列表：仅返回已发布且公开的文章。 */
     public Mono<Dtos.Page<Dtos.PostSummary>> listPosts(int page, int size) {
-        return pagePosts("", page, size);
+        return pagePosts("", null, page, size);
     }
 
-    private Mono<Dtos.Page<Dtos.PostSummary>> pagePosts(String keyword, int page, int size) {
+    public Mono<Dtos.Page<Dtos.PostSummary>> listStagePosts(Stage stage, int page, int size) {
+        return pagePosts("", stage, page, size);
+    }
+
+    private Mono<Dtos.Page<Dtos.PostSummary>> pagePosts(String keyword, Stage stage, int page, int size) {
         int p = normalizePage(page);
         int s = normalizeSize(size);
-        return client.list(Post.class, Visibility::isPublicPost, POST_ORDER)
+        return stagePosts(stage)
             .filter(post -> keyword.isEmpty()
                 || containsKeyword(post.getSpec().getTitle(), keyword)
                 || (post.getStatus() != null && containsKeyword(post.getStatus().getExcerpt(), keyword)))
@@ -132,6 +137,21 @@ public class PublicQueryService {
                     .defaultIfEmpty(Dtos.PostSummary.of(post, null)), 4)
                 .collectList()
                 .map(items -> new Dtos.Page<>(p, s, all.size(), items)));
+    }
+
+    private Flux<Post> stagePosts(Stage stage) {
+        if (stage == null) return client.list(Post.class, Visibility::isPublicPost, POST_ORDER);
+        String slug = stage.name().toLowerCase(Locale.ROOT).replace('_', '-');
+        return client.list(Category.class, category -> {
+                var spec = category.getSpec();
+                return !ExtensionOperator.isDeleted(category) && spec != null && !spec.isHideFromList()
+                    && (slug.equalsIgnoreCase(spec.getSlug()) || stage.getLabel().equals(spec.getDisplayName()));
+            }, Comparator.comparing(category -> category.getMetadata().getName()))
+            .map(category -> category.getMetadata().getName())
+            .collect(java.util.stream.Collectors.toSet())
+            .flatMapMany(categories -> categories.isEmpty() ? Flux.empty()
+                : client.list(Post.class, post -> Visibility.isPublicPost(post) && post.getSpec().getCategories() != null
+                    && post.getSpec().getCategories().stream().anyMatch(categories::contains), POST_ORDER));
     }
 
     private static boolean containsKeyword(String text, String keyword) {
@@ -180,9 +200,8 @@ public class PublicQueryService {
     public Mono<Dtos.SearchPage> searchWithGuides(String keyword, Stage stage, MaterialType type,
                                                  int page, int size) {
         String term = keyword.strip().toLowerCase(Locale.ROOT);
-        // Halo posts have no stage metadata, so stage-filtered results only include resource cards.
-        var guides = !term.isEmpty() && stage == null && (type == null || type == MaterialType.ORIGINAL)
-            ? pagePosts(term, page, size)
+        var guides = !term.isEmpty() && (type == null || type == MaterialType.ORIGINAL)
+            ? pagePosts(term, stage, page, size)
             : Mono.just(new Dtos.Page<Dtos.PostSummary>(normalizePage(page), normalizeSize(size), 0, List.of()));
         return Mono.zip(search(keyword, stage, type, page, size), guides, Dtos.SearchPage::of);
     }
