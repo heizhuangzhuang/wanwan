@@ -33,18 +33,33 @@
     <block wx:if="{{articles.length}}">
       <view wx:if="{{activeTab === 'all'}}" class="stage-bar">
         <text class="stage-section-label">本阶段原创导读</text>
-        <navigator wx:if="{{moreArticles}}" class="stage-more-inline" url="{{articlesUrl}}">全部导读 ›</navigator>
+        <navigator wx:if="{{moreArticles || articles.length > 1}}" class="stage-more-inline" url="{{articlesUrl}}">全部导读 ›</navigator>
       </view>
-      <navigator wx:for="{{articles}}" wx:key="name" class="card guide-card motion-press" hover-class="pressed"
-        url="/pages/reading/reading?kind=guide&name={{item.name}}">
-        <view class="guide-card-head">
-          <text class="badge badge-sage">📖 原创导读</text>
-          <text class="muted">分节阅读 ›</text>
+      <scroll-view wx:if="{{activeTab === 'all'}}" scroll-x class="stage-guide-carousel-scroll" show-scrollbar="{{false}}">
+        <view class="stage-guide-carousel">
+          <navigator wx:for="{{articles}}" wx:key="name" class="card guide-card stage-guide-carousel-item motion-press" hover-class="pressed"
+            url="/pages/reading/reading?kind=guide&name={{item.name}}">
+            <view class="guide-card-head">
+              <text class="badge badge-sage">📖 原创导读</text>
+              <text class="muted">分节阅读 ›</text>
+            </view>
+            <view class="resource-card-title clamp-2">{{item.title}}</view>
+            <view wx:if="{{item.excerpt}}" class="resource-card-intro clamp-2">{{item.excerpt}}</view>
+          </navigator>
         </view>
-        <view class="resource-card-title clamp-2">{{item.title}}</view>
-        <view wx:if="{{item.excerpt}}" class="resource-card-intro clamp-2">{{item.excerpt}}</view>
-      </navigator>
-      <navigator wx:if="{{activeTab === 'guides' && moreArticles}}" class="text-link stage-more-link" url="{{articlesUrl}}">查看本阶段全部导读 ›</navigator>
+      </scroll-view>
+      <block wx:else>
+        <navigator wx:for="{{articles}}" wx:key="name" class="card guide-card motion-press" hover-class="pressed"
+          url="/pages/reading/reading?kind=guide&name={{item.name}}">
+          <view class="guide-card-head">
+            <text class="badge badge-sage">📖 原创导读</text>
+            <text class="muted">分节阅读 ›</text>
+          </view>
+          <view class="resource-card-title clamp-2">{{item.title}}</view>
+          <view wx:if="{{item.excerpt}}" class="resource-card-intro clamp-2">{{item.excerpt}}</view>
+        </navigator>
+        <navigator wx:if="{{moreArticles}}" class="text-link stage-more-link" url="{{articlesUrl}}">查看本阶段全部导读 ›</navigator>
+      </block>
     </block>
     <view wx:elif="{{activeTab === 'guides'}}" class="card muted">
       这一阶段暂未发布原创导读，可查看上方的阶段工具或切换到「资料卡」。
@@ -52,22 +67,27 @@
   </block>
 
   <block wx:if="{{!guide || activeTab === 'all' || activeTab === 'resources'}}">
-    <view wx:if="{{guide && activeTab === 'all'}}" class="stage-section-label">本阶段精选资料卡</view>
+    <view wx:if="{{guide && activeTab === 'all'}}" class="stage-bar">
+      <text class="stage-section-label">本阶段精选资料卡</text>
+      <text wx:if="{{totalItems > 3}}" class="stage-more-inline" data-tab="resources" bindtap="selectTab">全部 {{totalItems}} 条 ›</text>
+    </view>
     <view wx:if="{{demoMode}}" class="notice">本地测试样本 · 虚构内容</view>
-    <view class="stage-filter-bar">
-      <scroll-view scroll-x class="filter-chips-scroll" show-scrollbar="{{false}}">
-        <view class="filter-chips">
-          <view wx:for="{{materials}}" wx:key="key" class="filter-chip {{typeIndex === index ? 'active' : ''}}"
-            role="button" data-index="{{index}}" bindtap="selectType">{{item.label}}</view>
-        </view>
-      </scroll-view>
-      <text class="stage-tag-toggle" bindtap="toggleTagFilter">{{showTagFilter ? '收起 ▴' : '标签 ▾'}}</text>
-    </view>
-    <view wx:if="{{showTagFilter}}" class="actions stage-tag">
-      <input class="field" placeholder="按主题标签筛选" maxlength="50" value="{{tag}}" disabled="{{loading}}" bindinput="onTag" bindconfirm="applyTag" />
-      <button class="btn motion-press" disabled="{{loading}}" bindtap="applyTag"
-        hover-class="pressed" hover-start-time="0" hover-stay-time="90">筛选</button>
-    </view>
+    <block wx:if="{{!guide || activeTab === 'resources'}}">
+      <view class="stage-filter-bar">
+        <scroll-view scroll-x class="filter-chips-scroll" show-scrollbar="{{false}}">
+          <view class="filter-chips">
+            <view wx:for="{{materials}}" wx:key="key" class="filter-chip {{typeIndex === index ? 'active' : ''}}"
+              role="button" data-index="{{index}}" bindtap="selectType">{{item.label}}</view>
+          </view>
+        </scroll-view>
+        <text class="stage-tag-toggle" bindtap="toggleTagFilter">{{showTagFilter ? '收起 ▴' : '标签 ▾'}}</text>
+      </view>
+      <view wx:if="{{showTagFilter}}" class="actions stage-tag">
+        <input class="field" placeholder="按主题标签筛选" maxlength="50" value="{{tag}}" disabled="{{loading}}" bindinput="onTag" bindconfirm="applyTag" />
+        <button class="btn motion-press" disabled="{{loading}}" bindtap="applyTag"
+          hover-class="pressed" hover-start-time="0" hover-stay-time="90">筛选</button>
+      </view>
+    </block>
     <view wx:if="{{loading}}" class="muted">正在加载资料…</view>
     <view wx:elif="{{error}}" class="card">
       <view>{{error}}</view>
@@ -79,8 +99,11 @@
         <text wx:elif="{{guide}}">这一阶段暂未收录资料卡，可先使用上方工具或查看原创导读。</text>
         <text wx:else>暂未收录公开资料。</text>
       </view>
-      <template is="resourceCards" data="{{items}}" />
-      <template is="pagination" data="{{page, hasNext, loading}}" />
+      <template is="resourceCards" data="{{items: guide && activeTab === 'all' ? previewItems : items}}" />
+      <button wx:if="{{guide && activeTab === 'all' && totalItems > 3}}" class="btn secondary stage-view-all-btn" data-tab="resources" bindtap="selectTab">
+        查看本阶段全部 {{totalItems}} 条资料卡与筛选 ›
+      </button>
+      <template wx:if="{{!guide || activeTab === 'resources'}}" is="pagination" data="{{page, hasNext, loading}}" />
     </block>
   </block>
 

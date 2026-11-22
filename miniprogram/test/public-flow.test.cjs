@@ -1139,13 +1139,30 @@ test('导读目录与重点速览、资料卡折叠出处、阶段分栏与首�
   detail.page.toggleMeta()
   assert.equal(detail.page.data.metaExpanded, true)
 
-  const stage = openPage('stage', () => ({ data: { items: [item('r1')], page: 1, size: 20, total: 1 } }))
+  const stage = openPage('stage', () => ({ data: { items: [item('r1'), item('r2'), item('r3'), item('r4')], page: 1, size: 20, total: 4 } }))
   stage.page.onLoad({ key: 'JUST_FOUND' })
+  await stage.page.fetch(1)
+  assert.equal(stage.page.data.previewItems.length, 3)
+  assert.equal(stage.page.data.items.length, 4)
+  assert.equal(stage.page.data.totalItems, 4)
   stage.page.selectTab({ currentTarget: { dataset: { tab: 'guides' } } })
   assert.equal(stage.page.data.activeTab, 'guides')
   stage.page.selectType({ currentTarget: { dataset: { index: '2' } } })
   await settle()
   assert.equal(stage.page.data.typeIndex, 2)
+
+  const lib = openPage('library', url => {
+    if (url.pathname.endsWith('/posts') || url.pathname.endsWith('/stage-posts')) {
+      return { data: { items: [{ name: 'p1', title: '产前导读', excerpt: '产前导读 正文内容' }], page: 1, size: 5, total: 1 } }
+    }
+    if (url.pathname.endsWith('/topics')) return { data: { items: [], page: 1, size: 2, total: 0 } }
+    return { data: { items: [item('r1')], page: 1, size: 3, total: 1 } }
+  })
+  lib.page.selectStage({ currentTarget: { dataset: { key: 'JUST_FOUND' } } })
+  await settle()
+  assert.equal(lib.page.data.selectedStage, 'JUST_FOUND')
+  assert.equal(lib.page.data.guides[0].excerpt, '正文内容')
+  assert.equal(lib.page.data.resources.length, 1)
 
   const home = openPage('index', () => ({ data: [] }))
   home.page.selectPhase({ currentTarget: { dataset: { phase: '1' } } })

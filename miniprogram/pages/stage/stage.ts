@@ -65,6 +65,8 @@ Page({
     guide: null as ReturnType<typeof familyGuide>, prepareUrl: '',
     articles: [] as PostSummary[], articlesUrl: '', moreArticles: false,
     items: [] as ReturnType<typeof resourceLabel>[],
+    previewItems: [] as ReturnType<typeof resourceLabel>[],
+    totalItems: 0,
     page: 1, hasNext: false, loading: false, error: '', requestedPage: 1, demoMode: false,
   },
   onLoad(options: Record<string, string | undefined>) {
@@ -143,10 +145,17 @@ Page({
   async fetch(page: number) {
     if (this.data.loading) return
     const { stageKey, typeIndex, submittedTag } = this.data
-    this.setData({ loading: true, error: '', items: [], requestedPage: page })
+    this.setData({ loading: true, error: '', items: [], previewItems: [], requestedPage: page })
     try {
       const result = await wanwanApi.listResources({ stage: stageKey, type: materialTypes[typeIndex]?.key, tag: submittedTag, page })
-      this.setData({ items: result.items.map(resourceLabel), page: result.page, hasNext: result.page * result.size < result.total })
+      const labeled = result.items.map(resourceLabel)
+      this.setData({
+        items: labeled,
+        previewItems: labeled.slice(0, 3),
+        totalItems: result.total,
+        page: result.page,
+        hasNext: result.page * result.size < result.total,
+      })
     } catch {
       this.setData({ error: '暂时无法加载资料，请重试。' })
     } finally {

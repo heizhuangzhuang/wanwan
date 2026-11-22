@@ -6,46 +6,92 @@
     <text class="search-action">搜索</text>
   </navigator>
 
-  <navigator class="tab-feature library-prenatal motion-press" url="/pages/prenatal/prenatal"
-    hover-class="pressed" hover-start-time="0" hover-stay-time="90">
-    <view class="icon-tile" aria-hidden="true"><image src="/assets/icons/scan-heart.png" mode="aspectFit" /></view>
-    <view class="tab-row-copy">
-      <view class="tab-feature-title">产前检查专项</view>
-      <view class="tab-feature-description">结构超声、羊水穿刺、全外显子测序等</view>
+  <view class="library-stage-bar">
+    <view class="library-stage-head">
+      <text class="library-section-title">按阶段看文章与资料</text>
+      <navigator wx:if="{{selectedStage}}" class="library-more-link" url="{{stageUrl}}">进入阶段专区 ›</navigator>
     </view>
-    <text class="tab-chevron" aria-hidden="true">›</text>
-  </navigator>
-  <view class="section-heading">按形态浏览</view>
-  <view class="tab-list">
-    <navigator class="tab-row" url="/pages/topics/topics?kind=guide" hover-class="pressed">
-      <view class="icon-tile icon-blue" aria-hidden="true"><image src="/assets/icons/book-open.png" mode="aspectFit" /></view>
-      <view class="tab-row-copy"><view class="tab-row-title">原创导读（站内长文）</view><view class="tab-row-caption clamp-1">白话拆解权威文献与流程，点开直接读完</view></view>
-      <text class="tab-chevron" aria-hidden="true">›</text>
-    </navigator>
-    <navigator class="tab-row" url="/pages/stage/stage" hover-class="pressed">
-      <view class="icon-tile icon-sage" aria-hidden="true"><image src="/assets/icons/files.png" mode="aspectFit" /></view>
-      <view class="tab-row-copy"><view class="tab-row-title">全部资料卡（出处索引）</view><view class="tab-row-caption clamp-1">按阶段、材料类型或标签查权威出处</view></view>
-      <text class="tab-chevron" aria-hidden="true">›</text>
-    </navigator>
-    <navigator class="tab-row" url="/pages/topics/topics" hover-class="pressed">
-      <view class="icon-tile icon-gold" aria-hidden="true"><image src="/assets/icons/layers.png" mode="aspectFit" /></view>
-      <view class="tab-row-copy"><view class="tab-row-title">阅读专题（主题合集）</view><view class="tab-row-caption clamp-1">按话题串联的资料合集</view></view>
-      <text class="tab-chevron" aria-hidden="true">›</text>
-    </navigator>
+    <scroll-view scroll-x class="library-stage-scroll" show-scrollbar="{{false}}">
+      <view class="filter-chips">
+        <view wx:for="{{stageFilters}}" wx:key="key" class="filter-chip {{selectedStage === item.key ? 'active' : ''}}"
+          role="button" data-key="{{item.key}}" bindtap="selectStage">{{item.label}}</view>
+      </view>
+    </scroll-view>
   </view>
 
-  <view wx:if="{{topics.length}}" class="section-heading">精选专题</view>
-  <view wx:if="{{topics.length}}" class="tab-list">
-    <navigator wx:for="{{topics}}" wx:key="name" class="tab-row" url="{{item.url}}" hover-class="pressed">
-      <view class="tab-row-copy"><view class="tab-row-title">{{item.title}}</view><view class="tab-row-caption">{{item.resourceCount}} 条资料</view></view>
-      <text class="tab-chevron" aria-hidden="true">›</text>
-    </navigator>
+  <block wx:if="{{guides.length}}">
+    <view class="library-bar">
+      <text class="library-section-title">{{selectedStage ? selectedStageLabel + ' · 原创导读' : '精选原创导读'}}</text>
+      <navigator class="library-more-link" url="{{guidesUrl}}">全部导读 ›</navigator>
+    </view>
+    <scroll-view scroll-x class="guide-carousel-scroll" show-scrollbar="{{false}}">
+      <view class="guide-carousel">
+        <navigator wx:for="{{guides}}" wx:key="name" class="card guide-card guide-carousel-item motion-press" hover-class="pressed"
+          url="/pages/reading/reading?kind=guide&name={{item.name}}">
+          <view class="guide-card-head">
+            <text class="badge badge-sage">📖 原创导读</text>
+            <text class="muted">分节阅读 ›</text>
+          </view>
+          <view class="resource-card-title clamp-2">{{item.title}}</view>
+          <view wx:if="{{item.excerpt}}" class="resource-card-intro clamp-2">{{item.excerpt}}</view>
+        </navigator>
+      </view>
+    </scroll-view>
+  </block>
+  <view wx:elif="{{selectedStage && !loading}}" class="card muted library-empty">
+    「{{selectedStageLabel}}」暂未发布原创导读，可查看下方资料卡或切换其他阶段。
   </view>
 
-  <view wx:if="{{resources.length}}" class="section-heading">精选资料卡</view>
-  <template is="resourceCards" data="{{items: resources}}" />
+  <view class="library-bar">
+    <text class="library-section-title">{{selectedStage ? selectedStageLabel + ' · 资料卡' : '精选资料卡'}}</text>
+    <navigator class="library-more-link" url="{{stageUrl}}">{{selectedStage ? '查看全部 ›' : '全部资料卡 ›'}}</navigator>
+  </view>
+  <template wx:if="{{resources.length}}" is="resourceCards" data="{{items: resources}}" />
+  <view wx:elif="{{!loading}}" class="card muted library-empty">
+    「{{selectedStageLabel}}」暂未收录资料卡。
+  </view>
+
   <view wx:if="{{featuredError}}" class="reading-state tab-retry">
-    <text>部分精选内容暂时无法加载。</text>
+    <text>部分内容暂时无法加载。</text>
     <button class="btn secondary compact" bindtap="loadFeatured" disabled="{{loading}}">重试</button>
   </view>
+
+  <block wx:if="{{!selectedStage}}">
+    <navigator class="tab-feature library-prenatal motion-press" url="/pages/prenatal/prenatal"
+      hover-class="pressed" hover-start-time="0" hover-stay-time="90">
+      <view class="icon-tile" aria-hidden="true"><image src="/assets/icons/scan-heart.png" mode="aspectFit" /></view>
+      <view class="tab-row-copy">
+        <view class="tab-feature-title">产前检查专项</view>
+        <view class="tab-feature-description">结构超声、羊水穿刺、全外显子测序等</view>
+      </view>
+      <text class="tab-chevron" aria-hidden="true">›</text>
+    </navigator>
+
+    <view class="section-heading">按形态浏览</view>
+    <view class="tab-list">
+      <navigator class="tab-row" url="/pages/topics/topics?kind=guide" hover-class="pressed">
+        <view class="icon-tile icon-blue" aria-hidden="true"><image src="/assets/icons/book-open.png" mode="aspectFit" /></view>
+        <view class="tab-row-copy"><view class="tab-row-title">原创导读（站内长文）</view><view class="tab-row-caption clamp-1">白话拆解权威文献与流程，点开直接读完</view></view>
+        <text class="tab-chevron" aria-hidden="true">›</text>
+      </navigator>
+      <navigator class="tab-row" url="/pages/stage/stage" hover-class="pressed">
+        <view class="icon-tile icon-sage" aria-hidden="true"><image src="/assets/icons/files.png" mode="aspectFit" /></view>
+        <view class="tab-row-copy"><view class="tab-row-title">全部资料卡（出处索引）</view><view class="tab-row-caption clamp-1">按阶段、材料类型或标签查权威出处</view></view>
+        <text class="tab-chevron" aria-hidden="true">›</text>
+      </navigator>
+      <navigator class="tab-row" url="/pages/topics/topics" hover-class="pressed">
+        <view class="icon-tile icon-gold" aria-hidden="true"><image src="/assets/icons/layers.png" mode="aspectFit" /></view>
+        <view class="tab-row-copy"><view class="tab-row-title">阅读专题（主题合集）</view><view class="tab-row-caption clamp-1">按话题串联的资料合集</view></view>
+        <text class="tab-chevron" aria-hidden="true">›</text>
+      </navigator>
+    </view>
+
+    <view wx:if="{{topics.length}}" class="section-heading">精选专题</view>
+    <view wx:if="{{topics.length}}" class="tab-list">
+      <navigator wx:for="{{topics}}" wx:key="name" class="tab-row" url="{{item.url}}" hover-class="pressed">
+        <view class="tab-row-copy"><view class="tab-row-title">{{item.title}}</view><view class="tab-row-caption">{{item.resourceCount}} 条资料</view></view>
+        <text class="tab-chevron" aria-hidden="true">›</text>
+      </navigator>
+    </view>
+  </block>
 </view>

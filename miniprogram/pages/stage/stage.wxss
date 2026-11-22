@@ -78,6 +78,16 @@
 .stage-tag { margin-top: 0; margin-bottom: 16rpx; }
 .stage-tag .btn { flex: 0 0 136rpx; }
 .stage-more-link { display: block; text-align: center; margin-top: 8rpx; }
+.stage-guide-carousel-scroll { width: 100%; white-space: nowrap; margin-bottom: 8rpx; }
+.stage-guide-carousel { display: inline-flex; gap: 16rpx; padding: 2rpx 2rpx 8rpx; }
+.stage-guide-carousel-item {
+  width: 560rpx;
+  flex-shrink: 0;
+  white-space: normal;
+  margin: 0;
+  box-sizing: border-box;
+}
+.stage-view-all-btn { margin: 8rpx 0 16rpx; font-size: 27rpx; min-height: 78rpx; }
 
 .stage-source-foot {
   margin-top: 24rpx;
