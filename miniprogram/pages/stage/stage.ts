@@ -176,4 +176,21 @@ Page({
   previousPage() { if (this.data.page > 1) void this.fetch(this.data.page - 1) },
   nextPage() { if (this.data.hasNext) void this.fetch(this.data.page + 1) },
   openDetail: openResource,
+  onShareAppMessage() {
+    const { stageKey, heading } = this.data
+    if (stageKey) {
+      return {
+        title: `小脚丫步步指南｜${heading}`,
+        path: `/pages/stage/stage?key=${encodeURIComponent(stageKey)}&label=${encodeURIComponent(heading)}`,
+      }
+    }
+    return { title: '小脚丫步步指南｜公开资料库', path: '/pages/stage/stage' }
+  },
+  onShareTimeline() {
+    const { stageKey, heading } = this.data
+    return {
+      title: stageKey ? `小脚丫步步指南｜${heading}` : '小脚丫步步指南｜公开资料库',
+      query: stageKey ? `key=${encodeURIComponent(stageKey)}&label=${encodeURIComponent(heading)}` : '',
+    }
+  },
 })

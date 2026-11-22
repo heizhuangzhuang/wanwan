@@ -55,4 +55,24 @@ Page({
       wx.navigateTo({ url: `/pages/reading/reading?kind=${this.data.kind}&name=${encodeURIComponent(name)}` })
     }
   },
+  onShareAppMessage() {
+    const { kind, stage, stageLabel } = this.data
+    if (kind === 'guide' && stage) {
+      return {
+        title: `小脚丫步步指南｜${stageLabel}原创导读`,
+        path: `/pages/topics/topics?kind=guide&stage=${encodeURIComponent(stage)}`,
+      }
+    }
+    return {
+      title: kind === 'guide' ? '小脚丫步步指南｜本站原创导读' : '小脚丫步步指南｜精选阅读专题',
+      path: `/pages/topics/topics?kind=${kind}`,
+    }
+  },
+  onShareTimeline() {
+    const { kind, stage, stageLabel } = this.data
+    return {
+      title: stageLabel ? `小脚丫步步指南｜${stageLabel}原创导读` : '小脚丫步步指南｜原创导读与精选专题',
+      query: kind === 'guide' && stage ? `kind=guide&stage=${encodeURIComponent(stage)}` : `kind=${kind}`,
+    }
+  },
 })

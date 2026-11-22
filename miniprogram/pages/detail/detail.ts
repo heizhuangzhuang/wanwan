@@ -9,6 +9,8 @@ Page({
     related: [] as ReturnType<typeof resourceLabel>[],
     allowArticle: false, allowMiniProgram: false,
   },
+  loadedName: '',
+  requestSeq: 0,
   toggleMeta() {
     this.setData({ metaExpanded: !this.data.metaExpanded })
   },
@@ -17,36 +19,48 @@ Page({
   },
   onShow() { void this.loadDetail() },
   async loadDetail() {
+    const seq = ++this.requestSeq
     const { name } = this.data
-    this.setData({ loading: true, error: '', retryable: false, entryError: '', resource: null, related: [], saved: false })
+    const sameCard = this.loadedName === name && !this.data.error && Boolean(this.data.resource)
+    if (!sameCard) {
+      this.setData({ loading: true, error: '', retryable: false, entryError: '', resource: null, related: [], saved: false })
+    }
     if (!name) {
       this.setData({ loading: false, error: '入口缺少有效的资料标识。' })
       return
     }
     try {
       const resource = await wanwanApi.getResource(name)
+      if (seq !== this.requestSeq) return
       const verified = resource.linkStatus === 'OK'
       if (resource.linkStatus !== 'SOURCE_RETRACTED') rememberResource(name)
+      this.loadedName = name
       this.setData({
         resource: resourceLabel(resource),
         saved: shelfNames('saved').includes(name),
         allowArticle: verified && resource.entry.type === 'MP_ARTICLE' && !!resource.entry.url
           && typeof wx.openOfficialAccountArticle === 'function',
         allowMiniProgram: verified && resource.entry.type === 'MINIPROGRAM' && !!resource.entry.appId,
+        loading: false,
+        error: '',
+        retryable: false,
       })
       if (resource.linkStatus !== 'SOURCE_RETRACTED') void this.loadRelated(resource)
     } catch (error) {
+      if (seq !== this.requestSeq) return
       const unavailable = error instanceof HttpError && error.statusCode === 404
+      this.loadedName = ''
       if (unavailable) {
         removeFromShelf('saved', name)
         removeFromShelf('recent', name)
       }
       this.setData({
+        resource: null,
+        related: [],
         error: unavailable ? '该资料不可访问或已下线。' : '暂时无法读取资料，请重试。',
         retryable: !unavailable,
+        loading: false,
       })
-    } finally {
-      this.setData({ loading: false })
     }
   },
   async loadRelated(resource: ResourceView) {
@@ -76,9 +90,21 @@ Page({
     }
   },
   onShareAppMessage() {
-    const { resource, name } = this.data
-    return { title: resource?.title || '小脚丫步步指南',
-      path: name ? `/pages/detail/detail?name=${encodeURIComponent(name)}` : '/pages/index/index' }
+    const { loading, error, resource, name } = this.data
+    if (!loading && !error && resource && name && resource.linkStatus !== 'SOURCE_RETRACTED') {
+      return {
+        title: resource.title,
+        path: `/pages/detail/detail?name=${encodeURIComponent(name)}`,
+      }
+    }
+    return { title: '小脚丫步步指南｜资料库', path: '/pages/library/library' }
+  },
+  onShareTimeline() {
+    const { loading, error, resource, name } = this.data
+    if (!loading && !error && resource && name && resource.linkStatus !== 'SOURCE_RETRACTED') {
+      return { title: resource.title, query: `name=${encodeURIComponent(name)}` }
+    }
+    return { title: '小脚丫步步指南｜足内翻家庭资料库', query: '' }
   },
   openFeedback() {
     const { resource } = this.data

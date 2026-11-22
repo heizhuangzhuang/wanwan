@@ -1237,3 +1237,100 @@ test('全局切换回归：资料页切阶段立即清空并切换资料卡、�
   assert.equal(home.page.data.phase, 1)
   assert.equal(home.page.data.active, true)
 })
+
+test('微信好友分享全链路：文章/专题/资料卡/阶段转发与好友冷启动直达落地，撤回内容不发坏链', async () => {
+  const guideId = '01a20276-ac3b-7379-92b4-bf34084aaee7'
+  const respond = url => {
+    if (url.pathname.endsWith(`/posts/${guideId}`)) {
+      return {
+        data: {
+          name: guideId,
+          title: '《深度解读：特发性先天性马蹄内翻足全景综述》',
+          publishTime: '2026-11-20T00:00:00Z',
+          content: '<h2>一、核心事实</h2><p>规范治疗预后良好。</p><h2>二、治疗流程</h2><p>Ponseti 方案。</p>',
+        },
+      }
+    }
+    if (url.pathname.endsWith('/topics/t-cast')) {
+      return { data: { name: 't-cast', title: '出生后石膏准备专题', intro: '专题导读', resources: [item('r-ok')] } }
+    }
+    if (url.pathname.endsWith('/resources/r-ok')) {
+      return { data: item('r-ok', { title: 'Ponseti 石膏居家观察', linkStatus: 'OK' }) }
+    }
+    if (url.pathname.endsWith('/resources/r-ret')) {
+      return { data: item('r-ret', { title: '已撤回资料', linkStatus: 'SOURCE_RETRACTED' }) }
+    }
+    if (url.pathname.endsWith('/resources/r-404')) {
+      return { statusCode: 404, data: {} }
+    }
+    return { data: { items: [item('r-ok')], page: 1, size: 20, total: 1 } }
+  }
+
+  // 1. 发送方打开导读并分享给微信好友 + 朋友圈
+  const senderGuide = openPage('reading', respond)
+  senderGuide.page.onLoad({ kind: 'guide', name: guideId })
+  await senderGuide.page.onShow()
+  const guideCard = senderGuide.page.onShareAppMessage()
+  assert.equal(guideCard.title, '《深度解读：特发性先天性马蹄内翻足全景综述》')
+  assert.equal(guideCard.path, `/pages/reading/reading?kind=guide&name=${guideId}`)
+  const guideTimeline = senderGuide.page.onShareTimeline()
+  assert.equal(guideTimeline.query, `kind=guide&name=${guideId}`)
+
+  // 好友点击微信卡片冷启动落地
+  const sharedUrl = new URL('https://mp.local' + guideCard.path)
+  const friendGuide = openPage('reading', respond)
+  friendGuide.page.onLoad(Object.fromEntries(sharedUrl.searchParams.entries()))
+  await friendGuide.page.onShow()
+  assert.equal(friendGuide.page.data.title, '《深度解读：特发性先天性马蹄内翻足全景综述》')
+  assert.equal(friendGuide.page.data.toc.length, 2)
+  assert.equal(friendGuide.page.data.error, '')
+
+  // 2. 专题分享后关闭微信转发面板（触发 onShow）不会清空专题内容
+  const senderTopic = openPage('reading', respond)
+  senderTopic.page.onLoad({ kind: 'topic', name: 't-cast' })
+  await senderTopic.page.onShow()
+  const topicCard = senderTopic.page.onShareAppMessage()
+  assert.equal(topicCard.path, '/pages/reading/reading?kind=topic&name=t-cast')
+  const refreshPromise = senderTopic.page.onShow()
+  assert.equal(senderTopic.page.data.items.length, 1) // 不会瞬间闪白清空
+  await refreshPromise
+
+  // 3. 资料卡分享：正常卡片精准直达，已撤回/404 降级分享资料库
+  const senderDetail = openPage('detail', respond)
+  senderDetail.page.onLoad({ name: 'r-ok' })
+  await senderDetail.page.onShow()
+  const detailCard = senderDetail.page.onShareAppMessage()
+  assert.equal(detailCard.title, 'Ponseti 石膏居家观察')
+  assert.equal(detailCard.path, '/pages/detail/detail?name=r-ok')
+  const detailRefresh = senderDetail.page.onShow()
+  assert.ok(senderDetail.page.data.resource) // 分享返回不闪白屏
+  await detailRefresh
+
+  const retractedDetail = openPage('detail', respond)
+  retractedDetail.page.onLoad({ name: 'r-ret' })
+  await retractedDetail.page.onShow()
+  assert.equal(retractedDetail.page.onShareAppMessage().path, '/pages/library/library')
+
+  const missingDetail = openPage('detail', respond)
+  missingDetail.page.onLoad({ name: 'r-404' })
+  await missingDetail.page.onShow()
+  assert.equal(missingDetail.page.onShareAppMessage().path, '/pages/library/library')
+
+  // 4. 首页、资料页、阶段页、专题列表页均支持微信好友与朋友圈分享
+  const home = openPage('index', respond)
+  assert.equal(home.page.onShareAppMessage().path, '/pages/index/index')
+  assert.ok(home.page.onShareTimeline().title.includes('小脚丫'))
+
+  const lib = openPage('library', respond)
+  assert.equal(lib.page.onShareAppMessage().path, '/pages/library/library')
+  lib.page.selectStage({ currentTarget: { dataset: { key: 'JUST_FOUND' } } })
+  assert.match(lib.page.onShareAppMessage().path, /^\/pages\/stage\/stage\?key=JUST_FOUND/)
+
+  const stg = openPage('stage', respond)
+  stg.page.onLoad({ key: 'BRACE_DAILY', label: '支具与日常生活' })
+  assert.match(stg.page.onShareAppMessage().path, /^\/pages\/stage\/stage\?key=BRACE_DAILY/)
+
+  const tp = openPage('topics', respond)
+  tp.page.onLoad({ kind: 'guide', stage: 'JUST_FOUND' })
+  assert.equal(tp.page.onShareAppMessage().path, '/pages/topics/topics?kind=guide&stage=JUST_FOUND')
+})

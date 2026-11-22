@@ -29,7 +29,8 @@ Page({
     const seq = ++this.requestSeq
     const { kind, name } = this.data
     const key = `${kind}:${name}`
-    const sameDoc = this.loadedKey === key && !this.data.error && this.data.sections.length > 0
+    const sameDoc = this.loadedKey === key && !this.data.error
+      && (kind === 'topic' ? (this.data.items.length > 0 || Boolean(this.data.title)) : this.data.sections.length > 0)
     if (!sameDoc) {
       this.setData({
         loading: true, error: '', retryable: false, title: '', items: [],
@@ -132,6 +133,13 @@ Page({
       return { title, path: `/pages/reading/reading?kind=${kind}&name=${encodeURIComponent(name)}` }
     }
     return { title: '小脚丫步步指南｜资料库', path: '/pages/library/library' }
+  },
+  onShareTimeline() {
+    const { loading, error, kind, name, title } = this.data
+    if (!loading && !error && title && name && (kind === 'topic' || kind === 'guide')) {
+      return { title, query: `kind=${kind}&name=${encodeURIComponent(name)}` }
+    }
+    return { title: '小脚丫步步指南｜足内翻家庭资料库', query: '' }
   },
   backToLibrary() {
     wx.switchTab({ url: '/pages/library/library' })

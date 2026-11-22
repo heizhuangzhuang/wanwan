@@ -51,4 +51,8 @@ Page({
     const guide = this.data.selected
     return { title: guide?.title || '产前检查专项', path: guide ? `${pagePath}?key=${guide.key}` : pagePath }
   },
+  onShareTimeline() {
+    const guide = this.data.selected
+    return { title: guide?.title || '小脚丫步步指南｜产前检查专项', query: guide ? `key=${guide.key}` : '' }
+  },
 })

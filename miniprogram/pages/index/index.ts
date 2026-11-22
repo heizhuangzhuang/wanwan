@@ -177,4 +177,10 @@ Page({
       this.setData({ loading: false })
     }
   },
+  onShareAppMessage() {
+    return { title: '小脚丫步步指南｜足内翻家庭资料与护理工具', path: '/pages/index/index' }
+  },
+  onShareTimeline() {
+    return { title: '小脚丫步步指南｜足内翻家庭资料与护理工具', query: '' }
+  },
 })

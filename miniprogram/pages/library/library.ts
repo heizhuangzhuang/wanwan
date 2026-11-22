@@ -105,4 +105,18 @@ Page({
     })
   },
   openDetail: openResource,
+  onShareAppMessage() {
+    const { selectedStage, selectedStageLabel, stageUrl } = this.data
+    if (selectedStage) {
+      return { title: `小脚丫步步指南｜${selectedStageLabel}资料与导读`, path: stageUrl }
+    }
+    return { title: '小脚丫步步指南｜足内翻家庭资料库', path: '/pages/library/library' }
+  },
+  onShareTimeline() {
+    const { selectedStage, selectedStageLabel } = this.data
+    return {
+      title: selectedStage ? `小脚丫步步指南｜${selectedStageLabel}资料与导读` : '小脚丫步步指南｜足内翻家庭资料库',
+      query: '',
+    }
+  },
 })
