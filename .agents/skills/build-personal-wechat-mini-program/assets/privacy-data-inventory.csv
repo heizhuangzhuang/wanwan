@@ -1,0 +1,2 @@
+data_id,data_or_permission,source,exact_purpose,required_or_optional,trigger_page,user_action,client_storage,server_storage,third_party_recipient,retention,delete_method,mp_privacy_declaration,legal_basis,sensitive_level,security_controls,verified_at,notes
+data-001,,,,optional,,,,,,,,,,normal,,,

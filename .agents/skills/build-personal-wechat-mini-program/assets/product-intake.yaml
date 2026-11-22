@@ -1,0 +1,89 @@
+# 复制到项目文档目录后按真实情况填写；不要为过审虚构事实。
+project:
+  name: ""
+  appid: ""
+  repository: ""
+  current_stage: idea # idea|development|experience|review|released|rejected|incident
+  target_release_date: ""
+
+operator:
+  subject_route: unknown # ordinary-personal|upgraded-personal|non-personal|unknown
+  registration_channel: unknown # direct|service-provider-fast-register|service-provider-upgraded|unknown
+  legal_identity: ""
+  administrator: ""
+  service_provider: ""
+  appid_control_owner: ""
+  data_controller: ""
+  payment_merchant_owner: ""
+
+account_status:
+  real_name_completed: unknown
+  certification_status: unknown
+  certification_route: none # none|personal-self-service|service-provider-proxy|organization|unknown
+  filing_status: unknown
+  filing_number: ""
+  approved_categories: []
+  rejected_history: []
+
+product:
+  target_users: ""
+  core_user_job: ""
+  service_description: ""
+  revenue_model: none # none|ads|physical_goods|real_world_service|virtual_goods|mixed
+  multi_merchant: false
+  public_ugc: false
+  ai_generated_content: false
+  regulated_domain: []
+  target_minors: false
+  web_view_required: false
+  phone_number_required: false
+  payment_required: false
+  virtual_payment_required: false
+
+features:
+  - id: core-001
+    name: ""
+    user_value: ""
+    entry_path: ""
+    hidden_or_conditional: false
+    candidate_category: ""
+    filing_service_content: ""
+    qualification: ""
+    monetization: none
+    user_data: []
+    device_permissions: []
+    third_party_sdks: []
+    review_account_required: false
+
+technology:
+  stack: unknown # native-ts|native-js|taro|uni-app|other
+  miniprogram_root: ""
+  backend: unknown # none|cloudbase|self-hosted|cloud-run|other
+  environments: []
+  request_domains: []
+  business_domains: []
+  minimum_base_library: ""
+  ci: ""
+  tests: []
+
+privacy:
+  inventory_file: "privacy-data-inventory.csv"
+  mp_privacy_guide_checked_at: ""
+  account_deletion: false
+  data_deletion: false
+  third_party_sdk_audited: false
+
+operations:
+  developer_contact: ""
+  complaint_channel: ""
+  infringement_channel: ""
+  refund_after_sales: ""
+  content_moderation_owner: ""
+  incident_owner: ""
+
+evidence:
+  live_official_checked_at: ""
+  official_urls: []
+  mp_backend_screenshots: []
+  qualifications: []
+  unresolved_questions: []

@@ -1,0 +1,4 @@
+interface:
+  display_name: "个人微信小程序全栈开发"
+  short_description: "从个人主体准入、工程实现到隐私安全与提审发布的全流程实战"
+  default_prompt: "使用 $build-personal-wechat-mini-program 评估并实现这个个人主体微信小程序，从类目准入到提审发布给出可执行方案。"

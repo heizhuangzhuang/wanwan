@@ -1,0 +1,5 @@
+test_id,area,scenario,precondition,steps,expected_result,platform,base_library,network,account_role,privacy_state,data_fixture,automation,evidence,status,owner,notes
+T-001,core,首页进入核心服务,,,,iOS+Android,current+minimum,normal,reviewer,agreed,,manual,,pending,,
+T-002,privacy,拒绝非必要权限后继续无关功能,,,,iOS+Android,current,normal,new-user,rejected,,manual,,pending,,
+T-003,network,核心提交超时且不重复创建,,,,iOS+Android,current,timeout,normal,agreed,,manual+integration,,pending,,
+T-004,update,旧客户端与新服务端兼容,,,,iOS+Android,minimum,normal,existing-user,agreed,,manual,,pending,,

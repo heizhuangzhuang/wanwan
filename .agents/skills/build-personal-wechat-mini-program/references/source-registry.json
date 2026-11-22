@@ -1,0 +1,589 @@
+{
+  "schema_version": 1,
+  "registry_checked_at": "2026-07-12T00:00:00+08:00",
+  "sources": [
+    {
+      "id": "wmp-introduction",
+      "title": "微信开放文档 / 介绍",
+      "url": "https://developers.weixin.qq.com/miniprogram/introduction/",
+      "authority": "wechat-official",
+      "volatility": "high",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["general-overview", "members", "payment-overview", "conflict-warning"]
+    },
+    {
+      "id": "wmp-personal-registration",
+      "title": "小程序注册流程",
+      "url": "https://kf.qq.com/faq/170109iQBJ3Q170109JbQfiu.html",
+      "authority": "tencent-customer-service",
+      "volatility": "high",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["personal-registration", "age", "identity", "email"]
+    },
+    {
+      "id": "wmp-registration-limits",
+      "title": "小程序注册上限和绑定上限",
+      "url": "https://kf.qq.com/faq/170109F3MRFj170109eYJ7fi.html",
+      "authority": "tencent-customer-service",
+      "volatility": "critical",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["registration-limit", "binding-limit", "personal-subject"]
+    },
+    {
+      "id": "wmp-personal-certification",
+      "title": "小程序微信认证申请流程指引（个人）",
+      "url": "https://kf.qq.com/faq/231114eyInYR23111463uqeM.html",
+      "authority": "tencent-customer-service",
+      "volatility": "critical",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["personal-certification", "personal-invoice", "certification-fee"]
+    },
+    {
+      "id": "wmp-personal-profession-certification",
+      "title": "小程序微信认证-个人类型职业身份认证介绍",
+      "url": "https://kf.qq.com/faq/231025iYNNzm231025NjMzIZ.html",
+      "authority": "tencent-customer-service",
+      "volatility": "high",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["personal-profession-certification", "identity-label", "qualification-materials"]
+    },
+    {
+      "id": "wmp-categories",
+      "title": "小程序开放的服务类目",
+      "url": "https://developers.weixin.qq.com/miniprogram/product/material/",
+      "authority": "wechat-official",
+      "volatility": "critical",
+      "checked_at": "2026-07-12",
+      "last_modified": "Fri, 10 Jul 2026 11:17:18 GMT",
+      "use_for": ["ordinary-personal-categories", "qualifications"]
+    },
+    {
+      "id": "wmp-operations",
+      "title": "微信小程序平台运营规范",
+      "url": "https://developers.weixin.qq.com/miniprogram/product/",
+      "authority": "wechat-official",
+      "volatility": "high",
+      "checked_at": "2026-07-12",
+      "last_modified": "Fri, 10 Jul 2026 11:17:18 GMT",
+      "use_for": ["operations", "privacy", "content", "payment", "review", "enforcement"]
+    },
+    {
+      "id": "wmp-reject",
+      "title": "微信小程序平台常见拒绝情形",
+      "url": "https://developers.weixin.qq.com/miniprogram/product/reject.html",
+      "authority": "wechat-official",
+      "volatility": "high",
+      "checked_at": "2026-07-12",
+      "last_modified": "Fri, 10 Jul 2026 11:17:21 GMT",
+      "use_for": ["review", "rejection", "completeness", "ui"]
+    },
+    {
+      "id": "wmp-service-terms",
+      "title": "微信小程序平台服务条款",
+      "url": "https://developers.weixin.qq.com/miniprogram/product/service.html",
+      "authority": "wechat-official",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["contract", "developer-responsibility", "privacy", "transactions"]
+    },
+    {
+      "id": "wmp-certification-standard",
+      "title": "微信认证指引（通用页面，个人流程不完整）",
+      "url": "https://developers.weixin.qq.com/miniprogram/product/renzheng.html",
+      "authority": "wechat-official",
+      "volatility": "high",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["organization-certification", "annual-review", "conflict-warning"]
+    },
+    {
+      "id": "wmp-filing",
+      "title": "小程序备案操作指引",
+      "url": "https://developers.weixin.qq.com/miniprogram/product/record/guidelines.html",
+      "authority": "wechat-official",
+      "volatility": "high",
+      "checked_at": "2026-07-12",
+      "last_modified": "Fri, 10 Jul 2026 11:17:21 GMT",
+      "use_for": ["filing", "sms-verification", "materials", "filing-change"]
+    },
+    {
+      "id": "miit-filing",
+      "title": "工业和信息化部政务服务平台 ICP/IP 地址/域名信息备案管理系统",
+      "url": "https://beian.miit.gov.cn/",
+      "authority": "government",
+      "volatility": "medium",
+      "check_mode": "manual",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["filing-sms-verification"]
+    },
+    {
+      "id": "wmp-fast-personal",
+      "title": "快速创建个人小程序",
+      "url": "https://developers.weixin.qq.com/doc/oplatform/Third-party_Platforms/2.0/product/Register_Mini_Programs/fastregisterpersonalmp.html",
+      "authority": "wechat-official",
+      "volatility": "critical",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["service-provider-fast-registration", "personal-payment-limit", "search-share-certification"]
+    },
+    {
+      "id": "wmp-proxy-certification",
+      "title": "代认证小程序介绍",
+      "url": "https://developers.weixin.qq.com/doc/oplatform/Third-party_Platforms/2.0/product/weapp_wxverify.html",
+      "authority": "wechat-official",
+      "volatility": "critical",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["service-provider-certification", "personal-search-share", "certification-payment"]
+    },
+    {
+      "id": "wmp-upgraded-personal",
+      "title": "个人升级版小程序能力介绍",
+      "url": "https://developers.weixin.qq.com/doc/oplatform/Third-party_Platforms/2.0/product/Register_Mini_Programs/fastregistertransactionweapp.html",
+      "authority": "wechat-official",
+      "volatility": "critical",
+      "checked_at": "2026-07-12",
+      "last_modified": "Fri, 10 Jul 2026 11:01:54 GMT",
+      "use_for": ["upgraded-personal", "service-provider", "transactions", "special-merchant"]
+    },
+    {
+      "id": "wmp-fast-category-reference",
+      "title": "快速创建小程序接口-类目参考表",
+      "url": "https://developers.weixin.qq.com/doc/oplatform/Third-party_Platforms/2.0/product/Register_Mini_Programs/Category_Reference_Table.html",
+      "authority": "wechat-official",
+      "volatility": "stale-warning",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "page_self_reported_date": "2023-07-25",
+      "use_for": ["historical-category-leads-only"]
+    },
+    {
+      "id": "wechat-pay-miniapp",
+      "title": "小程序 - 微信支付接入指引",
+      "url": "https://pay.weixin.qq.com/static/applyment_guide/applyment_detail_miniapp.shtml",
+      "authority": "wechat-pay-official",
+      "volatility": "critical",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["standard-payment", "merchant-materials", "fees"]
+    },
+    {
+      "id": "wmp-virtual-payment",
+      "title": "虚拟支付",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/platform-capabilities/business-capabilities/virtual-payment.html",
+      "authority": "wechat-official",
+      "volatility": "critical",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["virtual-goods", "virtual-payment", "ios", "merchant-opening"]
+    },
+    {
+      "id": "wechat-ads-traffic-owner",
+      "title": "小程序流量主开通流程",
+      "url": "https://ad.weixin.qq.com/docs/50",
+      "authority": "wechat-ads-official",
+      "volatility": "high",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["ads", "traffic-owner", "uv-threshold"]
+    },
+    {
+      "id": "wmp-privacy-authorize",
+      "title": "小程序隐私协议开发指南",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/framework/user-privacy/PrivacyAuthorize.html",
+      "authority": "wechat-official",
+      "volatility": "high",
+      "checked_at": "2026-07-12",
+      "last_modified": "Fri, 10 Jul 2026 11:13:01 GMT",
+      "use_for": ["privacy-consent", "privacy-api", "official-dialog"]
+    },
+    {
+      "id": "wmp-login",
+      "title": "小程序登录",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/login.html",
+      "authority": "wechat-official",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["login", "code2session", "session-key"]
+    },
+    {
+      "id": "wmp-user-profile",
+      "title": "头像昵称填写",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/userProfile.html",
+      "authority": "wechat-official",
+      "volatility": "high",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["avatar", "nickname", "content-safety"]
+    },
+    {
+      "id": "wmp-phone-number",
+      "title": "手机号快速验证组件",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/getPhoneNumber.html",
+      "authority": "wechat-official",
+      "volatility": "critical",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["phone-number", "subject-restriction", "pricing"]
+    },
+    {
+      "id": "wmp-web-view",
+      "title": "web-view",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/component/web-view.html",
+      "authority": "wechat-official",
+      "volatility": "critical",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["web-view", "personal-subject-restriction", "business-domain"]
+    },
+    {
+      "id": "wmp-network",
+      "title": "基础能力 / 网络 / 使用说明",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/framework/ability/network.html",
+      "authority": "wechat-official",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["domains", "https", "tls", "timeouts", "appsecret"]
+    },
+    {
+      "id": "wmp-security-risk",
+      "title": "常见风险及处理建议",
+      "url": "https://developers.weixin.qq.com/miniprogram/security/basic/risk.html",
+      "authority": "wechat-official",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": "Fri, 10 Jul 2026 11:17:21 GMT",
+      "use_for": ["authorization", "secrets", "injection", "uploads", "race-conditions"]
+    },
+    {
+      "id": "wmp-content-security",
+      "title": "内容安全解决方案",
+      "url": "https://developers.weixin.qq.com/miniprogram/security/content/security.html",
+      "authority": "wechat-official",
+      "volatility": "high",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["ugc", "text-check", "media-check", "human-review"]
+    },
+    {
+      "id": "wmp-performance-package",
+      "title": "代码包体积优化",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/framework/performance/tips/start_optimizeA.html",
+      "authority": "wechat-official",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["package-size", "subpackages", "lazy-loading", "resources"]
+    },
+    {
+      "id": "wmp-performance-setdata",
+      "title": "合理使用 setData",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/framework/performance/tips/runtime_setData.html",
+      "authority": "wechat-official",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": "Fri, 10 Jul 2026 11:12:54 GMT",
+      "use_for": ["setdata", "runtime-performance"]
+    },
+    {
+      "id": "wmp-compatibility",
+      "title": "兼容",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/framework/compatibility.html",
+      "authority": "wechat-official",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["base-library", "can-i-use", "fallback"]
+    },
+    {
+      "id": "wmp-update",
+      "title": "小程序更新机制",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/framework/runtime/update-mechanism.html",
+      "authority": "wechat-official",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["update-manager", "minimum-version", "rollout"]
+    },
+    {
+      "id": "wmp-design",
+      "title": "微信小程序设计指南",
+      "url": "https://developers.weixin.qq.com/miniprogram/design/",
+      "authority": "wechat-official",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["navigation", "feedback", "ui", "accessibility"]
+    },
+    {
+      "id": "wmp-automator",
+      "title": "小程序自动化",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/devtools/auto/",
+      "authority": "wechat-official",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["automation", "testing"]
+    },
+    {
+      "id": "wmp-ci",
+      "title": "miniprogram-ci",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/devtools/ci.html",
+      "authority": "wechat-official",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["ci", "preview", "upload", "private-key"]
+    },
+    {
+      "id": "wmp-cloudbase",
+      "title": "微信云开发介绍",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/wxcloudservice/wxcloud/basis/getting-started.html",
+      "authority": "wechat-official",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["cloudbase", "database", "storage", "cloud-functions"]
+    },
+    {
+      "id": "wmp-subject-change-conditions",
+      "title": "小程序主体变更条件",
+      "url": "https://kf.qq.com/faq/180831FBfE32180831UBr6Vn.html",
+      "authority": "tencent-customer-service",
+      "volatility": "critical",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["subject-change", "target-subject", "payment-advertising-blockers"]
+    },
+    {
+      "id": "wmp-subject-change-overview",
+      "title": "小程序主体变更介绍",
+      "url": "https://kf.qq.com/faq/180914RZVjyE180914YjMvAF.html",
+      "authority": "tencent-customer-service",
+      "volatility": "critical",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["subject-change", "category-reset", "merchant-unbinding", "post-change-review"]
+    },
+    {
+      "id": "wmp-phone-number-realtime",
+      "title": "手机号实时验证组件",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/framework/open-ability/getRealtimePhoneNumber.html",
+      "authority": "wechat-official",
+      "volatility": "critical",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["phone-number", "realtime-verification", "subject-restriction"]
+    },
+    {
+      "id": "wmp-content-msg-sec-check",
+      "title": "msgSecCheck 文本内容安全",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/server/API/sec-center/sec-check/api_msgseccheck",
+      "authority": "wechat-official",
+      "volatility": "high",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["ugc", "text-content-safety", "server-api"]
+    },
+    {
+      "id": "wmp-content-media-check",
+      "title": "mediaCheckAsync 多媒体内容安全",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/server/API/sec-center/sec-check/api_mediacheckasync",
+      "authority": "wechat-official",
+      "volatility": "high",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["ugc", "media-content-safety", "async-callback"]
+    },
+    {
+      "id": "wmp-subpackages",
+      "title": "分包加载",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/framework/subpackages.html",
+      "authority": "wechat-official",
+      "volatility": "high",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["package-size", "subpackage", "service-provider-package-limit"]
+    },
+    {
+      "id": "wmp-cloudbase-pricing",
+      "title": "微信云开发计费说明",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/wxcloudservice/wxcloud/billing/price.html",
+      "authority": "wechat-official",
+      "volatility": "critical",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["cloudbase-pricing", "free-trial", "quota", "expiration"]
+    },
+    {
+      "id": "wmp-cloudbase-database-permission",
+      "title": "云开发数据库权限控制",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/wxcloudservice/wxcloud/guide/database/permission.html",
+      "authority": "wechat-official",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["cloudbase", "database-permission", "server-privilege"]
+    },
+    {
+      "id": "wmp-cloudbase-database-rules",
+      "title": "云开发数据库安全规则",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/wxcloudservice/wxcloud/guide/database/security-rules.html",
+      "authority": "wechat-official",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["cloudbase", "database-security-rules", "authorization"]
+    },
+    {
+      "id": "wmp-cloudbase-storage-rules",
+      "title": "云开发存储安全规则",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/wxcloudservice/wxcloud/guide/storage/security-rules.html",
+      "authority": "wechat-official",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["cloudbase", "storage-security-rules", "private-files"]
+    },
+    {
+      "id": "wmp-cloudbase-function-rules",
+      "title": "云开发云函数安全规则",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/wxcloudservice/wxcloud/guide/functions/security-rules.html",
+      "authority": "wechat-official",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["cloudbase", "function-security-rules", "authorization"]
+    },
+    {
+      "id": "wechat-ads-personal-settlement",
+      "title": "流量主结算规则",
+      "url": "https://kf.qq.com/faq/161222jMVJfA161222YB3EZ7.html",
+      "authority": "tencent-customer-service",
+      "volatility": "critical",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["traffic-owner", "personal-settlement", "invoice", "withholding"]
+    },
+    {
+      "id": "china-tax-platform-worker-2025-16",
+      "title": "国家税务总局关于互联网平台企业报送涉税信息有关事项的公告",
+      "url": "https://fgk.chinatax.gov.cn/zcfgk/c100012/c5241472/content.html",
+      "authority": "government",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["platform-tax", "income-reporting", "withholding"]
+    },
+    {
+      "id": "china-personal-information-protection-law",
+      "title": "中华人民共和国个人信息保护法",
+      "url": "http://www.npc.gov.cn/npc/c2/c30834/202108/t20210820_313088.html",
+      "authority": "government",
+      "volatility": "low",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["personal-information", "sensitive-information", "user-rights", "security"]
+    },
+    {
+      "id": "china-ecommerce-law",
+      "title": "中华人民共和国电子商务法",
+      "url": "http://www.npc.gov.cn/zgrdw/npc/xinwen/2018-08/31/content_2060172.htm",
+      "authority": "government",
+      "volatility": "low",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["business-registration", "license-exemption", "administrative-license", "personal-upgraded"]
+    },
+    {
+      "id": "china-generative-ai-interim-measures",
+      "title": "生成式人工智能服务管理暂行办法",
+      "url": "https://www.cac.gov.cn/2023-07/13/c_1690898327029107.htm",
+      "authority": "government",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["generative-ai", "public-service", "content-safety", "algorithm-filing", "complaints"]
+    },
+    {
+      "id": "china-aigc-labeling-measures",
+      "title": "人工智能生成合成内容标识办法",
+      "url": "https://www.cac.gov.cn/2025-03/14/c_1743654684782215.htm",
+      "authority": "government",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "effective_date": "2025-09-01",
+      "use_for": ["aigc-labeling", "explicit-label", "implicit-label", "export", "distribution"]
+    },
+    {
+      "id": "wmp-development-framework",
+      "title": "微信小程序开发指南",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/framework/",
+      "authority": "wechat-official",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["development-index", "framework", "components", "api"]
+    },
+    {
+      "id": "wmp-privacy-guide-index",
+      "title": "用户隐私保护指引填写说明",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/framework/user-privacy/index",
+      "authority": "wechat-official",
+      "volatility": "high",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["privacy-guide", "backend-declaration", "user-rights"]
+    },
+    {
+      "id": "wmp-privacy-data-map",
+      "title": "隐私保护指引内容介绍",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/framework/user-privacy/miniprogram-intro",
+      "authority": "wechat-official",
+      "volatility": "high",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["privacy-api-map", "personal-information-types", "required-private-infos"]
+    },
+    {
+      "id": "wmp-performance-overview",
+      "title": "小程序性能与体验",
+      "url": "https://developers.weixin.qq.com/miniprogram/dev/framework/performance/",
+      "authority": "wechat-official",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["performance", "startup", "runtime", "diagnostics"]
+    },
+    {
+      "id": "wmp-accessibility",
+      "title": "微信小程序无障碍设计指南",
+      "url": "https://developers.weixin.qq.com/miniprogram/design/accessibility.html",
+      "authority": "wechat-official",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["accessibility", "screen-reader", "inclusive-design"]
+    },
+    {
+      "id": "wmp-elderly-design",
+      "title": "微信小程序适老化设计指南",
+      "url": "https://developers.weixin.qq.com/miniprogram/design/elderly.html",
+      "authority": "wechat-official",
+      "volatility": "medium",
+      "checked_at": "2026-07-12",
+      "last_modified": null,
+      "use_for": ["elderly", "font-size", "touch-target", "adaptive-layout"]
+    }
+  ]
+}
