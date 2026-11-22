@@ -1,0 +1,36 @@
+.shelf-card {
+  border-left: 6rpx solid #6f947e;
+  padding: 22rpx 24rpx 16rpx;
+}
+
+.shelf-open {
+  display: block;
+}
+
+.shelf-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16rpx;
+  padding-top: 14rpx;
+  border-top: 1rpx solid #efe6da;
+}
+
+.shelf-open-hint {
+  font-size: 25rpx;
+  font-weight: 600;
+  color: #376052;
+}
+
+.shelf-remove-btn,
+button.plain-button.shelf-remove-btn:not([size='mini']) {
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: 6rpx 16rpx;
+  font-size: 24rpx;
+  line-height: 1.4;
+  color: #7b6658;
+  background: #f6efe6;
+  border-radius: 999rpx;
+}

@@ -19,12 +19,20 @@
       <view class="description">{{kind === 'saved' ? '在资料详情点收藏，方便下次接着读。' : '打开过的资料会显示在这里。'}}</view>
       <navigator class="text-link" url="/pages/library/library" open-type="switchTab">去资料库看看</navigator>
     </view>
-    <view wx:for="{{items}}" wx:key="name" class="card">
-      <button class="plain-button" data-name="{{item.name}}" bindtap="openDetail">
-        <view class="title">{{item.title}}</view>
-        <view class="muted">{{item.materialLabel}} · {{item.sourceName}}</view>
+    <view wx:for="{{items}}" wx:key="name" class="card shelf-card">
+      <button class="plain-button shelf-open" data-name="{{item.name}}" bindtap="openDetail" hover-class="pressed">
+        <view class="badge-row">
+          <text class="badge badge-{{item.materialTone || 'sage'}}">{{item.materialLabel}}</text>
+          <text class="muted clamp-1">{{item.sourceName}}</text>
+          <text wx:if="{{item.entryLabel}}" class="badge badge-outline badge-right">{{item.entryLabel}}</text>
+        </view>
+        <view class="resource-card-title clamp-2">{{item.title}}</view>
+        <view wx:if="{{item.intro}}" class="resource-card-intro clamp-2">{{item.intro}}</view>
       </button>
-      <button class="plain-button shelf-remove" data-name="{{item.name}}" bindtap="remove">{{kind === 'saved' ? '取消收藏' : '移除记录'}}</button>
+      <view class="shelf-foot">
+        <text class="shelf-open-hint" data-name="{{item.name}}" bindtap="openDetail">继续阅读 ›</text>
+        <button class="plain-button shelf-remove-btn" data-name="{{item.name}}" bindtap="remove">{{kind === 'saved' ? '取消收藏' : '移除记录'}}</button>
+      </view>
     </view>
     <template is="pagination" data="{{page, hasNext, loading}}" />
   </block>

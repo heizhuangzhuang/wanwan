@@ -21,9 +21,9 @@
 .home-phase { display: inline-block; color: #285143; font-size: 25rpx; font-weight: 600; padding: 6rpx 10rpx; }
 
 .home-phase-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12rpx; margin-top: 12rpx; }
-.phase-pick-btn { width: 100%; box-sizing: border-box; margin: 0; padding: 18rpx 14rpx; font-size: 26rpx; font-weight: 600; color: #264a3b; background: #f3f7f4; border: 1rpx solid #cfe0d3; border-radius: 16rpx; line-height: 1.3; }
+.phase-pick-btn, button.phase-pick-btn:not([size='mini']) { width: 100%; max-width: none; box-sizing: border-box; margin: 0; padding: 18rpx 14rpx; font-size: 26rpx; font-weight: 600; color: #264a3b; background: #f3f7f4; border: 1rpx solid #cfe0d3; border-radius: 16rpx; line-height: 1.3; }
 .phase-pick-btn::after { border: 0; }
-.phase-pick-start { width: 100%; margin-top: 14rpx; background: #fff6e9; border-color: #ebd3b0; color: #7a4f13; }
+.phase-pick-start, button.phase-pick-start:not([size='mini']) { width: 100%; margin: 14rpx 0 0; background: #fff6e9; border-color: #ebd3b0; color: #7a4f13; }
 
 .home-task-active .tab-row-title { margin: 4rpx 0 8rpx; }
 .home-action { display: flex; align-items: center; justify-content: center; width: 100%; box-sizing: border-box; margin: 18rpx 0 0; padding: 0 20rpx; text-align: center; }
@@ -43,4 +43,4 @@
 .home-stage .icon-tile { width: 60rpx; height: 60rpx; }
 .home-stage .icon-tile image { width: 32rpx; height: 32rpx; }
 .home-sync { color: #5a6358; display: flex; align-items: center; gap: 12rpx; font-size: 23rpx; margin-top: 10rpx; }
-.home-sync-retry { flex: none; background: transparent; color: #285143; font-size: 24rpx; margin: 0; padding: 0 10rpx; }
+.home-sync-retry, button.home-sync-retry:not([size='mini']) { flex: none; width: auto; max-width: none; background: transparent; color: #285143; font-size: 24rpx; margin: 0; padding: 0 10rpx; }
