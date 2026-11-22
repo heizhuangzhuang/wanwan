@@ -3,15 +3,30 @@ import { renderFeedback } from './feedback.js'
 import type { BackendClient, PageResult, PostSummary, ResourceView, StageView } from './api.js'
 import { braceScript, braceScriptHash, renderBraceDashboard } from './brace-dashboard.js'
 import type { WebConfig } from './config.js'
-import { appointmentScript, prenatalPaths, renderPrenatal, renderTools, searchPrenatalGuides } from './tools.js'
+import {
+  listStageGuides,
+  renderChannels,
+  renderPrenatalBanner,
+  renderPreparation,
+  renderStageToolsSection,
+} from './guides.js'
+import {
+  appointmentScript,
+  pageActionsHash,
+  pageActionsScript,
+  prenatalPaths,
+  renderPrenatal,
+  renderTools,
+  searchPrenatalGuides,
+} from './tools.js'
 import {
   accessLabel,
   escapeHtml,
   materialLabel,
+  preparePostContent,
   renderCard,
   renderLayout,
   safeHttpUrl,
-  sanitizePostHtml,
 } from './html.js'
 
 const LOGO_PNG = readFileSync(new URL('../public/logo.png', import.meta.url))
@@ -71,9 +86,10 @@ function renderStageGrid(stages: StageView[], basePath: string): string {
 function renderHome(config: WebConfig, stages: StageView[], topics: string, recent: string, posts: string) {
   const base = config.siteBasePath
   const tools = [
-    ['/tools/brace-followup', '矫正鞋穿戴记录', '计时、补记，按周或按年回看。', 'green'],
-    ['/tools#cast', '石膏记录', '记录每次治疗，在微信查看复诊提醒。', 'yellow'],
-    ['/prenatal', '产前检查与清单', '查找检查介绍，整理就诊问题。', 'linen'],
+    ['/tools/brace-followup', '矫正鞋穿戴记录', '计时、补记、困难观察与复诊摘要。', 'green'],
+    ['/tools/preparation', '就诊沟通清单', '按阶段勾选想问医生的问题并一键复制。', 'yellow'],
+    ['/prenatal', '产前检查专项', '超声、无创、羊穿、CMA 与全外显。', 'linen'],
+    ['/channels', '找医生与家长经验', '查医院官方渠道、产前与小儿骨科搜索词。', 'green'],
   ]
   return renderLayout(config, null, `
 <section class="home-hero" aria-labelledby="home-title">
@@ -132,6 +148,36 @@ function renderFilterBar(basePath: string, selectedType: string, extraQuery = ''
     const cls = selectedType === t.key ? ' class="active" aria-current="true"' : ''
     return `<a href="${escapeHtml(href)}"${cls}>${t.label}</a>`
   }).join('')}</div>`
+}
+
+function renderStageFilterBar(basePath: string, selectedStage: string, extraQuery = ''): string {
+  const items = [
+    { key: '', label: '全部阶段' },
+    ...listStageGuides().map(s => ({ key: s.key, label: s.shortLabel })),
+  ]
+  return `<nav class="filter-bar stage-filter-bar" aria-label="按阶段筛选">${items.map((s) => {
+    const params = new URLSearchParams(extraQuery)
+    if (s.key) params.set('stage', s.key)
+    else params.delete('stage')
+    const qs = params.toString()
+    const href = qs ? `${basePath}?${qs}` : basePath
+    const cls = selectedStage === s.key ? ' class="active" aria-current="true"' : ''
+    return `<a href="${escapeHtml(href)}"${cls}>${escapeHtml(s.label)}</a>`
+  }).join('')}</nav>`
+}
+
+async function collectAllPages<T>(
+  fetchPage: (page: number, size: number) => Promise<PageResult<T>>,
+  maxPages = 10,
+  pageSize = 50,
+): Promise<T[]> {
+  const all: T[] = []
+  for (let page = 1; page <= maxPages; page++) {
+    const res = await fetchPage(page, pageSize)
+    all.push(...res.items)
+    if (res.items.length < pageSize || all.length >= res.total) break
+  }
+  return all
 }
 
 function renderPagination<T>(path: string, result: PageResult<T>, query: URLSearchParams) {
@@ -199,10 +245,21 @@ function renderResourceDetail(r: ResourceView, config: WebConfig): string {
   const attachmentLink = downloadUrl?.startsWith('https://') && r.attachment
     ? `<p class="meta-row"><a href="${escapeHtml(downloadUrl)}" target="_blank" rel="noopener noreferrer">下载附件 · ${escapeHtml(r.attachment.fileName)}</a></p>`
     : ''
-  const originBtn =
-    r.linkStatus === 'OK' && originUrl
-      ? `<div style="margin-top:14px"><a class="btn" href="${escapeHtml(originUrl)}" target="_blank" rel="noopener noreferrer">前往原站阅读（${escapeHtml(r.sourceName)}）</a></div>`
-      : ''
+  const citationParts = [
+    r.title,
+    `来源：${r.sourceName}`,
+    r.author ? `作者/机构：${r.author}` : '',
+    citationUrl ? `链接：${citationUrl}` : '',
+    r.doi ? `DOI：${r.doi}` : '',
+    r.pmid ? `PMID：${r.pmid}` : '',
+  ].filter(Boolean)
+  const citationText = citationParts.join('\n')
+
+  const actionRow = `<div class="action-bar" style="margin-top:14px">
+    ${r.linkStatus === 'OK' && originUrl ? `<a class="btn" href="${escapeHtml(originUrl)}" target="_blank" rel="noopener noreferrer">前往原站阅读（${escapeHtml(r.sourceName)}）</a>` : ''}
+    <button class="btn btn-outline" type="button" data-copy-text="${escapeHtml(citationText)}" data-copy-ok="已复制原文出处信息，可粘贴查阅或发给家人。" data-status-id="resource-copy-status">复制原文出处</button>
+  </div>
+  <p id="resource-copy-status" class="action-status" role="status" aria-live="polite"></p>`
   const urlLine = citationUrl
     ? `<p class="meta-row" style="margin-top:10px;word-break:break-all"><span>原始出处链接：${escapeHtml(citationUrl)}</span></p>`
     : ''
@@ -226,11 +283,12 @@ function renderResourceDetail(r: ResourceView, config: WebConfig): string {
     ${r.storyContext ? `<span>经历背景：${escapeHtml(r.storyContext)}</span>` : ''}
   </div>
   ${statusNotice}
-  ${originBtn}
+  ${actionRow}
   ${attachmentLink}
   ${urlLine}
-  <p class="meta-row" style="margin-top:16px">发现来源失效、错误或版权问题？请查看<a href="${config.siteBasePath}/about?resource=${encodeURIComponent(r.name)}#feedback">提交勘误</a>。</p>
-</article>`
+  <p class="meta-row" style="margin-top:16px">发现来源失效、错误或版权问题？<a href="${config.siteBasePath}/feedback?category=ISSUE&amp;resource=${encodeURIComponent(r.name)}">提交勘误</a> · <a href="${config.siteBasePath}/about?resource=${encodeURIComponent(r.name)}#feedback">版权与撤回联系</a></p>
+</article>
+<script src="${config.siteBasePath}/tools/page-actions.js" integrity="${pageActionsHash}" defer></script>`
 }
 
 export async function handleRequest(
@@ -274,9 +332,26 @@ export async function handleRequest(
     return { status: 200, contentType: 'text/plain; charset=utf-8', body: 'ok' }
   }
 
-  if (path === '/feedback') return renderFeedback(config, { sent: url.searchParams.get('sent') === '1' })
+  if (path === '/feedback') {
+    return renderFeedback(config, {
+      sent: url.searchParams.get('sent') === '1',
+      category: (url.searchParams.get('category') || '').trim().toUpperCase() || undefined,
+      resource: (url.searchParams.get('resource') || '').trim().slice(0, 120) || undefined,
+    })
+  }
 
   if (path === '/tools') return { ...htmlResponse(200, renderTools(config)), toolsScript: true }
+
+  if (path === '/tools/preparation') {
+    const stageKey = (url.searchParams.get('stage') || '').trim().toUpperCase()
+    return { ...htmlResponse(200, renderPreparation(config, stageKey, pageActionsHash)), scriptHash: pageActionsHash }
+  }
+
+  if (path === '/channels') {
+    const channelType = (url.searchParams.get('type') || 'doctor').trim().toLowerCase()
+    const channelPeriod = (url.searchParams.get('period') || 'postnatal').trim().toLowerCase()
+    return { ...htmlResponse(200, renderChannels(config, channelType, channelPeriod, pageActionsHash)), scriptHash: pageActionsHash }
+  }
 
   if (path === '/tools/brace-followup') {
     return { ...htmlResponse(200, renderBraceDashboard(config)), scriptHash: braceScriptHash }
@@ -289,11 +364,17 @@ export async function handleRequest(
     return { status: 200, contentType: 'text/javascript; charset=utf-8', body: appointmentScript, cacheControl: 'public, max-age=3600' }
   }
 
+  if (path === '/tools/page-actions.js') {
+    return { status: 200, contentType: 'text/javascript; charset=utf-8', body: pageActionsScript, cacheControl: 'public, max-age=3600' }
+  }
+
   if (path === '/prenatal' || path.startsWith('/prenatal/')) {
     const key = path === '/prenatal' ? undefined : routeKey(path, '/prenatal/')
     if (key === '') return notFoundResponse(config)
-    const html = renderPrenatal(config, key)
-    return html ? htmlResponse(200, html) : notFoundResponse(config)
+    const prenatalQuery = key ? '' : (url.searchParams.get('q') || '')
+    const html = renderPrenatal(config, key, prenatalQuery)
+    if (!html) return notFoundResponse(config)
+    return key ? { ...htmlResponse(200, html), scriptHash: pageActionsHash } : htmlResponse(200, html)
   }
 
   if (path === '/downloads/clubfoot-ultrasound-checklist.pdf') {
@@ -332,14 +413,14 @@ export async function handleRequest(
   if (path === '/sitemap.xml') {
     const [stagesRes, resourcesRes, topicsRes, postsRes] = await Promise.allSettled([
       client.getStages(),
-      client.listResources({ page: 1, size: 100 }),
-      client.listTopics(1, 100),
-      client.listPosts(1, 100),
+      collectAllPages((p, s) => client.listResources({ page: p, size: s })),
+      collectAllPages((p, s) => client.listTopics(p, s)),
+      collectAllPages((p, s) => client.listPosts(p, s)),
     ])
     const stages = stagesRes.status === 'fulfilled' ? stagesRes.value : FIXED_STAGES
-    const resources = resourcesRes.status === 'fulfilled' ? resourcesRes.value.items : []
-    const topics = topicsRes.status === 'fulfilled' ? topicsRes.value.items : []
-    const posts = postsRes.status === 'fulfilled' ? postsRes.value.items : []
+    const resources = resourcesRes.status === 'fulfilled' ? resourcesRes.value : []
+    const topics = topicsRes.status === 'fulfilled' ? topicsRes.value : []
+    const posts = postsRes.status === 'fulfilled' ? postsRes.value : []
     const base = `${config.siteOrigin}${basePath}`
     const urls = [
       `${base}/`,
@@ -349,8 +430,10 @@ export async function handleRequest(
       `${base}/posts`,
       `${base}/about`,
       `${base}/tools`,
+      `${base}/tools/preparation`,
       `${base}/tools/brace-followup`,
-      ...prenatalPaths.map(path => base + path),
+      `${base}/channels`,
+      ...prenatalPaths.map(itemPath => base + itemPath),
       ...stages.map((s) => `${base}/stages/${encodeURIComponent(s.key)}`),
       ...resources.map((r) => `${base}/resources/${encodeURIComponent(r.name)}`),
       ...topics.map((t) => `${base}/topics/${encodeURIComponent(t.name)}`),
@@ -422,9 +505,10 @@ export async function handleRequest(
       ? `<section class="stage-guides"><h2>这一阶段的原创导读</h2><div class="card-list">${posts.items.map(guide => renderGuideCard(guide, basePath, 'h3')).join('')}</div>
 ${posts.total > posts.items.length ? `<a href="${basePath}/posts?stage=${encodeURIComponent(stage.key)}">查看本阶段全部导读</a>` : ''}</section>`
       : ''
+    const stageToolsHtml = renderStageToolsSection(stage.key, basePath)
     if (!list) {
       return htmlResponse(200, renderPage(stage.label,
-        `<h1>${escapeHtml(stage.label)}</h1>${stageGuides}${renderUnavailableResources(basePath)}`,
+        `<h1>${escapeHtml(stage.label)}</h1>${stageToolsHtml}${stageGuides}${renderUnavailableResources(basePath)}`,
       ))
     }
     const cards = list.items.length
@@ -434,6 +518,7 @@ ${posts.total > posts.items.length ? `<a href="${basePath}/posts?stage=${encodeU
       200,
       renderPage(stage.label,
         `<h1>${escapeHtml(stage.label)}</h1>
+${stageToolsHtml}
 <p class="notice-bar">以下为手动核对后收录的公开资料。按编辑推荐阅读顺序排列，不构成个体医学建议。</p>
 ${stageGuides}
 <h2>这一阶段的资料卡</h2>
@@ -455,13 +540,18 @@ ${cards}${renderPagination(stagePath, list, query)}`,
       page,
       size: 20,
     })
+    const showPrenatalBanner = !stageFilter || stageFilter === 'JUST_FOUND' || stageFilter === 'PRENATAL'
     const cards = list.items.length
       ? `<div class="card-list">${list.items.map((item) => renderCard(item, config)).join('')}</div>`
       : '<div class="warn-bar">暂无符合条件的已公开资料。</div>'
     return htmlResponse(
       200,
       renderPage('资料库',
-        `<h1>资料库</h1>${renderFilterBar(`${basePath}/resources`, selectedType, query.toString())}${cards}${renderPagination(`${basePath}/resources`, list, query)}`,
+        `<h1>资料库</h1>
+${renderStageFilterBar(`${basePath}/resources`, stageFilter, query.toString())}
+${showPrenatalBanner ? renderPrenatalBanner(basePath) : ''}
+${renderFilterBar(`${basePath}/resources`, selectedType, query.toString())}
+${cards}${renderPagination(`${basePath}/resources`, list, query)}`,
       ),
     )
   }
@@ -472,7 +562,7 @@ ${cards}${renderPagination(stagePath, list, query)}`,
     const r = await client.getResource(name)
     if (!r) return notFoundResponse(config)
     const related = await renderRelated(r, client, config)
-    return htmlResponse(200, renderPage(r.title, renderResourceDetail(r, config) + related))
+    return { ...htmlResponse(200, renderPage(r.title, renderResourceDetail(r, config) + related)), scriptHash: pageActionsHash }
   }
 
   if (path === '/topics') {
@@ -521,18 +611,31 @@ ${cards}${renderPagination(stagePath, list, query)}`,
     const post = await client.getPost(name)
     if (!post) return notFoundResponse(config)
     const dateLine = post.publishTime ? `<span>发布日期：${escapeHtml(post.publishTime.slice(0, 10))}</span>` : ''
-    return htmlResponse(
-      200,
-      renderPage(post.title,
-        `<p><a href="${basePath}/posts">← 返回原创导读</a></p>
+    const { html: proseHtml, toc, readingMinutes } = preparePostContent(post.content)
+    const tocHtml = toc.length >= 2
+      ? `<nav class="post-toc" aria-label="文章目录"><strong>本篇目录</strong><ol>${toc.map(item => `<li class="post-toc--${item.level}"><a href="#${item.id}">${escapeHtml(item.text)}</a></li>`).join('')}</ol></nav>`
+      : ''
+    return {
+      ...htmlResponse(
+        200,
+        renderPage(post.title,
+          `<p><a href="${basePath}/posts">← 返回原创导读</a></p>
 <article class="card post-prose">
-  <div class="meta-row"><span class="badge">本站原创导读</span>${post.author ? `<span>作者 ${escapeHtml(post.author)}</span>` : ''}${dateLine}</div>
+  <div class="meta-row"><span class="badge">本站原创导读</span><span>约 ${readingMinutes} 分钟阅读</span>${post.author ? `<span>作者 ${escapeHtml(post.author)}</span>` : ''}${dateLine}</div>
   <h1>${escapeHtml(post.title)}</h1>
+  <div class="action-bar" style="margin:12px 0">
+    <button class="btn btn-outline" type="button" data-copy-url="current" data-copy-prefix="${escapeHtml(`小脚丫步步指南｜${post.title}`)}" data-copy-ok="已复制文章链接，可直接粘贴发给微信好友或家人。" data-status-id="post-share-status">复制文章链接分享给家人</button>
+  </div>
+  <p id="post-share-status" class="action-status" role="status" aria-live="polite"></p>
   <div class="notice-bar">本文为本站原创导读或使用说明，不替代门诊沟通与专业医学意见。</div>
-  <div class="prose-body">${sanitizePostHtml(post.content)}</div>
-</article>`,
+  ${tocHtml}
+  <div class="prose-body">${proseHtml}</div>
+</article>
+<script src="${basePath}/tools/page-actions.js" integrity="${pageActionsHash}" defer></script>`,
+        ),
       ),
-    )
+      scriptHash: pageActionsHash,
+    }
   }
 
   if (path === '/search') {
@@ -546,16 +649,19 @@ ${cards}${renderPagination(stagePath, list, query)}`,
     ])
     const unavailable = Boolean(keyword && !tooLong && !results)
     const submittedEmpty = !keyword && (url.searchParams.has('keyword') || Boolean(stageFilter) || Boolean(selectedType))
-    const prenatalMatches = keyword && !tooLong && !selectedType && (!stageFilter || stageFilter === 'PRENATAL' || stageFilter === 'JUST_FOUND')
+    const prenatalMatches = keyword && !tooLong && (!selectedType || selectedType === 'ORIGINAL') && (!stageFilter || stageFilter === 'PRENATAL' || stageFilter === 'JUST_FOUND')
       ? searchPrenatalGuides(keyword)
       : []
+    const prenatalHtml = prenatalMatches.length && page === 1
+      ? `<h2>产前检查专项</h2><p class="meta-row">共 ${prenatalMatches.length} 项（本地离线可用）</p><div class="card-list">${prenatalMatches.map(item => `<article class="card"><h3 class="card-title"><a href="${basePath}/prenatal/${encodeURIComponent(item.key)}">${escapeHtml(item.title)}</a></h3><p class="card-intro">${escapeHtml(item.summary)}</p></article>`).join('')}</div>`
+      : ''
     let resultHtml = ''
     if (tooLong) {
       resultHtml = '<div class="warn-bar">关键词超过 100 个字符限制，请缩短后重试。</div>'
     } else if (submittedEmpty) {
       resultHtml = `<div class="notice-bar">请输入关键词后再搜索，或直接前往<a href="${basePath}/resources">资料库</a>按类型和阶段浏览。</div>`
     } else if (unavailable) {
-      resultHtml = renderUnavailableResources(basePath)
+      resultHtml = renderUnavailableResources(basePath) + prenatalHtml
     } else if (results) {
       const guideItems = results.guideItems ?? []
       resultHtml = results.items.length
@@ -564,8 +670,8 @@ ${cards}${renderPagination(stagePath, list, query)}`,
       if (guideItems.length) {
         resultHtml += `<h2>本站原创导读</h2><p class="meta-row">共 ${results.guideTotal ?? guideItems.length} 篇</p><div class="card-list">${guideItems.map(guide => renderGuideCard(guide, basePath, 'h3')).join('')}</div>`
       }
-      if (prenatalMatches.length && page === 1) {
-        resultHtml += `<h2>产前检查专项</h2><p class="meta-row">共 ${prenatalMatches.length} 项</p><div class="card-list">${prenatalMatches.map(item => `<article class="card"><h3 class="card-title"><a href="${basePath}/prenatal/${encodeURIComponent(item.key)}">${escapeHtml(item.title)}</a></h3><p class="card-intro">${escapeHtml(item.summary)}</p></article>`).join('')}</div>`
+      if (prenatalHtml) {
+        resultHtml += prenatalHtml
       }
       if (!resultHtml) {
         resultHtml = `<div class="warn-bar">本页没有匹配「${escapeHtml(keyword)}」的已公开内容。可以更换关键词，或<a href="${basePath}/stages">按阶段浏览</a>。</div>`

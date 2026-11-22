@@ -1,7 +1,55 @@
 import { blankWearLog, chartWear, dailyWear, dateKey, dayBoundary, durationText, MAX_BACKUP_BYTES, MINUTE, normalizeWearLog,
-  parseBackup, parseLocalTime, PERIOD_OPTIONS, periodStart, planOn, recordId, serializeBackup, STATE_LABEL, summarizeWear,
-  timeKey, validDay, VISIT_TYPES, withPlan, type PeriodKey, type WearLog, type WearPlan } from '../../miniprogram/services/brace-ledger'
+  OBSERVATION_SIDES, OBSERVATION_TYPES, parseBackup, parseLocalTime, PERIOD_OPTIONS, periodStart, planOn, recordId, serializeBackup, STATE_LABEL, summarizeWear,
+  timeKey, validDay, VISIT_TYPES, withPlan, type PeriodKey, type WearLog, type WearObservation, type WearPlan } from '../../miniprogram/services/brace-ledger'
 import { wearWorkbook } from '../../miniprogram/services/brace-xlsx'
+
+function planLabel(plan?: WearPlan) {
+  return plan?.type === 'wear' ? durationText(plan.minutes! * MINUTE) :
+    plan?.type === 'followup' ? '仅随访' : '未设目标'
+}
+
+function followupSummary(log: WearLog, today: string, now = Date.now()) {
+  const lastVisit = log.visits.filter(row => row.kind === '复诊' && row.day <= today)
+    .sort((a, b) => b.day.localeCompare(a.day))[0]
+  const from = lastVisit?.day ?? dateKey(dayBoundary(today, -29))
+  const days = dailyWear(log, from, today, now)
+  const stats = summarizeWear(days)
+  const plans = log.plans.filter(plan => plan.day > from && plan.day <= today)
+    .map(plan => ({ day: plan.day, label: planLabel(plan) }))
+  const initialPlan = planLabel(planOn(log, from))
+  const adjustment = log.visits.filter(row => ['调整支具', '更换矫正鞋'].includes(row.kind) && row.day <= today)
+    .sort((a, b) => b.day.localeCompare(a.day))[0]
+  return {
+    from, today, fromVisit: Boolean(lastVisit), ...stats, total: days.length, unknown: days.length - stats.recorded,
+    average: stats.recorded ? durationText(Math.round(stats.minutes / stats.recorded) * MINUTE) : '暂无记录',
+    initialPlan, plans, adjustment: adjustment ? `${adjustment.day} ${adjustment.kind}${adjustment.note ? ' · ' + adjustment.note : ''}` : '暂无记录',
+  }
+}
+
+async function copyToClipboard(content: string): Promise<boolean> {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(content)
+      return true
+    } catch { /* fallback below */ }
+  }
+  try {
+    const area = document.createElement('textarea')
+    area.value = content
+    area.setAttribute('readonly', '')
+    area.style.position = 'fixed'
+    area.style.top = '-9999px'
+    area.style.left = '-9999px'
+    document.body.append(area)
+    area.focus()
+    area.select()
+    const ok = document.execCommand('copy')
+    area.remove()
+    return ok
+  } catch {
+    return false
+  }
+}
 
 const byId = <T extends HTMLElement = HTMLElement>(name: string): T => document.getElementById('brace-' + name) as T
 const value = (name: string) => byId<HTMLInputElement>(name).value
@@ -102,13 +150,39 @@ async function run() {
   date.value = day
   byId<HTMLInputElement>('plan-day').value = day
   byId<HTMLInputElement>('visit-day').value = day
+  const obsDayInput = document.getElementById('brace-obs-day') as HTMLInputElement | null
+  if (obsDayInput) {
+    obsDayInput.value = day
+    obsDayInput.max = day
+  }
   const range = () => ({ start: periodStart(log, period, day), end: day })
   const togglePlanInput = () => { byId('hours-label').hidden = value('plan-type') !== 'wear' }
   byId('plan-type').addEventListener('change', togglePlanInput)
 
+  function buildSummaryText(now: number): string {
+    const today = dateKey(now)
+    const s = followupSummary(log, today, now)
+    const recentObs = (log.observations ?? [])
+      .filter(o => o.day >= s.from && o.day <= today)
+      .sort((a, b) => b.day.localeCompare(a.day))
+    const savedQuestions = (log.questions ?? []).filter(Boolean)
+    const lines = [
+      `复诊摘要 ${s.from} 至 ${s.today}${s.fromVisit ? '（自上次复诊）' : '（近 30 天）'}`,
+      `记录覆盖 ${s.recorded}/${s.total} 天 · 有记录日均值 ${s.average}`,
+      `未记录 ${s.unknown} 天 · 低于目标 ${s.below} 天 · 确认未穿 ${s.zero} 天（低于目标及未穿仅统计已结束日期）`,
+      `期初目标 ${s.initialPlan}`,
+      ...s.plans.map(plan => `阶段变更 ${plan.day} ${plan.label}`),
+      `最近一次支具调整 ${s.adjustment}`,
+      ...recentObs.map(o => `穿戴观察 ${o.day} · ${o.kind}（${o.side}，${o.contacted ? '已联系团队' : '未记录联系'}）${o.outcome ? '：' + o.outcome : ''}`),
+      ...savedQuestions.map((q, idx) => `想问医生 ${idx + 1}：${q}`),
+    ]
+    return lines.join('\n')
+  }
+
   function renderToday(now: number) {
     const today = dateKey(now)
     date.max = today
+    if (obsDayInput) obsDayInput.max = today
     const current = planOn(log, today)
     const [todayWear] = dailyWear(log, today, today, now)
     text('today-total', todayWear.recordedMinutes === null ? '—' : durationText(todayWear.recordedMinutes * MINUTE))
@@ -198,14 +272,23 @@ async function run() {
       .map(row => ({ label: row.day + ' · ' + row.kind + (row.note ? ' · ' + row.note : ''), actions: [['删除', () => {
         if (window.confirm('删除这条随访记录？')) void commit({ ...log, visits: log.visits.filter(item => item.id !== row.id) }, '已删除。')
       }]] })), '暂无随访记录。')
-    const extraEl = document.getElementById('brace-extra')
-    if (extraEl) {
-      const obs = (log.observations ?? []).map(o => `${o.day} · ${o.kind}${o.side ? '（' + o.side + '）' : ''}${o.outcome ? '：' + o.outcome : ''}`)
-      const qs = (log.questions ?? []).filter(Boolean).map(q => '想问医生：' + q)
-      const combined = [...obs, ...qs]
-      extraEl.hidden = combined.length === 0
-      if (combined.length) list('extra-list', combined.map(label => ({ label })), '')
+    list('observations', (log.observations ?? []).slice().sort((a, b) => b.day.localeCompare(a.day))
+      .map(row => ({
+        label: `${row.day} · ${row.kind}（${row.side}）· ${row.contacted ? '已联系团队' : '待确认联系'}${row.outcome ? ' · ' + row.outcome : ''}`,
+        actions: [['删除', () => {
+          if (window.confirm('删除这条穿戴困难记录？')) {
+            void commit({ ...log, observations: (log.observations ?? []).filter(item => item.id !== row.id) }, '已删除穿戴观察。')
+          }
+        }]],
+      })), '暂无穿戴困难记录。')
+    const qForm = document.getElementById('brace-questions-form')
+    if (qForm && !qForm.contains(document.activeElement)) {
+      for (let i = 0; i < 3; i++) {
+        const input = document.getElementById('brace-q-' + i) as HTMLInputElement | null
+        if (input) input.value = log.questions?.[i] ?? ''
+      }
     }
+    text('summary-preview', buildSummaryText(now))
     const cancelTimerBtn = document.getElementById('brace-cancel-timer')
     if (cancelTimerBtn) cancelTimerBtn.hidden = log.activeStart === null
     list('sessions', log.sessions.filter(row => row.start < dayBoundary(end, 1) && row.end > dayBoundary(end))
@@ -371,10 +454,56 @@ async function run() {
       status(err instanceof Error && err.message ? `恢复失败：${err.message}` : '请选择本工具导出的有效 JSON 备份。')
     }
   })
+  document.querySelectorAll<HTMLButtonElement>('.brace-preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const hours = btn.dataset.presetHours
+      if (!hours) return
+      byId<HTMLSelectElement>('plan-type').value = 'wear'
+      togglePlanInput()
+      byId<HTMLInputElement>('plan-hours').value = hours
+      status(`已填入每日 ${hours} 小时，确认生效日期后点击「保存计划」。`)
+    })
+  })
+  byId('obs-form').addEventListener('submit', event => {
+    event.preventDefault()
+    const obsDay = value('obs-day')
+    const kind = OBSERVATION_TYPES.find(item => item === value('obs-kind'))
+    const side = OBSERVATION_SIDES.find(item => item === value('obs-side'))
+    if (!validDay(obsDay) || obsDay > dateKey(Date.now()) || !kind || !side) {
+      status('请选择不晚于今天的日期及困难类型。')
+      return
+    }
+    const contacted = byId<HTMLInputElement>('obs-contacted').checked
+    const outcome = value('obs-outcome').trim().slice(0, 200)
+    const row: WearObservation = { id: recordId(), day: obsDay, kind, side, contacted, outcome }
+    void commit({ ...log, observations: [...(log.observations ?? []), row] }, '已保存穿戴观察记录。').then(saved => {
+      if (saved) {
+        byId<HTMLInputElement>('obs-outcome').value = ''
+        byId<HTMLInputElement>('obs-contacted').checked = false
+      }
+    })
+  })
+  byId('questions-form').addEventListener('submit', event => {
+    event.preventDefault()
+    const questions = [0, 1, 2]
+      .map(i => value('q-' + i).trim().slice(0, 100))
+      .filter(Boolean)
+    void commit({ ...log, questions }, '已保存复诊问题，并同步到下方复诊摘要。')
+  })
+  click('copy-summary', () => {
+    const summaryText = buildSummaryText(Date.now())
+    void copyToClipboard(summaryText).then(ok => {
+      status(ok ? '已复制复诊摘要，可直接粘贴发给医生或家人。' : '复制失败，请长按上方摘要框手动复制。')
+    })
+  })
   render()
   byId<HTMLButtonElement>('timer').disabled = false
   byId<HTMLButtonElement>('add-session').disabled = false
-  setInterval(() => { if (log.activeStart !== null && !busy) renderToday(Date.now()) }, 15_000)
+  setInterval(() => {
+    if (busy) return
+    const now = Date.now()
+    if (log.activeStart !== null || date.max !== dateKey(now)) renderToday(now)
+  }, 15_000)
 }
 
 void run().catch(() => status('无法读取本浏览器的档案。请使用支持本地存储的浏览器。'))

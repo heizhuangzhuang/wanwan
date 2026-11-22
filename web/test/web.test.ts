@@ -388,9 +388,138 @@ describe('web security & SSR', () => {
     const res = await handleRequest('/sitemap.xml', mockClient(), config)
     assert.equal(res.status, 200)
     assert.ok(String(res.body).includes('https://wanwan.run/tools/brace-followup'))
+    assert.ok(String(res.body).includes('https://wanwan.run/tools/preparation'))
+    assert.ok(String(res.body).includes('https://wanwan.run/channels'))
 
     const search = await handleRequest('/search?keyword=%E7%BE%8A%E7%A9%BF', mockClient(), config)
     assert.equal(search.status, 200)
     assert.match(String(search.body), /\/prenatal\/amniocentesis/)
+  })
+
+  it('serves stage-aware preparation checklists and channels with SRI script hashes', async () => {
+    const subpath = loadConfig({ SITE_BASE_PATH: '/xiaojiaoya' })
+    const offline = createBackendClient('')
+
+    const genericPrep = await handleRequest('/xiaojiaoya/tools/preparation', offline, subpath)
+    assert.equal(genericPrep.status, 200)
+    assert.ok(genericPrep.scriptHash?.startsWith('sha256-'))
+    assert.match(String(genericPrep.body), /这次沟通需要带哪些资料/)
+    assert.match(String(genericPrep.body), /clubfoot-ultrasound-checklist\.pdf/)
+
+    const bracePrep = await handleRequest('/xiaojiaoya/tools/preparation?stage=BRACE_DAILY', offline, subpath)
+    assert.equal(bracePrep.status, 200)
+    assert.match(String(bracePrep.body), /支具与日常生活 · 就诊沟通清单/)
+    assert.match(String(bracePrep.body), /怎样确认脚跟在合适的位置/)
+    assert.doesNotMatch(String(bracePrep.body), /clubfoot-ultrasound-checklist\.pdf/)
+
+    const doctorChannels = await handleRequest('/xiaojiaoya/channels?type=doctor&period=prenatal', offline, subpath)
+    assert.equal(doctorChannels.status, 200)
+    assert.ok(doctorChannels.scriptHash?.startsWith('sha256-'))
+    const bodyStr = String(doctorChannels.body)
+    assert.ok(bodyStr.indexOf('产前诊断或胎儿医学门诊') < bodyStr.indexOf('按地区查小儿骨科医生'))
+
+    const socialChannels = await handleRequest('/xiaojiaoya/channels?type=social', offline, subpath)
+    assert.equal(socialChannels.status, 200)
+    assert.match(String(socialChannels.body), /小红书 · 家庭经验/)
+    assert.match(String(socialChannels.body), /复制搜索词/)
+
+    const js = await handleRequest('/xiaojiaoya/tools/page-actions.js', offline, subpath)
+    assert.equal(js.status, 200)
+    assert.match(js.contentType, /javascript/)
+  })
+
+  it('adds stage filter chips and stage-aware prenatal banner on /resources and tools on /stages/:key', async () => {
+    const allRes = await handleRequest('/resources', mockClient(), config)
+    assert.equal(allRes.status, 200)
+    assert.match(String(allRes.body), /孕期必查/)
+    assert.match(String(allRes.body), /stage=JUST_FOUND/)
+
+    const braceRes = await handleRequest('/resources?stage=BRACE_DAILY', mockClient(), config)
+    assert.equal(braceRes.status, 200)
+    assert.doesNotMatch(String(braceRes.body), /孕期必查/)
+
+    const stageRes = await handleRequest('/stages/JUST_FOUND', mockClient(), config)
+    assert.equal(stageRes.status, 200)
+    assert.match(String(stageRes.body), /本阶段常用工具与准备/)
+    assert.match(String(stageRes.body), /\/tools\/preparation\?stage=JUST_FOUND/)
+  })
+
+  it('matches all 6 prenatal guides by alias, supports /prenatal?q=, and returns offline matches on 503 search', async () => {
+    const offline = createBackendClient('')
+    for (const [q, expectedKey] of [
+      ['WES', 'exome'],
+      ['CMA', 'chromosome'],
+      ['无创', 'screening'],
+      ['遗传咨询', 'genetic-counseling'],
+    ]) {
+      const res = await handleRequest(`/prenatal?q=${encodeURIComponent(q)}`, offline, config)
+      assert.equal(res.status, 200)
+      assert.match(String(res.body), new RegExp(`/prenatal/${expectedKey}`))
+    }
+
+    const detail = await handleRequest('/prenatal/exome', offline, config)
+    assert.equal(detail.status, 200)
+    assert.ok(detail.scriptHash?.startsWith('sha256-'))
+    assert.match(String(detail.body), /复制可以问医生的问题/)
+
+    const failingClient = mockClient()
+    failingClient.search = async () => { throw new Error('down') }
+    const search503 = await handleRequest('/search?keyword=全外显', failingClient, config)
+    assert.equal(search503.status, 503)
+    assert.match(String(search503.body), /\/prenatal\/exome/)
+  })
+
+  it('generates TOC anchors & share action on /posts/:name, copy citation on /resources/:name, and pre-fills /feedback', async () => {
+    const client = mockClient()
+    client.getPost = async () => ({
+      name: 'p1',
+      title: '测试长文',
+      content: '<h2>第一章 背景</h2><p>正文内容一。</p><h3>1.1 小节</h3><p>正文内容二。</p><h2>第二章 准备</h2><p>正文内容三。</p>',
+    })
+    const postRes = await handleRequest('/posts/p1', client, config)
+    assert.equal(postRes.status, 200)
+    assert.ok(postRes.scriptHash?.startsWith('sha256-'))
+    assert.match(String(postRes.body), /本篇目录/)
+    assert.match(String(postRes.body), /href="#sec-1">第一章 背景/)
+    assert.match(String(postRes.body), /<h2 id="sec-1">第一章 背景<\/h2>/)
+    assert.match(String(postRes.body), /约 1 分钟阅读/)
+    assert.match(String(postRes.body), /复制文章链接分享给家人/)
+
+    const resDetail = await handleRequest('/resources/r1', client, config)
+    assert.equal(resDetail.status, 200)
+    assert.ok(resDetail.scriptHash?.startsWith('sha256-'))
+    assert.match(String(resDetail.body), /复制原文出处/)
+    assert.match(String(resDetail.body), /\/feedback\?category=ISSUE&amp;resource=r1/)
+
+    const prefilled = await handleRequest('/feedback?category=ISSUE&resource=r1', client, config)
+    assert.equal(prefilled.status, 200)
+    assert.match(String(prefilled.body), /value="ISSUE" selected/)
+    assert.match(String(prefilled.body), /关于资料「r1」的反馈：/)
+  })
+
+  it('paginates sitemap resources in batches of 50 without truncating', async () => {
+    const client = mockClient()
+    const seenPages: number[] = []
+    client.listResources = async params => {
+      seenPages.push(params.page ?? 1)
+      if (params.page === 1) {
+        return {
+          page: 1,
+          size: 50,
+          total: 52,
+          items: Array.from({ length: 50 }, (_, i) => mockResource({ name: `r-${i + 1}` })),
+        }
+      }
+      return {
+        page: 2,
+        size: 50,
+        total: 52,
+        items: [mockResource({ name: 'r-51' }), mockResource({ name: 'r-52' })],
+      }
+    }
+    const sitemap = await handleRequest('/sitemap.xml', client, config)
+    assert.equal(sitemap.status, 200)
+    assert.deepEqual(seenPages, [1, 2])
+    assert.ok(String(sitemap.body).includes('https://wanwan.run/resources/r-52'))
   })
 })

@@ -81,6 +81,13 @@ export function renderBraceDashboard(config: WebConfig): string {
       </section>
       <section class="brace-panel" aria-labelledby="brace-plan-title">
         <h3 id="brace-plan-title">阶段计划</h3><p>按医生交代填写，每次变更从所选日期生效。</p>
+        <div class="brace-presets" role="group" aria-label="Ponseti 常用目标时长">
+          <span>常用目标：</span>
+          <button class="btn btn-outline brace-preset-btn" type="button" data-preset-hours="23">23 小时</button>
+          <button class="btn btn-outline brace-preset-btn" type="button" data-preset-hours="16">16 小时</button>
+          <button class="btn btn-outline brace-preset-btn" type="button" data-preset-hours="14">14 小时</button>
+          <button class="btn btn-outline brace-preset-btn" type="button" data-preset-hours="12">12 小时</button>
+        </div>
         <form id="brace-plan-form">
           <label>生效日期<input required id="brace-plan-day" type="date"></label>
           <label>阶段<select id="brace-plan-type"><option value="wear">有穿戴目标</option><option value="followup">仅随访</option><option value="unset">未设目标</option></select></label>
@@ -96,16 +103,43 @@ export function renderBraceDashboard(config: WebConfig): string {
           <label class="brace-full-width">备注<input id="brace-visit-note" maxlength="200"></label><button class="btn" type="submit">加记录</button></form>
         <ul id="brace-visits"></ul>
       </section>
-      <section class="brace-panel" id="brace-export" aria-labelledby="brace-export-title">
+      <section class="brace-panel" id="brace-observations-panel" aria-labelledby="brace-obs-title">
+        <h3 id="brace-obs-title">穿戴困难与观察</h3>
+        <p>记录滑脚、磨红、支具异常等情况，复诊时方便与医生核对，备份与微信小程序互通。</p>
+        <form id="brace-obs-form">
+          <label>日期<input required id="brace-obs-day" type="date"></label>
+          <label>困难类型<select id="brace-obs-kind"><option>脚跟易滑出</option><option>皮肤不适</option><option>支具损坏</option><option>穿戴不适应</option><option>其他困难</option></select></label>
+          <label>侧别<select id="brace-obs-side"><option>未记录</option><option>左侧</option><option>右侧</option><option>双侧</option></select></label>
+          <label class="brace-checkbox-row"><input id="brace-obs-contacted" type="checkbox"><span>已联系治疗团队</span></label>
+          <label class="brace-full-width">情况与处置备注<input id="brace-obs-outcome" maxlength="200" placeholder="例如：已调整鞋带松紧 / 预约复查"></label>
+          <button class="btn" type="submit">记录观察</button>
+        </form>
+        <ul id="brace-observations"></ul>
+      </section>
+      <section class="brace-panel" id="brace-questions-panel" aria-labelledby="brace-questions-title">
+        <h3 id="brace-questions-title">复诊想问医生的问题</h3>
+        <p>最多保存 3 条，会自动带入下方复诊摘要。</p>
+        <form id="brace-questions-form" class="brace-questions-form">
+          <label class="brace-full-width">问题 1<input id="brace-q-0" maxlength="100" placeholder="例如：最近脚跟偶尔滑出，鞋码是否需要调整？"></label>
+          <label class="brace-full-width">问题 2<input id="brace-q-1" maxlength="100" placeholder="例如：下一阶段每天穿戴时长何时调整？"></label>
+          <label class="brace-full-width">问题 3<input id="brace-q-2" maxlength="100" placeholder="例如：复诊是否需要带齐连杆和鞋子？"></label>
+          <button class="btn" type="submit">保存复诊问题</button>
+        </form>
+      </section>
+      <section class="brace-panel brace-panel-wide" id="brace-summary-panel" aria-labelledby="brace-summary-box-title">
+        <div class="brace-section-heading">
+          <h3 id="brace-summary-box-title">复诊摘要（一键复制给医生）</h3>
+          <button class="btn" type="button" id="brace-copy-summary">复制复诊摘要</button>
+        </div>
+        <p>按上次复诊（或最近 30 天）至今日自动汇总，便于门诊沟通或发给家人。</p>
+        <pre id="brace-summary-preview" class="brace-summary-box">正在整理复诊摘要…</pre>
+      </section>
+      <section class="brace-panel brace-panel-wide" id="brace-export" aria-labelledby="brace-export-title">
         <h3 id="brace-export-title">导出与换机</h3>
-        <p>档案保存在当前浏览器（建议定期导出备份以防浏览器清理本地存储）。Excel 包含所选区间，备份可与微信小程序互通。</p>
+        <p>档案保存在当前浏览器（建议定期导出备份以防浏览器清理本地存储）。Excel 包含所选区间，备份可与微信小程序互通（包含穿戴时段、阶段计划、复诊记录、穿戴困难与复诊问题）。</p>
         <div class="brace-actions"><button class="btn" type="button" id="brace-excel">导出 Excel</button>
           <button class="btn btn-outline" type="button" id="brace-backup">导出备份</button>
           <label class="btn btn-outline brace-upload">恢复备份<input id="brace-restore" type="file" accept=".json,application/json"></label></div>
-        <div id="brace-extra" hidden style="margin-top:14px;border-top:1px solid var(--border);padding-top:10px">
-          <h4>同步自备份的穿戴困难与复诊问题</h4>
-          <ul id="brace-extra-list"></ul>
-        </div>
       </section>
     </div>
   </section>

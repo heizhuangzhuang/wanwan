@@ -68,6 +68,44 @@ export function sanitizePostHtml(html: string | null | undefined): string {
   })
 }
 
+export interface PostTocItem {
+  id: string
+  level: 'h2' | 'h3'
+  text: string
+}
+
+export function preparePostContent(rawHtml: string | null | undefined): {
+  html: string
+  toc: PostTocItem[]
+  readingMinutes: number
+} {
+  const clean = sanitizePostHtml(rawHtml)
+  const plainText = clean
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&[a-z#0-9]+;/gi, ' ')
+    .replace(/\s+/g, '')
+  const readingMinutes = Math.max(1, Math.ceil(plainText.length / 400))
+  const toc: PostTocItem[] = []
+  const html = clean.replace(/<(h[23])>([\s\S]*?)<\/\1>/gi, (match, rawTag: string, inner: string) => {
+    const label = inner
+      .replace(/<[^>]+>/g, '')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&lt;/gi, '<')
+      .replace(/&gt;/gi, '>')
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      .replace(/\s+/g, ' ')
+      .trim()
+    if (!label) return match
+    const level = rawTag.toLowerCase() as 'h2' | 'h3'
+    const id = `sec-${toc.length + 1}`
+    toc.push({ id, level, text: label })
+    return `<${level} id="${id}">${inner}</${level}>`
+  })
+  return { html, toc, readingMinutes }
+}
+
 export function materialLabel(type: string): string {
   return MATERIAL_LABELS[type] ?? '资料'
 }
