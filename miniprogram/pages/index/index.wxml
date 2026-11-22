@@ -69,6 +69,7 @@
       <navigator class="btn home-action" url="/pages/followup/followup">准备复诊摘要</navigator>
       <navigator class="home-task-link" url="/pages/brace-dashboard/brace-dashboard">穿戴趋势与复诊 ›</navigator>
     </block>
+    <navigator wx:if="{{active && phase !== 4}}" class="home-task-link" url="/pages/brace-wear/brace-wear">矫正鞋计时进行中（今日 {{wearTime}}），点击查看 ›</navigator>
     <view wx:if="{{actionError}}" class="tab-row-caption" aria-live="polite">{{actionError}}</view>
   </view>
 

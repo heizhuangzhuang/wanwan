@@ -57,6 +57,8 @@ function cleanExcerpt(title: string, excerpt?: string | null): string {
 }
 
 Page({
+  requestSeq: 0,
+  articleSeq: 0,
   data: {
     stageKey: '', heading: '', intro: '', materials: materialTypes, typeIndex: 0, tag: '', submittedTag: '',
     activeTab: 'all' as 'all' | 'guides' | 'resources',
@@ -93,11 +95,14 @@ Page({
   async fetchArticles() {
     const { stageKey } = this.data
     if (!fixedStages.some(stage => stage.key === stageKey)) return
+    const seq = ++this.articleSeq
     try {
       const result = await wanwanApi.listStagePosts(stageKey, 1, 3)
+      if (seq !== this.articleSeq) return
       const articles = result.items.map(post => ({ ...post, excerpt: cleanExcerpt(post.title, post.excerpt) }))
       this.setData({ articles, moreArticles: result.total > result.items.length })
     } catch {
+      if (seq !== this.articleSeq) return
       this.setData({ articles: [], moreArticles: false })
     }
   },
@@ -120,15 +125,20 @@ Page({
   },
   selectTab(e: WechatMiniprogram.TouchEvent) {
     const tab = e.currentTarget.dataset.tab as 'all' | 'guides' | 'resources' | undefined
-    if (tab) this.setData({ activeTab: tab })
+    if (!tab || tab === this.data.activeTab) return
+    if (tab === 'all' && (this.data.typeIndex !== 0 || this.data.submittedTag !== '')) {
+      this.setData({ activeTab: tab, typeIndex: 0, tag: '', submittedTag: '' })
+      void this.fetch(1)
+      return
+    }
+    this.setData({ activeTab: tab })
   },
   toggleTagFilter() {
     this.setData({ showTagFilter: !this.data.showTagFilter })
   },
   selectType(e: WechatMiniprogram.TouchEvent) {
-    if (this.data.loading) return
     const index = Number(e.currentTarget.dataset.index)
-    if (Number.isNaN(index)) return
+    if (Number.isNaN(index) || (index === this.data.typeIndex && !this.data.error)) return
     this.setData({ typeIndex: index })
     void this.fetch(1)
   },
@@ -138,16 +148,16 @@ Page({
   },
   onTag(e: WechatMiniprogram.Input) { this.setData({ tag: e.detail.value }) },
   applyTag() {
-    if (this.data.loading) return
     this.setData({ submittedTag: this.data.tag.trim() })
     void this.fetch(1)
   },
   async fetch(page: number) {
-    if (this.data.loading) return
+    const seq = ++this.requestSeq
     const { stageKey, typeIndex, submittedTag } = this.data
     this.setData({ loading: true, error: '', items: [], previewItems: [], requestedPage: page })
     try {
       const result = await wanwanApi.listResources({ stage: stageKey, type: materialTypes[typeIndex]?.key, tag: submittedTag, page })
+      if (seq !== this.requestSeq) return
       const labeled = result.items.map(resourceLabel)
       this.setData({
         items: labeled,
@@ -155,11 +165,11 @@ Page({
         totalItems: result.total,
         page: result.page,
         hasNext: result.page * result.size < result.total,
+        loading: false,
       })
     } catch {
-      this.setData({ error: '暂时无法加载资料，请重试。' })
-    } finally {
-      this.setData({ loading: false })
+      if (seq !== this.requestSeq) return
+      this.setData({ error: '暂时无法加载资料，请重试。', loading: false })
     }
   },
   retry() { void this.fetch(this.data.requestedPage); void this.fetchArticles() },

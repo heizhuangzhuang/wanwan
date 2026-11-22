@@ -76,7 +76,7 @@
       <view class="stage-filter-bar">
         <scroll-view scroll-x class="filter-chips-scroll" show-scrollbar="{{false}}">
           <view class="filter-chips">
-            <view wx:for="{{materials}}" wx:key="key" class="filter-chip {{typeIndex === index ? 'active' : ''}}"
+            <view wx:for="{{materials}}" wx:key="label" class="filter-chip {{typeIndex === index ? 'active' : ''}}"
               role="button" data-index="{{index}}" bindtap="selectType">{{item.label}}</view>
           </view>
         </scroll-view>

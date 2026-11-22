@@ -12,8 +12,8 @@
       hover-class="pressed" hover-start-time="0" hover-stay-time="90">搜索</button>
   </view>
   <view class="actions">
-    <picker mode="selector" range="{{stages}}" range-key="label" value="{{stageIndex}}" disabled="{{loading}}" bindchange="onStage"><view class="filter">{{stages[stageIndex].label}} ▾</view></picker>
-    <picker mode="selector" range="{{materials}}" range-key="label" value="{{typeIndex}}" disabled="{{loading}}" bindchange="onType"><view class="filter">{{materials[typeIndex].label}} ▾</view></picker>
+    <picker mode="selector" range="{{stages}}" range-key="label" value="{{stageIndex}}" bindchange="onStage"><view class="filter">{{stages[stageIndex].label}} ▾</view></picker>
+    <picker mode="selector" range="{{materials}}" range-key="label" value="{{typeIndex}}" bindchange="onType"><view class="filter">{{materials[typeIndex].label}} ▾</view></picker>
   </view>
   <view wx:if="{{!submittedKeyword && !loading && history.length}}" class="search-history">
     <view class="search-history-header">

@@ -4,6 +4,7 @@ import { fixedStages } from '../../services/stages'
 type ReadingLink = { name: string; title: string; intro: string; date?: string; resourceCount?: number }
 
 Page({
+  requestSeq: 0,
   data: {
     kind: 'topic', stage: '', stageLabel: '', items: [] as ReadingLink[], page: 1, hasNext: false,
     loading: false, error: '', requestedPage: 1,
@@ -17,30 +18,32 @@ Page({
   },
   selectKind(e: WechatMiniprogram.TouchEvent) {
     const kind = e.currentTarget.dataset.kind
-    if (this.data.loading || kind === this.data.kind || (kind !== 'topic' && kind !== 'guide')) return
-    this.setData({ kind, page: 1, hasNext: false })
+    if ((kind === this.data.kind && !this.data.error) || (kind !== 'topic' && kind !== 'guide')) return
+    this.setData({ kind, page: 1, hasNext: false, items: [], error: '' })
     void this.fetch(1)
   },
   async fetch(page: number) {
-    if (this.data.loading) return
+    const seq = ++this.requestSeq
+    const { kind, stage } = this.data
     this.setData({ loading: true, error: '', items: [], requestedPage: page })
     try {
-      if (this.data.kind === 'topic') {
+      if (kind === 'topic') {
         const res = await wanwanApi.listTopics(page)
-        this.setData({ items: res.items, page: res.page, hasNext: res.page * res.size < res.total })
+        if (seq !== this.requestSeq) return
+        this.setData({ items: res.items, page: res.page, hasNext: res.page * res.size < res.total, loading: false })
       } else {
-        const res = await (this.data.stage ? wanwanApi.listStagePosts(this.data.stage, page) : wanwanApi.listPosts(page))
+        const res = await (stage ? wanwanApi.listStagePosts(stage, page) : wanwanApi.listPosts(page))
+        if (seq !== this.requestSeq) return
         this.setData({
           items: res.items.map(post => ({
             name: post.name, title: post.title, intro: post.excerpt ?? '', date: post.publishTime?.slice(0, 10),
           })),
-          page: res.page, hasNext: res.page * res.size < res.total,
+          page: res.page, hasNext: res.page * res.size < res.total, loading: false,
         })
       }
     } catch {
-      this.setData({ error: '暂时无法加载，请重试。' })
-    } finally {
-      this.setData({ loading: false })
+      if (seq !== this.requestSeq) return
+      this.setData({ error: '暂时无法加载，请重试。', loading: false })
     }
   },
   retry() { void this.fetch(this.data.requestedPage) },

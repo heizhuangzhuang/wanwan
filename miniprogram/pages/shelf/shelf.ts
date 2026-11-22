@@ -6,6 +6,7 @@ const PAGE_SIZE = 6
 type ShelfKind = 'saved' | 'recent'
 
 Page({
+  requestSeq: 0,
   data: {
     kind: 'saved' as ShelfKind, items: [] as ReturnType<typeof resourceLabel>[],
     page: 1, hasNext: false, loading: false, failed: false,
@@ -16,12 +17,12 @@ Page({
   onShow() { void this.load(this.data.page) },
   selectKind(event: WechatMiniprogram.TouchEvent) {
     const kind = event.currentTarget.dataset.kind
-    if (this.data.loading || (kind !== 'saved' && kind !== 'recent')) return
-    this.setData({ kind })
+    if ((kind !== 'saved' && kind !== 'recent') || (kind === this.data.kind && !this.data.failed)) return
+    this.setData({ kind, page: 1, hasNext: false, items: [], failed: false })
     void this.load(1)
   },
   async load(page: number) {
-    if (this.data.loading) return
+    const seq = ++this.requestSeq
     const kind = this.data.kind
     const names = shelfNames(kind)
     const currentPage = Math.min(page, Math.max(1, Math.ceil(names.length / PAGE_SIZE)))
@@ -29,6 +30,7 @@ Page({
     const selected = names.slice(end - PAGE_SIZE, end)
     this.setData({ page: currentPage, loading: true, items: [], failed: false })
     const results = await Promise.allSettled(selected.map(name => wanwanApi.getResource(name)))
+    if (seq !== this.requestSeq) return
     const items: ReturnType<typeof resourceLabel>[] = []
     let failed = false
     let removed = false

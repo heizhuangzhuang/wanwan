@@ -1173,3 +1173,67 @@ test('导读目录与重点速览、资料卡折叠出处、阶段分栏与首�
   assert.equal(home.page.data.phase, 4)
   assert.ok(home.page.data.quickTiles.some(tile => tile.title.includes('穿戴')))
 })
+
+test('全局切换回归：资料页切阶段立即清空并切换资料卡、阶段页切回全部重置筛选、首页计时中可切阶段', async () => {
+  const byStage = {
+    '': [item('r-all-1'), item('r-all-2')],
+    JUST_FOUND: [item('r-jf-1')],
+    POSTNATAL_TREATMENT: [item('r-post-1')],
+    PRENATAL: [],
+  }
+  const lib = openPage('library', url => {
+    if (url.pathname.endsWith('/topics')) return { data: { items: [{ name: 't1', title: '专题一', resourceCount: 2 }], page: 1, size: 6, total: 1 } }
+    if (url.pathname.endsWith('/posts') || url.pathname.endsWith('/stage-posts')) {
+      const st = url.searchParams.get('stage') || 'ALL'
+      return { data: { items: [{ name: `g-${st}`, title: `${st} 导读`, excerpt: '摘要' }], page: 1, size: 5, total: 1 } }
+    }
+    const st = url.searchParams.get('stage') || ''
+    return { data: { items: byStage[st] ?? [], page: 1, size: 3, total: (byStage[st] ?? []).length } }
+  })
+  await lib.page.onShow()
+  assert.deepEqual(lib.page.data.resources.map(r => r.name), ['r-all-1', 'r-all-2'])
+
+  lib.page.selectStage({ currentTarget: { dataset: { key: 'POSTNATAL_TREATMENT' } } })
+  assert.deepEqual(lib.page.data.resources, [])
+  assert.equal(lib.page.data.loading, true)
+  await settle()
+  assert.deepEqual(lib.page.data.resources.map(r => r.name), ['r-post-1'])
+
+  lib.page.selectStage({ currentTarget: { dataset: { key: 'PRENATAL' } } })
+  await settle()
+  assert.deepEqual(lib.page.data.resources, [])
+
+  lib.page.resetStage()
+  await settle()
+  assert.equal(lib.page.data.selectedStage, '')
+  assert.deepEqual(lib.page.data.resources.map(r => r.name), ['r-all-1', 'r-all-2'])
+
+  // 阶段页：资料卡 Tab 筛选后切回「全部内容」自动恢复精选资料卡
+  const stg = openPage('stage', url => {
+    if (url.pathname.endsWith('/stage-posts')) return { data: { items: [], page: 1, size: 3, total: 0 } }
+    const type = url.searchParams.get('type') || ''
+    return { data: { items: type === 'PAPER' ? [] : [item('r-jf-1')], page: 1, size: 20, total: type === 'PAPER' ? 0 : 1 } }
+  })
+  stg.page.onLoad({ key: 'JUST_FOUND', label: '刚发现' })
+  stg.page.onShow()
+  await settle()
+  assert.equal(stg.page.data.previewItems.length, 1)
+  stg.page.selectTab({ currentTarget: { dataset: { tab: 'resources' } } })
+  stg.page.selectType({ currentTarget: { dataset: { index: '2' } } })
+  await settle()
+  assert.equal(stg.page.data.items.length, 0)
+  stg.page.selectTab({ currentTarget: { dataset: { tab: 'all' } } })
+  await settle()
+  assert.equal(stg.page.data.typeIndex, 0)
+  assert.equal(stg.page.data.previewItems.length, 1)
+
+  // 首页：计时进行中依然允许用户手动切到其他阶段
+  const storage = new Map()
+  const home = openPage('index', () => ({ data: [] }), { storage })
+  home.page.selectPhase({ currentTarget: { dataset: { phase: '4' } } })
+  home.page.toggleWear()
+  assert.equal(home.page.data.active, true)
+  home.page.selectPhase({ currentTarget: { dataset: { phase: '1' } } })
+  assert.equal(home.page.data.phase, 1)
+  assert.equal(home.page.data.active, true)
+})

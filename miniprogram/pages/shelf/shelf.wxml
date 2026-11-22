@@ -5,8 +5,8 @@
     <view class="description">收藏和最近阅读仅保存在当前设备。</view>
   </view>
   <view class="actions">
-    <button class="btn {{kind === 'saved' ? '' : 'secondary'}}" data-kind="saved" disabled="{{loading}}" bindtap="selectKind">我的收藏</button>
-    <button class="btn {{kind === 'recent' ? '' : 'secondary'}}" data-kind="recent" disabled="{{loading}}" bindtap="selectKind">最近阅读</button>
+    <button class="btn {{kind === 'saved' ? '' : 'secondary'}}" data-kind="saved" bindtap="selectKind">我的收藏</button>
+    <button class="btn {{kind === 'recent' ? '' : 'secondary'}}" data-kind="recent" bindtap="selectKind">最近阅读</button>
   </view>
   <view wx:if="{{loading}}" class="reading-state muted">正在核对资料状态…</view>
   <block wx:else>

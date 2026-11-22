@@ -7,6 +7,7 @@ import { fixedStages } from '../../services/stages'
 const allStages: StageView = { key: '', label: '全部阶段', order: -1 }
 
 Page({
+  requestSeq: 0,
   data: {
     suggestions: ['产前', '羊穿', 'CMA', '石膏', '支具'],
     keyword: '', submittedKeyword: '',
@@ -32,7 +33,6 @@ Page({
     }
   },
   pickKeyword(event: WechatMiniprogram.TouchEvent) {
-    if (this.data.loading) return
     const keyword = event.currentTarget.dataset.keyword
     if (typeof keyword !== 'string') return
     this.setData({ keyword })
@@ -40,8 +40,8 @@ Page({
   },
   onInput(e: WechatMiniprogram.Input) { this.setData({ keyword: e.detail.value }) },
   clearKeyword() {
-    if (this.data.loading) return
-    this.setData({ keyword: '', submittedKeyword: '', prenatalResults: [], items: [], guideItems: [], error: '', page: 1, requestedPage: 1, hasNext: false })
+    this.requestSeq += 1
+    this.setData({ keyword: '', submittedKeyword: '', prenatalResults: [], items: [], guideItems: [], error: '', loading: false, page: 1, requestedPage: 1, hasNext: false })
   },
   confirmClearHistory() {
     if (!this.data.history.length || this.data.loading) return
@@ -54,27 +54,33 @@ Page({
     })
   },
   doSearch() {
-    if (this.data.loading) return
     const keyword = this.data.keyword.trim()
     if (!keyword || keyword.length > 100) {
-      this.setData({ error: !keyword ? '请输入关键词。' : '关键词请勿超过 100 个字符。', items: [], guideItems: [], prenatalResults: [], submittedKeyword: '', page: 1, hasNext: false })
+      this.requestSeq += 1
+      this.setData({ error: !keyword ? '请输入关键词。' : '关键词请勿超过 100 个字符。', items: [], guideItems: [], prenatalResults: [], submittedKeyword: '', loading: false, page: 1, hasNext: false })
       return
     }
     this.setData({ submittedKeyword: keyword })
     void this.fetch(1, true)
   },
   onStage(e: WechatMiniprogram.PickerChange) {
-    if (this.data.loading) return
     this.setData({ stageIndex: Number(e.detail.value) })
-    if (this.data.submittedKeyword) void this.fetch(1)
+    const term = this.data.submittedKeyword || this.data.keyword.trim()
+    if (term && term.length <= 100) {
+      if (!this.data.submittedKeyword) this.setData({ submittedKeyword: term })
+      void this.fetch(1)
+    }
   },
   onType(e: WechatMiniprogram.PickerChange) {
-    if (this.data.loading) return
     this.setData({ typeIndex: Number(e.detail.value) })
-    if (this.data.submittedKeyword) void this.fetch(1)
+    const term = this.data.submittedKeyword || this.data.keyword.trim()
+    if (term && term.length <= 100) {
+      if (!this.data.submittedKeyword) this.setData({ submittedKeyword: term })
+      void this.fetch(1)
+    }
   },
   async fetch(page: number, record = false) {
-    if (this.data.loading) return
+    const seq = ++this.requestSeq
     const { submittedKeyword, stages, stageIndex, typeIndex } = this.data
     const stage = stages[stageIndex]?.key
     const type = materialTypes[typeIndex]?.key
@@ -88,19 +94,20 @@ Page({
     }
     try {
       const result = await wanwanApi.search({ keyword: submittedKeyword, stage, type, page })
+      if (seq !== this.requestSeq) return
       this.setData({
         items: result.items.map(resourceLabel),
         guideItems: result.guideItems ?? [],
         page: result.page,
         hasNext: result.page * result.size < Math.max(result.total, result.guideTotal ?? 0),
+        loading: false,
       })
       if (record && !prenatalResults.length) {
         this.setData({ history: rememberSearch(submittedKeyword) })
       }
     } catch {
-      this.setData({ error: '公开资料暂时不可用，请重试。' })
-    } finally {
-      this.setData({ loading: false })
+      if (seq !== this.requestSeq) return
+      this.setData({ error: '公开资料暂时不可用，请重试。', loading: false })
     }
   },
   retry() { void this.fetch(this.data.requestedPage, this.data.requestedPage === 1) },

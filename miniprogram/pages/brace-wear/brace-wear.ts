@@ -123,11 +123,11 @@ Page({
     this.setData({ targetHours: hours, targetMinutes: '0', message: '' })
   },
   chooseDay(e: WechatMiniprogram.TouchEvent) {
-    this.setData({ selectedDay: String(e.currentTarget.dataset.day), form: null, message: '' })
+    this.setData({ selectedDay: String(e.currentTarget.dataset.day), form: null, targetOpen: false, message: '' })
     this.renderLog()
   },
   pickDay(e: WechatMiniprogram.PickerChange) {
-    this.setData({ selectedDay: String(e.detail.value), form: null, message: '' })
+    this.setData({ selectedDay: String(e.detail.value), form: null, targetOpen: false, message: '' })
     this.renderLog()
   },
   addSession() {

@@ -18,6 +18,7 @@ Page({
     loading: true, error: '', retryable: false,
   },
   loadedKey: '',
+  requestSeq: 0,
   onLoad(options: Record<string, string | undefined>) {
     this.setData({ kind: options.kind ?? '', name: decodeOption(options.name) })
   },
@@ -25,6 +26,7 @@ Page({
     void this.load()
   },
   async load() {
+    const seq = ++this.requestSeq
     const { kind, name } = this.data
     const key = `${kind}:${name}`
     const sameDoc = this.loadedKey === key && !this.data.error && this.data.sections.length > 0
@@ -42,10 +44,12 @@ Page({
     try {
       if (kind === 'topic') {
         const topic = await wanwanApi.getTopic(name)
+        if (seq !== this.requestSeq) return
         this.loadedKey = key
-        this.setData({ title: topic.title, intro: topic.intro, items: topic.resources.map(resourceLabel), error: '', retryable: false })
+        this.setData({ title: topic.title, intro: topic.intro, items: topic.resources.map(resourceLabel), error: '', retryable: false, loading: false })
       } else {
         const guide = await wanwanApi.getPost(name)
+        if (seq !== this.requestSeq) return
         const nodes = guideNodes(guide.content || '', guide.title)
         const outline = buildGuideOutline(nodes)
         let openSections: Record<string, boolean> = sameDoc ? { ...this.data.openSections } : {}
@@ -76,15 +80,14 @@ Page({
           openSections,
           activeSectionId: activeSectionId || outline.toc[0]?.id || '',
           expandAll: sameDoc ? this.data.expandAll : outline.toc.length <= 1,
-          error: '', retryable: false,
+          error: '', retryable: false, loading: false,
         })
       }
     } catch (error) {
+      if (seq !== this.requestSeq) return
       const unavailable = error instanceof HttpError && error.statusCode === 404
       this.loadedKey = ''
-      this.setData({ error: unavailable ? '这项内容不可访问或已下线。' : '暂时无法加载，请重试。', retryable: !unavailable })
-    } finally {
-      this.setData({ loading: false })
+      this.setData({ error: unavailable ? '这项内容不可访问或已下线。' : '暂时无法加载，请重试。', retryable: !unavailable, loading: false })
     }
   },
   toggleSection(e: WechatMiniprogram.TouchEvent) {

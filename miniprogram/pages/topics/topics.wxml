@@ -5,8 +5,8 @@
     <view wx:if="{{!stageLabel}}" class="description">专题是资料合集，导读是站内白话长文。</view>
   </view>
   <view wx:if="{{!stageLabel}}" class="actions">
-    <button class="btn {{kind === 'topic' ? '' : 'secondary'}}" disabled="{{loading}}" data-kind="topic" bindtap="selectKind">精选专题</button>
-    <button class="btn {{kind === 'guide' ? '' : 'secondary'}}" disabled="{{loading}}" data-kind="guide" bindtap="selectKind">原创导读</button>
+    <button class="btn {{kind === 'topic' ? '' : 'secondary'}}" data-kind="topic" bindtap="selectKind">精选专题</button>
+    <button class="btn {{kind === 'guide' ? '' : 'secondary'}}" data-kind="guide" bindtap="selectKind">原创导读</button>
   </view>
   <view wx:if="{{loading}}" class="muted">加载中…</view>
   <view wx:elif="{{error}}" class="card">

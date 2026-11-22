@@ -13,7 +13,7 @@
     </view>
     <scroll-view scroll-x class="library-stage-scroll" show-scrollbar="{{false}}">
       <view class="filter-chips">
-        <view wx:for="{{stageFilters}}" wx:key="key" class="filter-chip {{selectedStage === item.key ? 'active' : ''}}"
+        <view wx:for="{{stageFilters}}" wx:key="label" class="filter-chip {{selectedStage === item.key ? 'active' : ''}}"
           role="button" data-key="{{item.key}}" bindtap="selectStage">{{item.label}}</view>
       </view>
     </scroll-view>
@@ -38,7 +38,7 @@
       </view>
     </scroll-view>
   </block>
-  <view wx:elif="{{selectedStage && !loading}}" class="card muted library-empty">
+  <view wx:elif="{{selectedStage && !loading && !featuredError}}" class="card muted library-empty">
     「{{selectedStageLabel}}」暂未发布原创导读，可查看下方资料卡或切换其他阶段。
   </view>
 
@@ -46,9 +46,11 @@
     <text class="library-section-title">{{selectedStage ? selectedStageLabel + ' · 资料卡' : '精选资料卡'}}</text>
     <navigator class="library-more-link" url="{{stageUrl}}">{{selectedStage ? '查看全部 ›' : '全部资料卡 ›'}}</navigator>
   </view>
-  <template wx:if="{{resources.length}}" is="resourceCards" data="{{items: resources}}" />
-  <view wx:elif="{{!loading}}" class="card muted library-empty">
-    「{{selectedStageLabel}}」暂未收录资料卡。
+  <view wx:if="{{loading}}" class="card muted library-empty">正在加载「{{selectedStageLabel}}」内容…</view>
+  <template wx:elif="{{resources.length}}" is="resourceCards" data="{{items: resources}}" />
+  <view wx:elif="{{!featuredError}}" class="card muted library-empty">
+    <view>「{{selectedStageLabel}}」暂未收录资料卡。</view>
+    <view wx:if="{{selectedStage}}" class="library-empty-action" bindtap="resetStage">查看全部阶段资料 ›</view>
   </view>
 
   <view wx:if="{{featuredError}}" class="reading-state tab-retry">

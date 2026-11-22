@@ -85,6 +85,7 @@ function homeStages(stages: StageView[]) {
 }
 
 Page({
+  castSeq: 0,
   data: {
     stages: homeStages(fixedStages),
     quickTiles: phaseQuickTiles[0],
@@ -119,9 +120,11 @@ Page({
       const log = readWearLog()
       const plan = planOn(log, day)
       const stored = wx.getStorageSync(PREFERENCE)
-      const inferred = plan?.type === 'followup' ? 5 : plan?.type === 'wear' || log.sessions.length ? 4 : 0
-      const preferred = typeof stored === 'number' && phases[stored] ? stored : inferred
-      const phase = log.activeStart !== null ? 4 : preferred === 4 && inferred === 5 ? 5 : preferred
+      const hasManualPreference = typeof stored === 'number' && Boolean(phases[stored])
+      const inferred = log.activeStart !== null ? 4
+        : plan?.type === 'followup' ? 5
+        : plan?.type === 'wear' || log.sessions.length ? 4 : 0
+      const phase = hasManualPreference ? stored : inferred
       const wear = dayWear(log, day, now)
       this.setData({
         phase,
@@ -137,10 +140,11 @@ Page({
     }
   },
   async loadCastPreview() {
+    const seq = ++this.castSeq
     try {
-      if (!(await castConfig()).enabled || this.data.phase !== 3) return
+      if (!(await castConfig()).enabled || seq !== this.castSeq || this.data.phase !== 3) return
       const journal = await castCommand('read')
-      if (this.data.phase !== 3 || !journal.consented) return
+      if (seq !== this.castSeq || this.data.phase !== 3 || !journal.consented) return
       const next = journal.entries.filter(row => row.visitAt && Date.parse(row.visitAt) > Date.now())
         .sort((a, b) => Date.parse(a.visitAt!) - Date.parse(b.visitAt!))[0]
       this.setData({ castVisit: next?.visitAt ? chinaDateTime(next.visitAt).replace('T', ' ') : '',

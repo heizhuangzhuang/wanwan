@@ -46,6 +46,13 @@ Page({
   selectStage(e: WechatMiniprogram.TouchEvent) {
     const key = String(e.currentTarget.dataset.key ?? '')
     if (key === this.data.selectedStage && !this.data.featuredError) return
+    this.applyStage(key)
+  },
+  resetStage() {
+    if (!this.data.selectedStage && !this.data.featuredError) return
+    this.applyStage('')
+  },
+  applyStage(key: string) {
     const fullLabel = fixedStages.find(stage => stage.key === key)?.label ?? '全部阶段'
     const shortLabel = stageFilters.find(stage => stage.key === key)?.label ?? '全部阶段'
     this.setData({
@@ -57,21 +64,27 @@ Page({
       guidesUrl: key
         ? `/pages/topics/topics?kind=guide&stage=${encodeURIComponent(key)}`
         : '/pages/topics/topics?kind=guide',
+      resources: [],
+      guides: [],
+      loading: true,
+      featuredError: false,
     })
-    void this.loadFeatured()
+    void this.loadFeatured(key)
   },
-  async loadFeatured() {
+  async loadFeatured(targetStage?: string) {
     const seq = ++this.requestSeq
-    const stageKey = this.data.selectedStage
+    const stageKey = typeof targetStage === 'string' ? targetStage : this.data.selectedStage
     this.setData({ loading: true, featuredError: false })
-    const [topics, resources, guides] = await Promise.allSettled([
-      wanwanApi.listTopics(1, 6),
+    const tasks = [
+      stageKey ? Promise.resolve(null) : wanwanApi.listTopics(1, 6),
       wanwanApi.listResources({ stage: stageKey || undefined, page: 1, size: 3 }),
       stageKey ? wanwanApi.listStagePosts(stageKey, 1, 5) : wanwanApi.listPosts(1, 5),
-    ])
+    ] as const
+    const [topics, resources, guides] = await Promise.allSettled(tasks)
     if (seq !== this.requestSeq) return
-    this.setData({
-      topics: topics.status === 'fulfilled'
+    const nextTopics = stageKey
+      ? this.data.topics
+      : topics.status === 'fulfilled' && topics.value
         ? topics.value.items
             .filter(topic => topic.resourceCount !== 0)
             .slice(0, 2)
@@ -79,12 +92,15 @@ Page({
               ...topic,
               url: `/pages/reading/reading?kind=topic&name=${encodeURIComponent(topic.name)}`,
             }))
-        : [],
+        : []
+    const topicsFailed = !stageKey && topics.status === 'rejected'
+    this.setData({
+      topics: nextTopics,
       resources: resources.status === 'fulfilled' ? resources.value.items.map(resourceLabel) : [],
       guides: guides.status === 'fulfilled'
         ? guides.value.items.map(post => ({ ...post, excerpt: cleanExcerpt(post.title, post.excerpt) }))
         : [],
-      featuredError: topics.status === 'rejected' || resources.status === 'rejected' || guides.status === 'rejected',
+      featuredError: topicsFailed || resources.status === 'rejected' || guides.status === 'rejected',
       loading: false,
     })
   },
