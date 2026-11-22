@@ -60,7 +60,9 @@
 }
 .detail-feedback-link {
   margin-top: 16rpx;
-  font-size: 24rpx;
-  color: #6b7268;
+  padding: 8rpx 0;
+  font-size: 25rpx;
+  color: #5b675e;
+  text-align: left;
   text-decoration: underline;
 }
