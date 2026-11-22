@@ -1255,10 +1255,10 @@ test('微信好友分享全链路：文章/专题/资料卡/阶段转发与好�
       return { data: { name: 't-cast', title: '出生后石膏准备专题', intro: '专题导读', resources: [item('r-ok')] } }
     }
     if (url.pathname.endsWith('/resources/r-ok')) {
-      return { data: item('r-ok', { title: 'Ponseti 石膏居家观察', linkStatus: 'OK' }) }
+      return { data: { ...item('r-ok'), title: 'Ponseti 石膏居家观察', linkStatus: 'OK' } }
     }
     if (url.pathname.endsWith('/resources/r-ret')) {
-      return { data: item('r-ret', { title: '已撤回资料', linkStatus: 'SOURCE_RETRACTED' }) }
+      return { data: { ...item('r-ret'), title: '已撤回资料', linkStatus: 'SOURCE_RETRACTED' } }
     }
     if (url.pathname.endsWith('/resources/r-404')) {
       return { statusCode: 404, data: {} }

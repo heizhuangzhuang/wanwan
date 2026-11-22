@@ -88,7 +88,12 @@ Page({
       if (seq !== this.requestSeq) return
       const unavailable = error instanceof HttpError && error.statusCode === 404
       this.loadedKey = ''
-      this.setData({ error: unavailable ? '这项内容不可访问或已下线。' : '暂时无法加载，请重试。', retryable: !unavailable, loading: false })
+      this.setData({
+        title: '', intro: '', items: [], body: [], sections: [], toc: [], highlights: [],
+        error: unavailable ? '这项内容不可访问或已下线。' : '暂时无法加载，请重试。',
+        retryable: !unavailable,
+        loading: false,
+      })
     }
   },
   toggleSection(e: WechatMiniprogram.TouchEvent) {
