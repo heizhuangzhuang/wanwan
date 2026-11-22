@@ -91,6 +91,7 @@ export function wearWorkbook(log: WearLog, start: string, end: string, now = Dat
   const stats = summarizeWear(days)
   const sheets: Sheet[] = [
     { title: '概览', rows: [['指标', '值'], ['开始日期', start], ['结束日期', end], ['有穿戴或确认记录的天数', stats.recorded],
+      ['所选区间天数', days.length], ['区间内未记录天数', days.length - stats.recorded],
       ['累计已记录分钟', stats.minutes], ['记录低于目标日', stats.below], ['计划日无记录', stats.missing],
       ['确认未穿日', stats.zero], ['说明', '按导出设备的日历日期统计；记录用于随访沟通。']] },
     { title: '每日统计', rows: [['日期', '记录分钟', '目标分钟', '记录状态'],
@@ -104,6 +105,12 @@ export function wearWorkbook(log: WearLog, start: string, end: string, now = Dat
     { title: '随访记录', rows: [['日期', '类型', '备注'], ...log.visits.filter(row => row.day >= start && row.day <= end)
       .sort((a, b) => a.day.localeCompare(b.day)).map(row => [row.day, row.kind, row.note])] },
   ]
+  const observations = (log.observations ?? []).filter(row => row.day >= start && row.day <= end)
+    .sort((a, b) => a.day.localeCompare(b.day))
+  if (observations.length) {
+    sheets.push({ title: '穿戴困难', rows: [['日期', '观察', '侧别', '联系治疗团队', '处理经过或结果'],
+      ...observations.map(row => [row.day, row.kind, row.side, row.contacted ? '已联系' : '未标记', row.outcome])] })
+  }
   const sheetOverrides = sheets.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')
   return zip([
     ['[Content_Types].xml', xml + `<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheetOverrides}</Types>`],

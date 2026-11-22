@@ -10,6 +10,8 @@ import run.halo.app.extension.index.IndexSpecs;
 import run.halo.app.plugin.BasePlugin;
 import run.halo.app.plugin.PluginContext;
 import run.wanwan.api.PublicQueryService;
+import run.wanwan.feedback.Feedback;
+import run.wanwan.feedback.FeedbackService;
 import run.wanwan.model.ResourceCard;
 import run.wanwan.model.Topic;
 import run.wanwan.model.Visibility;
@@ -54,6 +56,9 @@ public class WanwanPlugin extends BasePlugin {
         schemeManager.register(NoticePublication.class);
         schemeManager.register(CastJournal.class);
         schemeManager.register(MiniProgramCheck.class);
+        schemeManager.register(Feedback.class, specs ->
+            specs.add(IndexSpecs.<Feedback, String>single(FeedbackService.STATUS_INDEX, String.class)
+                .indexFunc(row -> row.getStatus() == null ? null : row.getStatus().name())));
         schemeManager.register(NoticeSubscription.class, specs ->
             specs.add(IndexSpecs.<NoticeSubscription, String>single(NoticeService.PENDING_SCOPE, String.class)
                 .indexFunc(grant -> grant.getOpenId() == null ? null : grant.getScope())));
@@ -74,6 +79,7 @@ public class WanwanPlugin extends BasePlugin {
         unregister(CastJournal.class);
         unregister(NoticeSubscription.class);
         unregister(MiniProgramCheck.class);
+        unregister(Feedback.class);
     }
 
     private void unregister(Class<? extends Extension> type) {

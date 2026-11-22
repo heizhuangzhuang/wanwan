@@ -50,6 +50,25 @@ const item = name => ({ name, title: name, originalTitle: name, sourceName: '资
   citationUrl: 'https://example.test/origin', entry: { type: 'CITATION_ONLY' } })
 const settle = () => new Promise(resolve => setImmediate(resolve))
 
+test('功能建议失败后保留内容并使用同一编号重试', async () => {
+  const submitted = []
+  const { page } = openPage('feedback', (url, req) => {
+    assert.equal(url.pathname, '/apis/api.xiaojiaoya.run/v1alpha1/feedback')
+    assert.equal(req.method, 'POST')
+    assert.equal(req.header['X-Wanwan-Client'], 'wechat-miniprogram')
+    submitted.push(req.data)
+    if (submitted.length === 2) return { status: 201, data: { accepted: true } }
+  }, { useCloudContainer: true, cloudEnv: 'dev', cloudService: 'xiaojiaoya' })
+  page.changeMessage({ detail: { value: '希望按月导出穿戴记录' } })
+  await page.submit()
+  assert.match(page.data.error, /内容已保留/)
+  assert.equal(page.data.message, '希望按月导出穿戴记录')
+  await page.submit()
+  assert.deepEqual(submitted[0], submitted[1])
+  assert.equal(page.data.sent, true)
+  assert.equal(page.data.message, '')
+})
+
 test('搜索结果能翻到没有资料卡的原创导读页，并打开对应导读', async () => {
   const { page, navigations } = openPage('search', url => ({
     data: { page: Number(url.searchParams.get('page')), size: 20, total: 0, items: [], guideTotal: 21,
@@ -141,9 +160,9 @@ test('矫正鞋页面离线计时跨重开，支持补记、编辑、删除与�
     assert.equal(page.data.sessions.length, 1)
     page.chooseDay(event({ day: '2026-11-20' }))
     assert.equal(page.data.selectedLabel, '11月20日')
-    page.addToday()
+    page.addSession()
     assert.equal(page.data.selectedDay, '2026-11-20')
-    assert.equal(page.data.form.startDay, day)
+    assert.equal(page.data.form.startDay, '2026-11-20')
     page.closeForm()
     page.chooseDay(event({ day }))
     page.addSession()
@@ -1017,4 +1036,71 @@ test('相册权限失败后保留本机图片，可重试保存', async () => {
   allowed = true
   page.saveToAlbum()
   assert.match(page.data.status, /已保存到手机相册/)
+})
+
+test('首页选择穿戴阶段后可直接开始并保存计时', () => {
+  const core = require(join(compiled, 'services/brace-ledger.js'))
+  const storage = new Map()
+  const { page, requests } = openPage('index', () => assert.fail('首页计时无需网络'), { storage })
+  const originalNow = Date.now
+  try {
+    Date.now = () => core.parseLocalTime('2026-11-22', '09:00')
+    page.onShow()
+    assert.equal(page.data.phase, 0)
+    page.choosePhase({ detail: { value: '3' } })
+    assert.equal(page.data.wearTime, '今天还没记录')
+    page.toggleWear()
+    assert.equal(page.data.active, true)
+    Date.now = () => core.parseLocalTime('2026-11-22', '10:00')
+    page.toggleWear()
+    assert.equal(page.data.wearTime, '1 小时 0 分钟')
+    assert.equal(page.data.active, false)
+    assert.deepEqual(requests, [])
+  } finally { Date.now = originalNow }
+})
+
+test('复诊摘要显示覆盖分母、未记录和医嘱变更，时间线保留历史备份里的观察', () => {
+  const core = require(join(compiled, 'services/brace-ledger.js'))
+  const { followupSummary, treatmentTimeline } = require(join(compiled, 'services/followup-summary.js'))
+  const today = '2026-11-22'
+  const at = core.parseLocalTime
+  const log = {
+    ...core.blankWearLog(),
+    sessions: [{ id: 's1', start: at('2026-11-20', '08:00'), end: at('2026-11-20', '11:00') }],
+    plans: [{ day: '2026-11-17', type: 'wear', minutes: 480 }, { day: '2026-11-21', type: 'wear', minutes: 360 }],
+    visits: [{ id: 'v1', day: '2026-11-19', kind: '复诊', note: '' }, { id: 'v2', day: '2026-11-21', kind: '更换矫正鞋', note: '' }],
+    confirmedZero: ['2026-11-21'],
+    observations: [{ id: 'o1', day: '2026-11-20', kind: '皮肤不适', side: '左侧', contacted: true, outcome: '记录结果' }],
+    questions: ['下次什么时候复诊？'],
+  }
+  const restored = core.parseBackup(core.serializeBackup(log))
+  const summary = followupSummary(restored, today, at(today, '13:00'))
+  assert.equal(summary.from, '2026-11-19')
+  assert.equal(summary.total, 4)
+  assert.equal(summary.recorded, 2)
+  assert.equal(summary.unknown, 2)
+  assert.equal(summary.zero, 1)
+  assert.equal(summary.below, 1)
+  assert.equal(summary.average, '1 小时 30 分钟')
+  assert.equal(summary.plans[0].day, '2026-11-21')
+  assert.match(summary.adjustment, /更换矫正鞋/)
+  const timeline = treatmentTimeline(restored, [{ id: '1', castDate: '2026-11-18', care: '', visitAt: null, side: '双侧', sequence: 3 }])
+  assert.ok(timeline.some(event => event.title === '第 3 次石膏' && event.note === '双侧'))
+  assert.ok(timeline.some(event => event.title === '皮肤不适' && event.note.includes('已联系治疗团队')))
+})
+
+test('同步在云端已改变时阻止直接上传，本机记录仍可用', async () => {
+  const core = require(join(compiled, 'services/brace-ledger.js'))
+  const storage = new Map([['wanwan-wear-cloud-revision', 'v1']])
+  const { page } = openPage('brace-sync', (url, req) => {
+    assert.equal(url.pathname, '/api/brace-archive')
+    assert.equal(req.data.action, 'read')
+    return { data: { revision: 'v2', consentVersion: 'brace-v1', consented: true,
+      updatedAt: '2026-11-22T08:00:00Z', archive: core.serializeBackup({ ...core.blankWearLog(), questions: ['云端新问题'] }) } }
+  }, { storage })
+  wx.login = options => options.success({ code: 'test-login' })
+  await page.upload()
+  assert.equal(page.data.conflict, true)
+  assert.match(page.data.message, /另一台设备/)
+  assert.equal(storage.get('wanwan-wear-cloud-revision'), 'v1')
 })

@@ -62,6 +62,36 @@ class CastJournalServiceTest {
     }
 
     @Test
+    void braceArchiveUsesIndependentConsentAndRejectsAStaleDevice() {
+        String archive = """
+            {"format":"wanwan-brace-ledger","version":1,"log":{"sessions":[],"plans":[],
+            "confirmedZero":[],"visits":[],"activeStart":null,"questions":["private-test-note"]}}
+            """;
+        var initial = brace(A, "read", null, null);
+        assertThat(initial.consented()).isFalse();
+        assertThatThrownBy(() -> brace(A, "save", null, archive))
+            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("403");
+        var allowed = brace(A, "consent", initial.revision(), null);
+        var saved = brace(A, "save", allowed.revision(), archive);
+        assertThat(saved.updatedAt()).isNotBlank();
+        assertThat(brace(A, "read", null, null).archive()).isEqualTo(archive);
+        assertThat(brace(B, "read", null, null).archive()).isNull();
+        assertThat(service.access(command(A, "read")).consented()).isFalse();
+        assertThat(rows.values().iterator().next().getEncryptedPayload()).doesNotContain("private-test-note");
+        assertThatThrownBy(() -> brace(A, "save", allowed.revision(), archive))
+            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("409");
+        assertThatThrownBy(() -> brace(A, "save", saved.revision(), "{}"))
+            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("400");
+        assertThat(brace(A, "clear", saved.revision(), null).consented()).isFalse();
+        assertThat(brace(A, "read", null, null).archive()).isNull();
+    }
+
+    private BraceArchiveService.State brace(String code, String action, String revision, String archive) {
+        return service.accessBraceArchive(new tools.jackson.databind.ObjectMapper().writeValueAsBytes(
+            new BraceArchiveService.Command(code, action, revision, "brace-v1", archive)));
+    }
+
+    @Test
     void guardianConsentAndWechatIdentityIsolateEncryptedRecords() {
         var entry = entry(Instant.now().plus(Duration.ofDays(2)));
         assertThatThrownBy(() -> service.access(new Command(A, "save", null, null, null, entry)))

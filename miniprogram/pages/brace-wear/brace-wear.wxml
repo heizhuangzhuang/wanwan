@@ -13,9 +13,10 @@
         </view>
       </view>
       <view class="wear-metrics">
-        <view class="wear-total" aria-label="今日累计 {{elapsed}}">
-          <view class="wear-total-label">累计穿戴</view>
-          <view class="wear-figures">
+        <view class="wear-total" aria-label="{{hasToday ? '今日累计 ' + elapsed : '今天还没记录'}}">
+          <view wx:if="{{hasToday}}" class="wear-total-label">累计穿戴</view>
+          <view wx:else class="wear-no-record">今天还没记录</view>
+          <view wx:if="{{hasToday}}" class="wear-figures">
             <block wx:if="{{subMinute}}">
               <text class="wear-unit">不足</text><text class="wear-number">1</text><text class="wear-unit">分钟</text>
             </block>
@@ -79,7 +80,7 @@
             <view class="wear-detail-title">{{selectedLabel}}明细</view>
             <view wx:if="{{hasDetails}}" class="wear-detail-total">合计 {{selectedElapsed}}</view>
           </view>
-          <button class="wear-button wear-link" bindtap="addSession" hover-class="wear-pressed">补记这天</button>
+
         </view>
         <block wx:if="{{hasDetails}}">
           <view wx:if="{{includesActive}}" class="wear-session wear-session-active">
@@ -93,16 +94,19 @@
               aria-label="编辑 {{item.label}}" hover-class="wear-pressed">编辑</button>
           </view>
         </block>
-        <view wx:else class="wear-empty">这天还没有穿戴记录</view>
+        <view wx:else class="wear-empty">{{selectedZero ? '已确认未穿' : '这天还没有穿戴记录'}}</view>
       </view>
     </view>
 
     <navigator url="/pages/brace-dashboard/brace-dashboard" class="wear-dashboard-link" hover-class="wear-pressed">
       <view class="wear-trend-icon" aria-hidden="true"><view /><view /><view /></view>
-      <view class="wear-dashboard-text"><view>长期随访</view><text>穿戴趋势、计划历史与 Excel 导出</text></view>
+      <view class="wear-dashboard-text"><view>穿戴趋势与复诊</view><text>穿戴趋势、计划历史与 Excel 导出</text></view>
       <text class="wear-chevron" aria-hidden="true">›</text>
     </navigator>
-    <view class="wear-foot">记录保存在本机</view>
+    <view class="wear-secondary-links">
+      <navigator url="/pages/followup/followup?observe=1&amp;day={{selectedDay}}">记录穿戴困难 ›</navigator>
+      <navigator url="/pages/brace-sync/brace-sync">档案同步 ›</navigator>
+    </view>
 
     <view wx:if="{{!form && !targetOpen}}" class="wear-dock">
       <view wx:if="{{message}}" class="wear-message wear-dock-message" aria-live="polite">{{message}}</view>
@@ -112,10 +116,10 @@
           <view class="{{active ? 'wear-stop' : 'wear-play'}}" aria-hidden="true" />
           <text>{{active ? '脱下并保存' : '穿上，开始计时'}}</text>
         </button>
-        <button class="wear-button wear-add" bindtap="addToday" aria-label="补记今天的穿戴时间"
+        <button class="wear-button wear-add" bindtap="addSession" aria-label="补记{{selectedLabel}}穿戴时间"
           hover-class="wear-pressed" hover-start-time="0" hover-stay-time="100">
           <view class="wear-plus" aria-hidden="true" />
-          <text>补记今天</text>
+          <text>补记{{selectedDay === today ? '今天' : selectedLabel}}</text>
         </button>
       </view>
     </view>

@@ -6,18 +6,22 @@ const LABELS = {
   UNCONFIRMED: '发送结果未确认', MISSED: '已错过发送时段',
 }
 
+const SIDES = ['未记录', '左侧', '右侧', '双侧']
+
 const today = () => chinaDateTime().slice(0, 10)
 
 function blank() {
-  return { id: '', castDate: today(), care: '', visitDate: '', visitTime: '' }
+  return { id: '', castDate: today(), care: '', visitDate: '', visitTime: '', side: 0, sequence: '' }
 }
 
 Page({
+  addOnReady: false,
   data: {
     config: null as CastConfig | null, consented: false, entries: [] as (CastEntry & { visitText: string; upcoming: boolean })[],
     reminder: null as (NonNullable<JournalView['reminder']> & { sendText: string; label: string }) | null,
-    today: today(), form: blank(), editing: false, busy: false, error: '', status: '',
+    sides: SIDES, today: today(), form: blank(), editing: false, busy: false, error: '', status: '',
   },
+  onLoad(query: Record<string, string | undefined>) { this.addOnReady = query.add === '1' },
   onShow() { return this.refresh() },
   async refresh() {
     if (this.data.busy) return
@@ -44,6 +48,7 @@ Page({
         upcoming: Boolean(item.visitAt && Date.parse(item.visitAt) > now + 120000) })),
       reminder: reminder ? { ...reminder, sendText: chinaDateTime(reminder.sendAt).replace('T', ' '), label: LABELS[reminder.state] } : null,
     })
+    if (this.addOnReady && journal.consented) { this.addOnReady = false; this.add() }
   },
   async apply(action: string, values: Record<string, unknown>, message: string) {
     if (this.data.busy) return false
@@ -75,18 +80,20 @@ Page({
     if (!entry) return
     const visit = entry.visitAt ? chinaDateTime(entry.visitAt) : ''
     this.setData({ editing: true, status: '', form: { id: entry.id, castDate: entry.castDate,
-      care: entry.care, visitDate: visit.slice(0, 10), visitTime: visit.slice(11) } })
+      care: entry.care, visitDate: visit.slice(0, 10), visitTime: visit.slice(11),
+      side: Math.max(0, SIDES.indexOf(entry.side ?? '')), sequence: entry.sequence ? String(entry.sequence) : '' } })
   },
   change(e: WechatMiniprogram.TouchEvent & WechatMiniprogram.Input) {
     const field = e.currentTarget.dataset.field
-    if (field === 'castDate' || field === 'care' || field === 'visitDate' || field === 'visitTime') {
+    if (field === 'side') this.setData({ form: { ...this.data.form, side: Number(e.detail.value) } })
+    if (field === 'sequence' || field === 'castDate' || field === 'care' || field === 'visitDate' || field === 'visitTime') {
       this.setData({ form: { ...this.data.form, [field]: e.detail.value } })
     }
   },
   clearVisit() { this.setData({ form: { ...this.data.form, visitDate: '', visitTime: '' } }) },
   closeForm() { this.setData({ form: blank(), editing: false }) },
   async save() {
-    const { id, castDate, care, visitDate, visitTime } = this.data.form
+    const { id, castDate, care, visitDate, visitTime, sequence, side } = this.data.form
     if (!castDate || Boolean(visitDate) !== Boolean(visitTime)) {
       wx.showToast({ title: '请填写石膏日期及完整的复诊时间', icon: 'none' })
       return
@@ -96,7 +103,12 @@ Page({
       wx.showToast({ title: '请选择有效的复诊时间', icon: 'none' })
       return
     }
-    const entry = { id, castDate, care: care.trim(), visitAt: visit?.toISOString() ?? null }
+    if (sequence && !/^[1-9][0-9]?$|^100$/.test(sequence)) {
+      wx.showToast({ title: '请填写 1 至 100 的石膏次数', icon: 'none' })
+      return
+    }
+    const entry = { id, castDate, care: care.trim(), visitAt: visit?.toISOString() ?? null,
+      side: side ? SIDES[side] : null, sequence: sequence ? Number(sequence) : null }
     if (await this.apply('save', { entry }, '记录已保存。修改复诊时间后可重新授权提醒。')) this.closeForm()
   },
   remove(e: WechatMiniprogram.TouchEvent) {

@@ -78,6 +78,7 @@ interface SearchResult extends PageResult<ResourceView> {
 }
 
 export interface BackendClient {
+  submitFeedback(submission: { requestId: string; category: string; message: string }): Promise<void>
   getStages(): Promise<StageView[]>
   listResources(params: {
     stage?: string
@@ -143,6 +144,21 @@ export function createBackendClient(apiBase: string, timeoutMs = 5000): BackendC
   }
 
   return {
+    async submitFeedback(submission) {
+      const res = await fetch(backendUrl('/feedback', apiBase), {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Wanwan-Client': 'web' },
+        body: JSON.stringify(submission),
+        redirect: 'manual',
+        signal: AbortSignal.timeout(timeoutMs),
+      })
+      if (!res.ok) {
+        await res.body?.cancel()
+        throw new HttpStatusError(res.status, `Backend HTTP ${res.status}`)
+      }
+      const receipt = await res.json() as { accepted?: boolean } | null
+      if (!receipt?.accepted) throw new Error('Unexpected feedback receipt')
+    },
     getStages: () => getJson<StageView[]>('/stages'),
     listResources: (p) => getJson<PageResult<ResourceView>>('/resources', p),
     getResource: (name) => getJsonOrNull<ResourceView>(`/resources/${encodeURIComponent(name)}`),

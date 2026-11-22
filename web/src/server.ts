@@ -1,6 +1,7 @@
 import { createServer } from 'node:http'
 import { createBackendClient } from './api.js'
 import { loadConfig } from './config.js'
+import { handleFeedbackPost } from './feedback.js'
 import { renderLayout } from './html.js'
 import { appointmentHash } from './tools.js'
 import { handleRequest } from './views.js'
@@ -15,14 +16,19 @@ const responseHeaders = {
 }
 
 const server = createServer(async (req, res) => {
-  if (req.method !== 'GET' && req.method !== 'HEAD') {
-    res.writeHead(405, { ...responseHeaders, 'Content-Type': 'text/plain; charset=utf-8', Allow: 'GET, HEAD' })
-    res.end('Method Not Allowed')
-    return
-  }
-
   try {
-    const result = await handleRequest(req.url || '/', client, config)
+    const requestUrl = req.url || '/'
+    const isFeedback = new URL(requestUrl, 'http://localhost').pathname.replace(/\/+$/, '')
+      === `${config.siteBasePath}/feedback`
+    if (req.method !== 'GET' && req.method !== 'HEAD' && !(req.method === 'POST' && isFeedback)) {
+      res.writeHead(405, { ...responseHeaders, 'Content-Type': 'text/plain; charset=utf-8',
+        Allow: isFeedback ? 'GET, HEAD, POST' : 'GET, HEAD' })
+      res.end('Method Not Allowed')
+      return
+    }
+    const result = req.method === 'POST'
+      ? await handleFeedbackPost(req, client, config)
+      : await handleRequest(requestUrl, client, config)
     res.writeHead(result.status, {
       'Content-Type': result.contentType,
       'Cache-Control': result.cacheControl ?? 'no-store',

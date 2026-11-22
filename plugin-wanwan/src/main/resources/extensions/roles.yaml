@@ -21,7 +21,7 @@ rules:
     resources: [ "cast-journal-config" ]
     verbs: [ "get", "list" ]
   - apiGroups: [ "api.xiaojiaoya.run" ]
-    resources: [ "cast-journal" ]
+    resources: [ "cast-journal", "brace-archive", "feedback" ]
     verbs: [ "create" ]
 ---
 apiVersion: v1alpha1
@@ -59,3 +59,19 @@ rules:
     resources: [ "ops-miniprogram-checks" ]
     resourceNames: [ "trial", "formal" ]
     verbs: [ "update" ]
+---
+apiVersion: v1alpha1
+kind: Role
+metadata:
+  name: role-template-wanwan-feedback
+  labels:
+    halo.run/role-template: "true"
+  annotations:
+    rbac.authorization.halo.run/module: "弯弯知识导航"
+    rbac.authorization.halo.run/display-name: "功能建议处理"
+    rbac.authorization.halo.run/ui-permissions: |
+      ["plugin:wanwan:feedback"]
+rules:
+  - apiGroups: [ "console.api.xiaojiaoya.run" ]
+    resources: [ "feedback" ]
+    verbs: [ "list", "update" ]

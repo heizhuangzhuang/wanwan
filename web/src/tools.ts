@@ -22,33 +22,33 @@ export const prenatalPaths = ['/prenatal', ...guides.map(guide => '/prenatal/' +
 export function renderTools(config: WebConfig) {
   const base = config.siteBasePath
   const miniProgram = config.castMiniprogramUrl
-    ? `<a class="btn" href="${escapeHtml(config.castMiniprogramUrl)}" rel="noopener noreferrer">在微信打开石膏记录</a>`
-    : '<p class="meta-row">在微信打开本小程序后，进入「家庭工具 → 石膏记录与复诊提醒」。</p>'
+    ? `<a class="btn btn-outline" href="${escapeHtml(config.castMiniprogramUrl)}" rel="noopener noreferrer">在微信打开石膏记录</a>`
+    : '<p class="meta-row">打开微信小程序，在家庭工具中选择「石膏记录与复诊提醒」。</p>'
   return renderLayout(config, '家庭工具', `
-    <section class="tool-lead"><h1>家庭工具</h1><p>整理就诊问题、保存复诊时间，和家人一起回顾每个阶段。</p></section>
-    <div class="card-list">
-      <article class="card"><h2 class="card-title">支具随访大屏</h2>
-        <p>记录矫正鞋穿戴时间、按年查看目标与随访、导出 Excel。</p>
-        <a class="btn" href="${base}/tools/brace-followup">打开随访大屏</a></article>
-      <article class="card"><h2 class="card-title">石膏记录与微信提醒</h2>
+    <section class="tool-lead"><h1>家庭工具</h1><p>记录治疗、准备就诊，回看每个阶段。</p></section>
+    <div class="tools-grid">
+      <article class="card tool-feature"><h2 class="card-title">矫正鞋穿戴记录</h2>
+        <p>计时或补记穿戴时段，查看最长十年的趋势，也可以导出 Excel。</p>
+        <a class="btn" href="${base}/tools/brace-followup">打开支具随访大屏 <span class="arrow" aria-hidden="true"></span></a></article>
+      <article class="card" id="cast"><h2 class="card-title">石膏记录与微信提醒</h2>
         <p>在微信小程序记录每次打石膏的日期、医院交代事项和下次治疗时间。同一微信账户可换机恢复。</p>
         ${miniProgram}</article>
       <article class="card"><h2 class="card-title">生成复诊日历文件</h2>
         <p>输入医院给出的时间，下载后导入手机或电脑日历。时间仅在当前浏览器处理。</p>
         <form class="tools-calendar">
           <label for="appointment-time">复诊时间（北京时间）</label>
-          <input type="datetime-local" id="appointment-time" required />
+          <input type="datetime-local" id="appointment-time" class="search-input" required />
           <button class="btn" type="submit">下载日历文件</button>
           <span id="appointment-status" role="status"></span>
         </form>
         <script src="${base}/tools/appointment.js" integrity="${appointmentHash}" defer></script></article>
       <article class="card"><h2 class="card-title">足内翻超声复查清单</h2>
         <p>一页空白 PDF，可打印后带去和医生沟通。</p>
-        <a class="btn" href="${base}/downloads/clubfoot-ultrasound-checklist.pdf">下载清单</a></article>
+        <a class="btn btn-outline" href="${base}/downloads/clubfoot-ultrasound-checklist.pdf">下载清单</a></article>
       <article class="card"><h2 class="card-title">产前检查专项</h2>
         <p>查阅结构超声、羊水穿刺和全外显子测序，并整理要向医生确认的问题。</p>
-        <a class="btn" href="${base}/prenatal">查看专项</a></article>
-    </div>`)
+        <a class="btn btn-outline" href="${base}/prenatal">查看专项</a></article>
+    </div>`, '/tools')
 }
 
 export function renderPrenatal(config: WebConfig, key?: string) {
@@ -63,11 +63,11 @@ export function renderPrenatal(config: WebConfig, key?: string) {
       ${guide.sections.map(item => `<section class="card"><h2 class="card-title">${escapeHtml(item.heading)}</h2>
         <p>${escapeHtml(item.body)}</p></section>`).join('')}
       <p>出处 <a href="${escapeHtml(guide.sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(guide.sourceTitle)}</a></p>
-      ${notice}`)
+      ${notice}`, '/prenatal/' + key)
   }
   return renderLayout(config, '产前检查专项', `
     <section class="tool-lead"><h1>产前检查专项</h1><p>按检查类型查找介绍、就诊问题和可核对的出处。</p></section>
     <div class="card-list">${guides.map(item => `<article class="card">
       <h2 class="card-title"><a href="${base}/prenatal/${item.key}">${escapeHtml(item.title)}</a></h2>
-      <p>${escapeHtml(item.summary)}</p></article>`).join('')}</div>${notice}`)
+      <p>${escapeHtml(item.summary)}</p></article>`).join('')}</div>${notice}`, '/prenatal')
 }

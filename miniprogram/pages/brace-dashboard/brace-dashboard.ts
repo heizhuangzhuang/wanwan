@@ -12,16 +12,21 @@ Page({
   data: {
     periods: PERIOD_OPTIONS, period: '30' as PeriodKey, today: '', from: '', to: '',
     mode: '', status: '', day: '', input: '', option: 0, planTypes: PLAN_TYPES, visitTypes: VISIT_TYPES,
-    average: '—', recorded: 0, below: 0, missing: 0, zero: 0, met: 0,
+    average: '—', periodDays: 0, recorded: 0, below: 0, missing: 0, zero: 0, met: 0,
     phase: '', chart: [] as ReturnType<typeof chartWear>,
     alerts: [] as { day: string; label: string }[], visits: [] as WearVisit[],
-    plans: [] as { day: string; label: string }[], dayConfirmed: false,
+    plans: [] as { day: string; label: string }[], dayConfirmed: false, selectedBucket: null as ReturnType<typeof chartWear>[number] | null,
   },
+  openVisitOnLoad: false,
+  onLoad(query: Record<string, string | undefined>) { this.openVisitOnLoad = query.visit === '1' },
   onShow() {
     try {
       this.log = readWearLog()
       const today = dateKey(Date.now())
-      this.setData({ today, to: this.data.to || today, status: '' })
+      this.setData({ today, to: this.data.to || today, status: '',
+        ...(this.openVisitOnLoad ? { mode: 'visit', day: today, input: '', option: 0 } : {}),
+      })
+      this.openVisitOnLoad = false
       this.updateDashboard()
     } catch { this.setData({ status: '本机档案暂时无法读取。' }) }
   },
@@ -33,8 +38,8 @@ Page({
     const stats = summarizeWear(days)
     const current = planOn(this.log, this.data.today)
     this.setData({
-      from: start, ...stats, average: stats.recorded ? durationText(stats.minutes * MINUTE / stats.recorded) : '—',
-      chart: chartWear(days),
+      from: start, periodDays: days.length, ...stats, average: stats.recorded ? durationText(stats.minutes * MINUTE / stats.recorded) : '—',
+      chart: stats.recorded ? chartWear(days) : [], selectedBucket: null,
       phase: current?.type === 'followup' ? '仅随访' : current?.minutes ? durationText(current.minutes * MINUTE) : '未设目标',
       alerts: days.filter(row => ['unrecorded', 'below', 'zero'].includes(row.state)).slice(-8).reverse()
         .map(row => ({ day: row.day, label: STATE_LABEL[row.state] })),
@@ -43,6 +48,10 @@ Page({
         label: row.type === 'wear' ? durationText(row.minutes! * MINUTE) : row.type === 'followup' ? '仅随访' : '未设目标' })),
       dayConfirmed: this.log.confirmedZero.includes(this.data.day),
     })
+  },
+  selectBucket(e: WechatMiniprogram.TouchEvent) {
+    const bucket = this.data.chart.find(item => item.key === e.currentTarget.dataset.key)
+    if (bucket) this.setData({ selectedBucket: bucket })
   },
   setPeriod(e: WechatMiniprogram.TouchEvent) {
     const period = PERIOD_OPTIONS.find(item => item.key === e.currentTarget.dataset.period)

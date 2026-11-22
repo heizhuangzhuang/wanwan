@@ -1,0 +1,82 @@
+<view class="container followup-page">
+  <view wx:if="{{summary && !editor}}" class="summary-card">
+    <view class="summary-heading">给医生看的复诊摘要</view>
+    <view class="summary-range">{{summary.from}} 至 {{summary.today}} · {{summary.fromVisit ? '自上次复诊' : '最近 30 天'}}</view>
+    <view class="summary-coverage">已记录 <text>{{summary.recorded}}/{{summary.total}}</text> 天</view>
+    <view>有记录日平均 {{summary.average}}</view>
+    <view class="summary-metrics">
+      <view>未记录 {{summary.unknown}} 天</view>
+      <view>低于目标 {{summary.below}} 天</view>
+      <view>确认未穿 {{summary.zero}} 天</view>
+    </view>
+    <view class="summary-caption">低于目标和确认未穿仅统计已结束日期。</view>
+    <view class="summary-divider">期初目标 {{summary.initialPlan}}</view>
+    <view wx:for="{{summary.plans}}" wx:key="day">{{item.day}} 生效 · {{item.label}}</view>
+    <view class="summary-divider">最近支具调整</view>
+    <view>{{summary.adjustment}}</view>
+    <view wx:if="{{savedQuestions.length}}" class="summary-divider">想问医生</view>
+    <view wx:for="{{savedQuestions}}" wx:key="*this">• {{item}}</view>
+    <view class="summary-actions summary-card-actions">
+      <button class="btn" bindtap="copySummary">复制复诊摘要</button>
+      <button class="btn secondary" bindtap="toggleQuestions">{{editingQuestions ? '收起问题编辑' : '编辑复诊问题'}}</button>
+    </view>
+  </view>
+
+  <view wx:if="{{editor}}" class="card summary-section" id="observations">
+    <view class="title">{{editor.id ? '编辑穿戴困难' : '记录穿戴困难'}}</view>
+    <view class="summary-fields">
+      <picker mode="date" value="{{editor.day}}" end="{{today}}" data-field="day" bindchange="changeObservation">
+        <view class="summary-field">日期 <text>{{editor.day}}</text></view>
+      </picker>
+      <picker range="{{types}}" value="{{editor.kind}}" data-field="kind" bindchange="changeObservation">
+        <view class="summary-field">观察 <text>{{types[editor.kind]}} ›</text></view>
+      </picker>
+      <picker range="{{sides}}" value="{{editor.side}}" data-field="side" bindchange="changeObservation">
+        <view class="summary-field">哪一侧 <text>{{sides[editor.side]}} ›</text></view>
+      </picker>
+      <view class="summary-field" bindtap="toggleContacted" aria-role="switch" aria-checked="{{editor.contacted}}">
+        联系治疗团队 <text>{{editor.contacted ? '已联系' : '未标记'}} ›</text>
+      </view>
+    </view>
+    <textarea class="summary-input" value="{{editor.outcome}}" maxlength="200" data-field="outcome" bindinput="changeObservation"
+      placeholder="处理经过或结果（可选）" auto-height />
+    <view class="summary-actions">
+      <button class="btn" bindtap="saveObservation">保存观察</button>
+      <button class="btn secondary" bindtap="closeObservation">取消</button>
+      <button wx:if="{{editor.id}}" class="btn secondary" bindtap="removeObservation">删除</button>
+    </view>
+  </view>
+
+  <view wx:if="{{!editor && editingQuestions}}" class="card summary-section">
+    <view class="title">想问医生的问题</view>
+    <input wx:for="{{questions}}" class="summary-input" maxlength="100" aria-label="复诊问题 {{index + 1}}"
+      value="{{item}}" data-index="{{index}}" bindinput="changeQuestion" placeholder="问题 {{index + 1}}（可选）" />
+    <view class="summary-actions">
+      <button class="btn" bindtap="saveQuestions">保存问题</button>
+      <button class="btn secondary" bindtap="toggleQuestions">取消</button>
+    </view>
+  </view>
+  <view wx:if="{{message}}" class="notice" aria-live="polite">{{message}}</view>
+
+  <view wx:if="{{!editor}}" class="card summary-section">
+    <view class="summary-section-head"><view class="title">治疗时间线</view><button class="btn secondary compact" bindtap="addObservation">记穿戴困难</button></view>
+    <view class="summary-actions summary-links">
+      <navigator url="/pages/cast/cast?add=1">记一次石膏 ›</navigator>
+      <navigator url="/pages/brace-dashboard/brace-dashboard?visit=1">记复诊或调整 ›</navigator>
+    </view>
+    <view wx:if="{{castStatus}}" class="summary-caption">{{castStatus}}</view>
+    <view wx:if="{{!timeline.length}}" class="description">添加第一条治疗或随访记录后，会在这里看到。</view>
+    <view wx:for="{{timeline}}" wx:key="id" class="timeline-entry">
+      <view class="timeline-date">{{item.day}}</view>
+      <view><view class="timeline-title">{{item.title}}</view><view wx:if="{{item.note}}" class="description">{{item.note}}</view></view>
+    </view>
+    <button wx:if="{{timelineTotal > timelineLimit}}" class="btn secondary" bindtap="moreTimeline">加载更早记录</button>
+  </view>
+
+  <view wx:if="{{observations.length && !editor}}" class="card summary-section">
+    <view class="title">穿戴困难记录</view>
+    <button wx:for="{{observations}}" wx:key="id" data-id="{{item.id}}" bindtap="editObservation" class="btn secondary summary-observation">
+      {{item.day}} · {{item.kind}} · {{item.side}}
+    </button>
+  </view>
+</view>

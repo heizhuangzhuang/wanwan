@@ -35,6 +35,7 @@ declare function Page<T extends { data?: Record<string, unknown> }>(
 
 interface MiniProgramFailure { errMsg?: string }
 interface MiniProgramFileSystem {
+  accessSync(path: string): void
   readFileSync(path: string, encoding: 'utf8'): string
   writeFileSync(path: string, data: string | ArrayBuffer, encoding?: 'utf8'): void
   access(options: { path: string; success: () => void; fail: (err: MiniProgramFailure) => void }): void
@@ -90,6 +91,7 @@ declare const wx: {
   login(options: { success: (result: { code?: string }) => void; fail: (err: unknown) => void }): void
   navigateTo(options: { url: string }): void
   navigateBack(): void
+  pageScrollTo?(options: { scrollTop: number; duration?: number }): void
   redirectTo(options: { url: string }): void
   switchTab(options: { url: string }): void
   reLaunch(options: { url: string }): void
@@ -101,5 +103,5 @@ declare const wx: {
   chooseMessageFile?(options: { count: number; type: 'file'; extension?: string[];
     success: (result: { tempFiles: { path: string; size: number }[] }) => void; fail?: () => void }): void
   showModal(options: { title: string; content: string; confirmText?: string;
-    success: (result: { confirm: boolean }) => void }): void
+    success: (result: { confirm: boolean }) => void; fail?: () => void }): void
 }

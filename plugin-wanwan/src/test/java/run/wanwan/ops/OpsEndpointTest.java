@@ -15,6 +15,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import run.halo.app.extension.Metadata;
 import run.halo.app.extension.ReactiveExtensionClient;
+import run.wanwan.feedback.FeedbackService;
 import run.wanwan.model.Enums.LinkStatus;
 import run.wanwan.model.Enums.PublishState;
 import run.wanwan.model.ResourceCard;
@@ -59,7 +60,8 @@ class OpsEndpointTest {
             return Mono.just(check);
         });
 
-        var client = WebTestClient.bindToRouterFunction(new OpsEndpoint(probes, storage).endpoint()).build();
+        var client = WebTestClient.bindToRouterFunction(new OpsEndpoint(probes, storage, mock(FeedbackService.class))
+            .endpoint()).build();
         client.get().uri("/ops-overview").exchange()
             .expectStatus().isOk()
             .expectHeader().valueEquals("Cache-Control", "no-store")

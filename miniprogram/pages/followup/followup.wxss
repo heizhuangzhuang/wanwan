@@ -1,0 +1,21 @@
+.followup-page { padding-bottom: 56rpx; }
+.summary-card { padding: 26rpx; border-radius: 24rpx; background: #234b3d; color: #fffdf7; line-height: 1.55; }
+.summary-heading { font-size: 39rpx; font-weight: 720; }
+.summary-range, .summary-caption, .timeline-date { font-size: 24rpx; }
+.summary-card .summary-range, .summary-card .summary-caption { color: #e3eee4; }
+.summary-coverage { margin-top: 12rpx; font-size: 28rpx; }
+.summary-coverage text { font-size: 48rpx; font-weight: 720; font-variant-numeric: tabular-nums; }
+.summary-metrics { display: flex; flex-wrap: wrap; gap: 4rpx 18rpx; margin: 8rpx 0; font-size: 25rpx; }
+.summary-divider { border-top: 1rpx solid #6c897c; margin-top: 13rpx; padding-top: 9rpx; font-weight: 650; }
+.summary-section { margin-top: 20rpx; }
+.summary-section-head, .summary-field { display: flex; justify-content: space-between; align-items: center; gap: 12rpx; }
+.summary-input, .summary-field { box-sizing: border-box; width: 100%; min-height: 88rpx; padding: 17rpx; margin: 10rpx 0; border-radius: 12rpx; background: #f0f4ec; }
+.summary-actions { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 12rpx; }
+.summary-actions .btn, .summary-section-head .btn { width: auto; margin: 0; }
+.summary-links navigator { padding: 18rpx 8rpx 18rpx 0; color: #285143; }
+.timeline-entry { display: grid; grid-template-columns: 174rpx 1fr; gap: 13rpx; border-top: 1rpx solid #e1e6dd; padding: 17rpx 0; }
+.timeline-title { font-weight: 675; }
+.summary-observation { text-align: left; }
+
+.summary-card-actions .btn { background: #fffdf7; color: #234b3d; }
+.summary-card-actions .secondary { background: #345c4d; color: #fffdf7; border-color: #8ca69a; }

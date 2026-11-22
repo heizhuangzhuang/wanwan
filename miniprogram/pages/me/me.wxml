@@ -47,6 +47,11 @@
   </view>
 
   <view class="tab-list me-support">
+    <navigator class="tab-row" url="/pages/feedback/feedback" hover-class="pressed">
+      <view class="icon-tile icon-sage" aria-hidden="true"><image src="/assets/icons/messages-square.png" mode="aspectFit" /></view>
+      <view class="tab-row-copy"><view class="tab-row-title">功能建议</view><view class="tab-row-caption">告诉我们你想新增或改进什么</view></view>
+      <text class="tab-chevron" aria-hidden="true">›</text>
+    </navigator>
     <navigator class="tab-row" url="/pages/about/about" hover-class="pressed">
       <view class="icon-tile icon-blue" aria-hidden="true"><image src="/assets/icons/info.png" mode="aspectFit" /></view>
       <view class="tab-row-copy"><view class="tab-row-title">关于与反馈</view><view class="tab-row-caption">隐私说明、版权和内容勘误</view></view>

@@ -7,6 +7,9 @@
     { "action": "disallow", "page": "pages/cast/cast" },
     { "action": "disallow", "page": "pages/brace-wear/brace-wear" },
     { "action": "disallow", "page": "pages/brace-dashboard/brace-dashboard" },
+    { "action": "disallow", "page": "pages/followup/followup" },
+    { "action": "disallow", "page": "pages/brace-sync/brace-sync" },
+    { "action": "disallow", "page": "pages/feedback/feedback" },
     { "action": "allow", "page": "*" }
   ]
 }

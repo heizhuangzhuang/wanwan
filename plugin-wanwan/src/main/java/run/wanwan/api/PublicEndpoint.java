@@ -4,6 +4,9 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferLimitException;
+import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -15,8 +18,10 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import run.halo.app.core.extension.endpoint.CustomEndpoint;
 import run.halo.app.extension.GroupVersion;
+import run.wanwan.feedback.FeedbackService;
 import run.wanwan.model.Enums.MaterialType;
 import run.wanwan.model.Stage;
+import run.wanwan.notice.BraceArchiveService;
 import run.wanwan.notice.CastJournalService;
 import run.wanwan.notice.NoticeService;
 import run.wanwan.search.SearchIndex;
@@ -31,6 +36,7 @@ public class PublicEndpoint implements CustomEndpoint {
     private final PublicQueryService queryService;
     private final NoticeService notices;
     private final CastJournalService journals;
+    private final FeedbackService feedback;
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -38,6 +44,8 @@ public class PublicEndpoint implements CustomEndpoint {
             .GET("cast-journal-config", req -> ServerResponse.ok().cacheControl(CacheControl.noStore())
                 .bodyValue(journals.configuration()))
             .POST("cast-journal", this::accessJournal)
+            .POST("brace-archive", this::accessBraceArchive)
+            .POST("feedback", this::submitFeedback)
             .build();
     }
 
@@ -76,6 +84,33 @@ public class PublicEndpoint implements CustomEndpoint {
                 .subscribeOn(Schedulers.boundedElastic()))
             .flatMap(result -> ServerResponse.ok().cacheControl(CacheControl.noStore()).bodyValue(result))
             .switchIfEmpty(ServerResponse.badRequest().build());
+    }
+
+    private Mono<ServerResponse> submitFeedback(ServerRequest req) {
+        return req.bodyToMono(FeedbackService.Submission.class)
+            .flatMap(input -> feedback.submit(input, WanwanCorsFilter.clientChannel(req.headers().asHttpHeaders())))
+            .flatMap(receipt -> ServerResponse.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore())
+                .bodyValue(receipt))
+            .switchIfEmpty(ServerResponse.badRequest().build());
+    }
+
+    private Mono<ServerResponse> accessBraceArchive(ServerRequest req) {
+        return DataBufferUtils.join(req.bodyToFlux(DataBuffer.class), BraceArchiveService.MAX_REQUEST_BYTES)
+            .map(buffer -> {
+                try {
+                    byte[] body = new byte[buffer.readableByteCount()];
+                    buffer.read(body);
+                    return body;
+                } finally {
+                    DataBufferUtils.release(buffer);
+                }
+            })
+            .flatMap(body -> Mono.fromCallable(() -> journals.accessBraceArchive(body))
+                .subscribeOn(Schedulers.boundedElastic()))
+            .flatMap(result -> ServerResponse.ok().cacheControl(CacheControl.noStore()).bodyValue(result))
+            .switchIfEmpty(ServerResponse.badRequest().build())
+            .onErrorResume(DataBufferLimitException.class,
+                error -> ServerResponse.status(HttpStatus.PAYLOAD_TOO_LARGE).build());
     }
 
     private Mono<ServerResponse> accessJournal(ServerRequest req) {

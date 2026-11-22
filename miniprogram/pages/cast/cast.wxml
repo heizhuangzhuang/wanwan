@@ -3,6 +3,10 @@
     <view class="page-heading">石膏记录</view>
     <view class="description">记下每一次，下一次就诊前有迹可查。</view>
   </view>
+  <view class="cast-help">
+    <navigator class="text-link" url="/pages/preparation/preparation?stage=POSTNATAL_TREATMENT">打开就诊沟通清单 ›</navigator>
+    <navigator class="text-link" url="/pages/stage/stage?key=POSTNATAL_TREATMENT">查看石膏护理资料 ›</navigator>
+  </view>
   <view wx:if="{{error}}" class="reading-state">
     <view>{{error}}</view><button class="btn secondary compact" bindtap="refresh" disabled="{{busy}}">重试</button>
   </view>
@@ -10,7 +14,7 @@
   <view wx:elif="{{!config || !config.enabled}}" class="reading-state">
     <view class="title">云端记录暂未开放</view>
     <view class="description">公用沟通清单仍可使用。</view>
-    <navigator class="text-link" url="/pages/preparation/preparation">打开沟通清单</navigator>
+
   </view>
   <view wx:elif="{{!consented && !busy}}" class="card">
     <view class="title">由本人或孩子的监护人授权</view>
@@ -26,10 +30,16 @@
       <button wx:if="{{reminder.state === 'PENDING'}}" class="btn secondary compact" bindtap="cancelReminder" disabled="{{busy}}">取消提醒</button>
     </view>
     <view wx:if="{{editing}}" class="card cast-form">
-      <view class="title">编辑石膏记录</view>
+      <view class="title">{{entries.length && form.id ? '石膏记录详情' : '记录一次石膏'}}</view>
       <view class="cast-field">
         <text>打石膏日期</text>
         <picker mode="date" value="{{form.castDate}}" end="{{today}}" data-field="castDate" bindchange="change"><view>{{form.castDate}}</view></picker>
+      </view>
+      <view class="cast-field"><text>哪一侧</text>
+        <picker range="{{sides}}" value="{{form.side}}" data-field="side" bindchange="change"><view>{{sides[form.side]}}</view></picker>
+      </view>
+      <view class="cast-field"><text>第几次石膏</text>
+        <input type="number" maxlength="3" value="{{form.sequence}}" placeholder="选填" data-field="sequence" bindinput="change" />
       </view>
       <view class="cast-field cast-note">
         <text>医院交代的注意事项</text>
@@ -52,7 +62,7 @@
     <button wx:else class="btn" bindtap="add" disabled="{{busy}}">添加一次石膏记录</button>
     <view wx:if="{{!entries.length && !editing}}" class="reading-state muted">还没有石膏记录。</view>
     <view wx:for="{{entries}}" wx:key="id" class="card">
-      <view class="title">{{item.castDate}} 打石膏</view>
+      <view class="title">{{item.castDate}} {{item.sequence ? '第 ' + item.sequence + ' 次石膏' : '打石膏'}} {{item.side || ''}}</view>
       <view wx:if="{{item.care}}" class="description cast-care">{{item.care}}</view>
       <view wx:if="{{item.visitText}}" class="description">下次治疗 {{item.visitText}}（北京时间）</view>
       <view class="cast-actions">

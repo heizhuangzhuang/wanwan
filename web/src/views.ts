@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { renderFeedback } from './feedback.js'
 import type { BackendClient, PageResult, PostSummary, ResourceView, StageView } from './api.js'
 import { braceScript, braceScriptHash, renderBraceDashboard } from './brace-dashboard.js'
 import type { WebConfig } from './config.js'
@@ -14,6 +15,7 @@ import {
 } from './html.js'
 
 const LOGO_PNG = readFileSync(new URL('../public/logo.png', import.meta.url))
+const HOME_PHOTO = readFileSync(new URL('../public/first-steps.webp', import.meta.url))
 const CHECKLIST_PDF = readFileSync(new URL('../public/downloads/clubfoot-ultrasound-checklist.pdf', import.meta.url))
 
 export interface RouteResponse {
@@ -48,10 +50,63 @@ function htmlResponse(status: number, body: string): RouteResponse {
   return { status, contentType: 'text/html; charset=utf-8', body }
 }
 
+const STAGE_CAPTIONS: Record<string, string> = {
+  JUST_FOUND: '看懂提示，整理要问的问题',
+  PRENATAL: '查找检查资料，准备就诊',
+  POSTNATAL_TREATMENT: '了解评估、石膏与复诊',
+  BRACE_DAILY: '记录穿戴，安排日常',
+  LONG_TERM: '回看变化，整理随访记录',
+}
+
 function renderStageGrid(stages: StageView[], basePath: string): string {
-  return `<div class="stage-grid">${stages.map(s =>
-    `<a class="stage-card" href="${basePath}/stages/${encodeURIComponent(s.key)}"><div class="stage-order">阶段 ${s.order + 1}</div><div class="stage-name">${escapeHtml(s.label)}</div></a>`,
-  ).join('')}</div>`
+  return `<ol class="stage-grid">${stages.map(s => `<li>
+    <a class="stage-card" href="${basePath}/stages/${encodeURIComponent(s.key)}">
+      <span class="stage-order" aria-hidden="true">${String(s.order + 1).padStart(2, '0')}</span>
+      <strong class="stage-name">${escapeHtml(s.label)}</strong>
+      ${STAGE_CAPTIONS[s.key] ? `<span class="stage-caption">${STAGE_CAPTIONS[s.key]}</span>` : ''}
+      <span class="arrow" aria-hidden="true"></span>
+    </a></li>`).join('')}</ol>`
+}
+
+function renderHome(config: WebConfig, stages: StageView[], topics: string, recent: string, posts: string) {
+  const base = config.siteBasePath
+  const tools = [
+    ['/tools/brace-followup', '矫正鞋穿戴记录', '计时、补记，按周或按年回看。', 'green'],
+    ['/tools#cast', '石膏记录', '记录每次治疗，在微信查看复诊提醒。', 'yellow'],
+    ['/prenatal', '产前检查与清单', '查找检查介绍，整理就诊问题。', 'linen'],
+  ]
+  return renderLayout(config, null, `
+<section class="home-hero" aria-labelledby="home-title">
+  <div class="home-hero-copy">
+    <h1 id="home-title">足内翻家庭指南</h1>
+    <p>从第一次看到报告，到治疗和随访。按当前阶段查资料，记录每一步。</p>
+    <form class="search-form home-search" action="${base}/search" method="get" role="search">
+      <label class="visually-hidden" for="home-keyword">搜索资料</label>
+      <span class="search-symbol" aria-hidden="true"></span>
+      <input id="home-keyword" class="search-input" type="search" name="keyword" maxlength="100" placeholder="超声、石膏、支具" required />
+      <button class="btn" type="submit">搜索资料</button>
+    </form>
+    <div class="quick-search" aria-label="快捷搜索">
+      ${['超声复查', '石膏', '支具'].map(term => `<a href="${base}/search?keyword=${encodeURIComponent(term)}">${term}</a>`).join('')}
+      <a class="home-tool-link" href="${base}/tools/brace-followup">记穿戴 <span class="arrow" aria-hidden="true"></span></a>
+    </div>
+  </div>
+  <div class="home-hero-media"><img src="${base}/assets/first-steps.webp" alt="" width="960" height="640" fetchpriority="high" /></div>
+</section>
+<section class="home-section" aria-labelledby="home-stages">
+  <header class="section-heading"><h2 id="home-stages">你现在在哪个阶段？</h2><a class="text-link" href="${base}/stages">全部阶段 <span class="arrow" aria-hidden="true"></span></a></header>
+  ${renderStageGrid(stages, base)}
+</section>
+<section class="home-section" aria-labelledby="home-tools">
+  <header class="section-heading"><h2 id="home-tools">家庭工具</h2><a class="text-link" href="${base}/tools">全部工具 <span class="arrow" aria-hidden="true"></span></a></header>
+  <div class="quick-tools">${tools.map(([href, title, caption, color]) => `
+    <a class="quick-tool quick-tool--${color}" href="${base}${href}"><strong>${title}</strong><span>${caption}</span><span class="arrow" aria-hidden="true"></span></a>`).join('')}</div>
+</section>
+<section class="home-section" aria-labelledby="home-resources">
+  <header class="section-heading"><h2 id="home-resources">近期整理资料</h2><a class="text-link" href="${base}/resources">查看资料库 <span class="arrow" aria-hidden="true"></span></a></header>
+  ${recent}
+</section>
+${topics}${posts}`, '/')
 }
 
 function renderUnavailableResources(basePath: string): string {
@@ -74,7 +129,7 @@ function renderFilterBar(basePath: string, selectedType: string, extraQuery = ''
     else params.delete('type')
     const qs = params.toString()
     const href = qs ? `${basePath}?${qs}` : basePath
-    const cls = selectedType === t.key ? ' class="active"' : ''
+    const cls = selectedType === t.key ? ' class="active" aria-current="true"' : ''
     return `<a href="${escapeHtml(href)}"${cls}>${t.label}</a>`
   }).join('')}</div>`
 }
@@ -184,6 +239,7 @@ export async function handleRequest(
     return notFoundResponse(config)
   }
   const path = url.pathname.slice(basePath.length).replace(/\/+$/, '') || '/'
+  const renderPage = (title: string, body: string) => renderLayout(config, title, body, path)
   const requestedPage = Number(url.searchParams.get('page'))
   const page = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1
   const selectedType = (url.searchParams.get('type') || '').trim().toUpperCase()
@@ -195,6 +251,8 @@ export async function handleRequest(
   if (path === '/healthz') {
     return { status: 200, contentType: 'text/plain; charset=utf-8', body: 'ok' }
   }
+
+  if (path === '/feedback') return renderFeedback(config, { sent: url.searchParams.get('sent') === '1' })
 
   if (path === '/tools') return { ...htmlResponse(200, renderTools(config)), toolsScript: true }
 
@@ -220,6 +278,13 @@ export async function handleRequest(
     return {
       status: 200, contentType: 'application/pdf', body: CHECKLIST_PDF,
       contentDisposition: "attachment; filename=clubfoot-ultrasound-checklist.pdf",
+    }
+  }
+
+  if (path === '/assets/first-steps.webp') {
+    return {
+      status: 200, contentType: 'image/webp', body: HOME_PHOTO,
+      cacheControl: 'public, max-age=86400',
     }
   }
 
@@ -269,76 +334,43 @@ export async function handleRequest(
     return { status: 200, contentType: 'application/xml; charset=utf-8', body: xml }
   }
 
-  if (path === '/' && !config.backendApiBase) {
-    return htmlResponse(
-      200,
-      renderLayout(
-        config,
-        null,
-        `<h1>${escapeHtml(config.siteTitle)}</h1>
-<p>为关注足内翻的家庭整理机构资料、论文题录和家庭经历。</p>
-<p class="notice-bar">资料库正在准备中。您可以先查看<a href="${basePath}/about">本站的收录规则</a>。</p>`,
-      ),
-    )
-  }
-
   if (path === '/') {
+    if (!config.backendApiBase) {
+      return htmlResponse(200, renderHome(config, FIXED_STAGES, '',
+        '<p class="notice-bar">资料库正在准备中。</p>', ''))
+    }
     const [stages, topics, recent, posts] = await Promise.allSettled([
       client.getStages(),
       client.listTopics(1, 4),
       client.listResources({ page: 1, size: 6 }),
       client.listPosts(1, 4),
     ])
-    const stageHtml = renderStageGrid(stages.status === 'fulfilled' ? stages.value : FIXED_STAGES, basePath)
     const topicHtml = topics.status === 'fulfilled' && topics.value.items.length
-      ? `<h2>精选专题</h2><div class="card-list">${topics.value.items
-          .map(
-            (t) =>
-              `<article class="card"><h3 class="card-title"><a href="${basePath}/topics/${encodeURIComponent(t.name)}">${escapeHtml(t.title)}</a></h3><p class="card-intro">${escapeHtml(t.intro)}</p><div class="meta-row">含 ${t.resourceCount} 条资料</div></article>`,
-          )
-          .join('')}</div>`
+      ? `<section class="home-section"><header class="section-heading"><h2>精选专题</h2><a class="text-link" href="${basePath}/topics">全部专题</a></header><div class="card-list home-grid">${topics.value.items
+          .map(t => `<article class="card"><h3 class="card-title"><a href="${basePath}/topics/${encodeURIComponent(t.name)}">${escapeHtml(t.title)}</a></h3><p class="card-intro">${escapeHtml(t.intro)}</p><div class="meta-row">含 ${t.resourceCount} 条资料</div></article>`)
+          .join('')}</div></section>`
       : ''
     const recentHtml = recent.status === 'fulfilled'
       ? recent.value.items.length
-        ? `<div class="card-list">${recent.value.items.map(item => renderCard(item, config)).join('')}</div>`
-        : '<div class="warn-bar">暂未发布资料卡。运营者核对收录后将陆续公开。</div>'
+        ? `<div class="card-list home-grid">${recent.value.items.map(item => renderCard(item, config)).join('')}</div>`
+        : '<p class="notice-bar">暂未发布资料。</p>'
       : renderUnavailableResources(basePath)
     const postHtml = posts.status === 'fulfilled' && posts.value.items.length
-      ? `<h2>本站原创导读</h2><div class="card-list">${posts.value.items
-          .map(
-            (p) =>
-              `<article class="card"><h3 class="card-title"><a href="${basePath}/posts/${encodeURIComponent(p.name)}">${escapeHtml(p.title)}</a></h3><p class="card-intro">${escapeHtml(p.excerpt)}</p>${p.author ? `<div class="meta-row">${escapeHtml(p.author)}</div>` : ''}</article>`,
-          )
-          .join('')}</div>`
+      ? `<section class="home-section"><header class="section-heading"><h2>本站原创导读</h2><a class="text-link" href="${basePath}/posts">全部导读</a></header><div class="card-list home-grid">${posts.value.items
+          .map(p => `<article class="card"><h3 class="card-title"><a href="${basePath}/posts/${encodeURIComponent(p.name)}">${escapeHtml(p.title)}</a></h3><p class="card-intro">${escapeHtml(p.excerpt)}</p>${p.author ? `<div class="meta-row">${escapeHtml(p.author)}</div>` : ''}</article>`)
+          .join('')}</div></section>`
       : ''
 
-    return htmlResponse(
-      200,
-      renderLayout(
-        config,
-        null,
-        `<div class="notice-bar">面向产前发现胎儿疑似足内翻的家庭：按阶段整理的公开资料导航。本页展示题录、来源与本站自写介绍，点击资料可前往合法原站阅读。不提供医学诊断或替代门诊沟通。</div>
-<form class="search-form" action="${basePath}/search" method="get">
-  <input class="search-input" type="search" name="keyword" maxlength="100" placeholder="搜索已收录资料标题、介绍或来源..." aria-label="搜索关键词" />
-  <button class="btn" type="submit">搜索</button>
-</form>
-<h2>按阶段开始浏览</h2>
-${stageHtml}
-${topicHtml}
-<h2>近期整理资料</h2>
-${recentHtml}
-${postHtml}`,
-      ),
-    )
+    return htmlResponse(200, renderHome(config,
+      stages.status === 'fulfilled' && stages.value.length ? stages.value : FIXED_STAGES,
+      topicHtml, recentHtml, postHtml))
   }
 
   if (path === '/stages') {
     const stages = await client.getStages().catch(() => FIXED_STAGES)
     return htmlResponse(
       200,
-      renderLayout(
-        config,
-        '按阶段浏览',
+      renderPage('按阶段浏览',
         `<h1>按阶段浏览</h1><p class="notice-bar">阶段只是阅读资料的组织方式，不代表对任何家庭规定检查或治疗路线。</p>${renderStageGrid(stages, basePath)}`,
       ),
     )
@@ -362,7 +394,7 @@ ${postHtml}`,
 ${posts.total > posts.items.length ? `<a href="${basePath}/posts?stage=${encodeURIComponent(stage.key)}">查看本阶段全部导读</a>` : ''}</section>`
       : ''
     if (!list) {
-      return htmlResponse(200, renderLayout(config, stage.label,
+      return htmlResponse(200, renderPage(stage.label,
         `<h1>${escapeHtml(stage.label)}</h1>${stageGuides}${renderUnavailableResources(basePath)}`,
       ))
     }
@@ -371,7 +403,7 @@ ${posts.total > posts.items.length ? `<a href="${basePath}/posts?stage=${encodeU
       : '<div class="warn-bar">该筛选条件下暂无已公开资料。</div>'
     return htmlResponse(
       200,
-      renderLayout(config, stage.label,
+      renderPage(stage.label,
         `<h1>${escapeHtml(stage.label)}</h1>
 <p class="notice-bar">以下为手动核对后收录的公开资料。按编辑推荐阅读顺序排列，不构成个体医学建议。</p>
 ${stageGuides}
@@ -399,9 +431,7 @@ ${cards}${renderPagination(stagePath, list, query)}`,
       : '<div class="warn-bar">暂无符合条件的已公开资料。</div>'
     return htmlResponse(
       200,
-      renderLayout(
-        config,
-        '资料库',
+      renderPage('资料库',
         `<h1>资料库</h1>${renderFilterBar(`${basePath}/resources`, selectedType, query.toString())}${cards}${renderPagination(`${basePath}/resources`, list, query)}`,
       ),
     )
@@ -413,7 +443,7 @@ ${cards}${renderPagination(stagePath, list, query)}`,
     const r = await client.getResource(name)
     if (!r) return notFoundResponse(config)
     const related = await renderRelated(r, client, config)
-    return htmlResponse(200, renderLayout(config, r.title, renderResourceDetail(r, config) + related))
+    return htmlResponse(200, renderPage(r.title, renderResourceDetail(r, config) + related))
   }
 
   if (path === '/topics') {
@@ -426,7 +456,7 @@ ${cards}${renderPagination(stagePath, list, query)}`,
           )
           .join('')}</div>`
       : '<div class="warn-bar">暂无已发布专题。</div>'
-    return htmlResponse(200, renderLayout(config, '精选专题', `<h1>精选专题</h1>${body}${renderPagination(`${basePath}${path}`, list, query)}`))
+    return htmlResponse(200, renderPage('精选专题', `<h1>精选专题</h1>${body}${renderPagination(`${basePath}${path}`, list, query)}`))
   }
 
   if (path.startsWith('/topics/')) {
@@ -439,9 +469,7 @@ ${cards}${renderPagination(stagePath, list, query)}`,
       : '<div class="warn-bar">该专题下暂无可公开资料。</div>'
     return htmlResponse(
       200,
-      renderLayout(
-        config,
-        topic.title,
+      renderPage(topic.title,
         `<p><a href="${basePath}/topics">← 返回专题列表</a></p><h1>${escapeHtml(topic.title)}</h1><div class="notice-bar">${escapeHtml(topic.intro)}</div>${cards}`,
       ),
     )
@@ -455,7 +483,7 @@ ${cards}${renderPagination(stagePath, list, query)}`,
     const body = list.items.length
       ? `<div class="card-list">${list.items.map(guide => renderGuideCard(guide, basePath)).join('')}</div>`
       : '<div class="warn-bar">暂无已发布的原创导读。</div>'
-    return htmlResponse(200, renderLayout(config, title, `<h1>${escapeHtml(title)}</h1>${body}${renderPagination(`${basePath}${path}`, list, query)}`))
+    return htmlResponse(200, renderPage(title, `<h1>${escapeHtml(title)}</h1>${body}${renderPagination(`${basePath}${path}`, list, query)}`))
   }
 
   if (path.startsWith('/posts/')) {
@@ -466,9 +494,7 @@ ${cards}${renderPagination(stagePath, list, query)}`,
     const dateLine = post.publishTime ? `<span>发布日期：${escapeHtml(post.publishTime.slice(0, 10))}</span>` : ''
     return htmlResponse(
       200,
-      renderLayout(
-        config,
-        post.title,
+      renderPage(post.title,
         `<p><a href="${basePath}/posts">← 返回原创导读</a></p>
 <article class="card">
   <div class="meta-row" style="margin-bottom:6px"><span class="badge">本站原创导读</span>${post.author ? `<span>作者 ${escapeHtml(post.author)}</span>` : ''}${dateLine}</div>
@@ -483,11 +509,19 @@ ${cards}${renderPagination(stagePath, list, query)}`,
   if (path === '/search') {
     const keyword = (url.searchParams.get('keyword') || '').trim()
     const tooLong = keyword.length > 100
+    const [results, stages] = await Promise.all([
+      keyword && !tooLong
+        ? client.search({ keyword, stage: stageFilter || undefined, type: selectedType || undefined, page, size: 20 }).catch(() => null)
+        : null,
+      client.getStages().catch(() => FIXED_STAGES),
+    ])
+    const unavailable = Boolean(keyword && !tooLong && !results)
     let resultHtml = ''
     if (tooLong) {
       resultHtml = '<div class="warn-bar">关键词超过 100 个字符限制，请缩短后重试。</div>'
-    } else if (keyword) {
-      const results = await client.search({ keyword, stage: stageFilter || undefined, type: selectedType || undefined, page, size: 20 })
+    } else if (unavailable) {
+      resultHtml = renderUnavailableResources(basePath)
+    } else if (results) {
       const guideItems = results.guideItems ?? []
       resultHtml = results.items.length
         ? `<h2>公开资料卡</h2><p class="meta-row">共 ${results.total} 条</p><div class="card-list">${results.items.map((item) => renderCard(item, config)).join('')}</div>`
@@ -500,29 +534,23 @@ ${cards}${renderPagination(stagePath, list, query)}`,
       }
       resultHtml += renderPagination(`${basePath}/search`, { ...results, total: Math.max(results.total, results.guideTotal ?? 0) }, query)
     }
-    const stages = await client.getStages().catch(() => [])
     return htmlResponse(
-      200,
-      renderLayout(
-        config,
-        '站内搜索',
+      unavailable ? 503 : 200,
+      renderPage('站内搜索',
         `<h1>站内搜索</h1>
 <p class="meta-row">搜索公开资料卡的题录、来源和标签，也可搜索本站原创导读的标题和摘要。</p>
-<form class="search-form" action="${basePath}/search" method="get">
-  <input class="search-input" type="search" name="keyword" maxlength="100" value="${escapeHtml(keyword)}" placeholder="输入关键词（最多 100 字符）..." aria-label="搜索关键词" />
-  <input type="hidden" name="stage" value="${escapeHtml(stageFilter)}" />
-  <input type="hidden" name="type" value="${escapeHtml(selectedType)}" />
-  <button class="btn" type="submit">搜索</button>
-</form>
-<form class="search-form" action="${basePath}/search" method="get">
-  <input type="hidden" name="keyword" value="${escapeHtml(keyword)}" />
-  <select class="search-input" name="stage" aria-label="阶段"><option value="">全部阶段</option>
+<form class="card search-panel" action="${basePath}/search" method="get" role="search">
+  <label for="keyword">关键词</label>
+  <input id="keyword" class="search-input" type="search" name="keyword" maxlength="100" value="${escapeHtml(keyword)}" placeholder="例如：超声复查、石膏、支具" />
+  <div class="search-options">
+  <label>阶段<select class="search-input" name="stage"><option value="">全部阶段</option>
     ${stages.map(s => `<option value="${escapeHtml(s.key)}"${stageFilter === s.key ? ' selected' : ''}>${escapeHtml(s.label)}</option>`).join('')}
-  </select>
-  <select class="search-input" name="type" aria-label="资料类型">
+  </select></label>
+  <label>资料类型<select class="search-input" name="type">
     ${TYPES.map(t => `<option value="${t.key}"${selectedType === t.key ? ' selected' : ''}>${t.label}</option>`).join('')}
-  </select>
-  <button class="btn" type="submit">筛选</button>
+  </select></label>
+  <button class="btn" type="submit">搜索</button>
+  </div>
 </form>
 ${resultHtml}`,
       ),
@@ -536,9 +564,7 @@ ${resultHtml}`,
       : '<p class="warn-bar">运营者尚未配置联系邮箱，请在正式公开前通过环境变量 CONTACT_EMAIL 填写真实可用联系方式。</p>'
     return htmlResponse(
       200,
-      renderLayout(
-        config,
-        '关于与规则',
+      renderPage('关于与规则',
         `<h1>关于本站与收录规则</h1>
 <div class="card" style="margin-bottom:14px">
   <h2>运营者身份与定位</h2>
@@ -558,6 +584,7 @@ ${resultHtml}`,
 </div>
 <div class="card">
   <h2>隐私与维护说明</h2>
+  <p><a href="${basePath}/feedback">提交功能建议</a>。建议内容与提交渠道仅供运营人员查看，用于改进产品。</p>
   <p>公开浏览与搜索无需注册。Web 的日历工具在本机生成文件。小程序的石膏记录开通后，由本人或孩子的监护人单独授权，再加密保存手填记录。微信提醒另行授权，可在小程序取消提醒、删除记录或撤回同意。病历、检查报告和遗传资料没有上传入口。</p>
   <p>服务器保留保障运行所需的访问日志，默认省去完整搜索词。</p>
   <p>${escapeHtml(config.maintenanceStatus)}</p>

@@ -11,7 +11,7 @@
   </navigator>
   <navigator class="tools-follow-tab motion-press" url="/pages/brace-dashboard/brace-dashboard" hover-class="pressed">
     <image src="/assets/icons/calendar-days.png" mode="aspectFit" aria-hidden="true" />
-    <text>支具随访大屏</text><text class="tools-follow-arrow" aria-hidden="true">›</text>
+    <text>穿戴趋势与复诊</text><text class="tools-follow-arrow" aria-hidden="true">›</text>
   </navigator>
   <navigator class="tab-feature tools-cast motion-press" url="/pages/cast/cast"
     hover-class="pressed" hover-start-time="0" hover-stay-time="90">

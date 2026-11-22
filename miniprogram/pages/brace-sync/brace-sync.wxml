@@ -1,0 +1,19 @@
+<view class="container">
+  <view class="card archive-card">
+    <view class="title">穿戴档案同步</view>
+    <view class="description">换机后，用同一微信账号在这里恢复穿戴档案。</view>
+    <view wx:if="{{service === 'ready'}}" class="archive-date">云端最近保存 {{cloudSaved || '尚未上传'}}</view>
+    <view wx:if="{{message}}" class="notice" aria-live="polite">{{message}}</view>
+    <view wx:if="{{!service && busy}}" class="description">正在读取同步状态…</view>
+    <view class="archive-actions">
+      <button wx:if="{{service === 'ready' && !consented}}" class="btn" disabled="{{busy}}" bindtap="consent">授权云端存储</button>
+      <button wx:if="{{consented && !conflict}}" class="btn" disabled="{{busy}}" bindtap="upload">上传本机档案</button>
+      <button wx:if="{{hasCloud && consented && conflict}}" class="btn secondary" disabled="{{busy}}" bindtap="replaceCloud">核对后替换云端</button>
+      <button wx:if="{{hasCloud && consented}}" class="btn secondary" disabled="{{busy}}" bindtap="restore">恢复云端档案</button>
+      <button class="btn secondary" disabled="{{busy}}" bindtap="refresh">重新读取云端状态</button>
+      <button wx:if="{{recovery}}" class="btn secondary" disabled="{{busy}}" bindtap="downloadRecovery">导出恢复前备份</button>
+    </view>
+  </view>
+  <navigator class="archive-link" url="/pages/brace-dashboard/brace-dashboard">Excel 和手动备份 ›</navigator>
+  <button wx:if="{{consented}}" class="archive-withdraw" disabled="{{busy}}" bindtap="withdraw">撤回同步授权并清除云端</button>
+</view>

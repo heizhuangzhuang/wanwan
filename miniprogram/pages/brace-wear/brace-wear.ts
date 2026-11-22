@@ -1,7 +1,7 @@
 import { blankWearLog, dateKey, dayWear, durationText, lastSevenDays, parseLocalTime, readWearLog,
-  saveWearLog, timeKey, type WearLog } from '../../services/brace-wear'
+  saveWearLog, toggleWearSession, timeKey, type WearLog } from '../../services/brace-wear'
 
-import { dayBoundary, MINUTE, planOn, withPlan } from '../../services/brace-ledger'
+import { dayBoundary, MINUTE, planOn, validDay, withPlan } from '../../services/brace-ledger'
 
 const weekdays = ['日', '一', '二', '三', '四', '五', '六']
 type Field = 'startDay' | 'startTime' | 'endDay' | 'endTime'
@@ -25,11 +25,14 @@ Page({
   ticker: null as ReturnType<typeof setInterval> | null,
   data: {
     ready: false, today: '', todayLabel: '', selectedDay: '', selectedLabel: '', elapsed: '',
-    hours: 0, minutes: '00', subMinute: false, active: false, startedAt: '', activeElapsed: '',
+    hasToday: false, selectedZero: false, hours: 0, minutes: '00', subMinute: false, active: false, startedAt: '', activeElapsed: '',
     target: '', targetPercent: 0, targetCompletion: 0,
     week: [] as { day: string; weekday: string; date: string; total: string; height: number }[],
     sessions: [] as { id: string; label: string }[], includesActive: false, hasDetails: false, selectedElapsed: '',
     form: null as TimeForm | null, targetOpen: false, targetHours: '', targetMinutes: '', message: '',
+  },
+  onLoad(query: Record<string, string | undefined>) {
+    if (validDay(query.day) && query.day <= dateKey(Date.now())) this.setData({ selectedDay: query.day })
   },
   onShow() {
     try {
@@ -63,6 +66,8 @@ Page({
     this.setData({
       today, todayLabel: shortDate(today), selectedDay,
       selectedLabel: selectedDay === today ? '今日' : shortDate(selectedDay),
+      hasToday: current.sessions.length > 0 || activeStart !== null,
+      selectedZero: this.log.confirmedZero.includes(selectedDay) && !selected.sessions.length && !selected.includesActive,
       elapsed: durationText(current.elapsed), hours: Math.floor(todayMinutes / 60),
       minutes: String(todayMinutes % 60).padStart(2, '0'), subMinute: current.elapsed > 0 && todayMinutes === 0,
       active: activeStart !== null, startedAt: activeStart === null ? '' : clockLabel(activeStart, today),
@@ -73,7 +78,7 @@ Page({
         const { elapsed, sessions, includesActive } = dayWear(this.log, day, now)
         return { day, weekday: day === today ? '今天' : '周' + weekdays[new Date(dayBoundary(day)).getDay()],
           date: day.slice(5).replace('-', '/'),
-          total: sessions.length || includesActive ? durationText(elapsed) : '无记录',
+          total: sessions.length || includesActive ? durationText(elapsed) : this.log.confirmedZero.includes(day) ? '确认未穿' : '无记录',
           height: Math.min(100, elapsed / (1440 * MINUTE) * 100) }
       }),
       sessions: selected.sessions.map(record => ({ id: record.id,
@@ -94,15 +99,11 @@ Page({
     return true
   },
   toggleWear() {
-    const now = Date.now()
-    const { activeStart, sessions } = this.log
-    if (activeStart === null) {
-      this.persist({ ...this.log, activeStart: now }, '已开始记录。')
-    } else if (now <= activeStart) {
-      this.setData({ message: '当前时间早于开始时间，请检查手机时间后再结束。' })
-    } else {
-      this.persist({ ...this.log, activeStart: null,
-        sessions: [...sessions, { id: newId(), start: activeStart, end: now }] }, '已保存本次穿戴。')
+    try {
+      const next = toggleWearSession(this.log)
+      this.persist(next, next.activeStart === null ? '已保存本次穿戴。' : '已开始记录。')
+    } catch {
+      this.setData({ message: '请核对手机时间后再结束计时。' })
     }
   },
   chooseDay(e: WechatMiniprogram.TouchEvent) {
@@ -112,9 +113,6 @@ Page({
   pickDay(e: WechatMiniprogram.PickerChange) {
     this.setData({ selectedDay: String(e.detail.value), form: null, message: '' })
     this.renderLog()
-  },
-  addToday() {
-    this.openSessionForm(this.data.today)
   },
   addSession() {
     this.openSessionForm(this.data.selectedDay)
@@ -146,7 +144,8 @@ Page({
     }
     const sessions = this.log.sessions.filter(item => item.id !== form.id)
     sessions.push({ id: form.id || newId(), start, end })
-    if (this.persist({ ...this.log, sessions }, '已保存这段穿戴时间。')) this.setData({ form: null })
+    if (this.persist({ ...this.log, sessions, confirmedZero: this.log.confirmedZero.filter(day =>
+      start >= dayBoundary(day, 1) || end <= dayBoundary(day)) }, '已保存这段穿戴时间。')) this.setData({ form: null })
   },
   removeSession(e: WechatMiniprogram.TouchEvent) {
     const id = e.currentTarget.dataset.id

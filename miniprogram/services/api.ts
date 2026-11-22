@@ -119,7 +119,7 @@ function request<T>(path: string, query?: Record<string, string | number | undef
     const options = {
       method: body ? 'POST' : 'GET',
       data: body,
-      header: { 'X-Wanwan-Client': 'wechat-miniprogram' },
+      header: { 'X-Wanwan-Client': 'wechat-miniprogram', ...(body ? { 'Content-Type': 'application/json' } : {}) },
       success(res: { statusCode: number; data: unknown }) {
         const loginPage = typeof res.data === 'string'
           && /authentication_required|<title>[^<]*(登录|login)/i.test(res.data)
@@ -162,6 +162,8 @@ function request<T>(path: string, query?: Record<string, string | number | undef
 }
 
 export const wanwanApi = {
+  submitFeedback: (requestId: string, category: string, message: string) =>
+    request<{ accepted: boolean }>('/feedback', undefined, { requestId, category, message }),
   getNoticeConfig: () => request<NoticeConfig>('/notice-config'),
   saveNotice: (code: string, templateId: string, enabled: boolean) =>
     request<{ subscribed: boolean }>('/notice-subscriptions', undefined, { code, templateId, enabled }),
@@ -179,6 +181,6 @@ export const wanwanApi = {
     request<SearchResult>('/search', params),
 }
 
-export function requestFamilyJournal<T>(path: '/cast-journal-config' | '/cast-journal', body?: Record<string, unknown>) {
+export function requestFamilyJournal<T>(path: '/cast-journal-config' | '/cast-journal' | '/brace-archive', body?: Record<string, unknown>) {
   return request<T>(path, undefined, body)
 }

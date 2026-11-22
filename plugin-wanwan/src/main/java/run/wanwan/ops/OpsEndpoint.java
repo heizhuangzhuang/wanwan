@@ -21,6 +21,8 @@ import run.halo.app.extension.GroupVersion;
 import run.halo.app.extension.ListOptions;
 import run.halo.app.extension.Metadata;
 import run.halo.app.extension.ReactiveExtensionClient;
+import run.wanwan.feedback.Feedback;
+import run.wanwan.feedback.FeedbackService;
 import run.wanwan.model.Enums.LinkStatus;
 import run.wanwan.model.Enums.PublishState;
 import run.wanwan.model.ResourceCard;
@@ -33,6 +35,7 @@ class OpsEndpoint implements CustomEndpoint {
 
     private final OpsProbes probes;
     private final ReactiveExtensionClient client;
+    private final FeedbackService feedback;
 
     @Override
     public GroupVersion groupVersion() {
@@ -44,8 +47,32 @@ class OpsEndpoint implements CustomEndpoint {
         return RouterFunctions.route()
             .GET("ops-overview", this::overview)
             .PUT("ops-miniprogram-checks/{channel}", this::save)
+            .GET("feedback", this::listFeedback)
+            .PUT("feedback/{name}", this::updateFeedback)
             .build();
     }
+
+    private Mono<ServerResponse> listFeedback(ServerRequest request) {
+        int page = request.queryParam("page").filter(value -> value.matches("[0-9]{1,7}"))
+            .map(Integer::parseInt).orElse(1);
+        Feedback.Status status;
+        try {
+            status = request.queryParam("status").map(Feedback.Status::valueOf).orElse(null);
+        } catch (IllegalArgumentException e) {
+            return ServerResponse.badRequest().build();
+        }
+        return feedback.list(page, status)
+            .flatMap(list -> ServerResponse.ok().cacheControl(CacheControl.noStore()).bodyValue(list));
+    }
+
+    private Mono<ServerResponse> updateFeedback(ServerRequest request) {
+        return request.bodyToMono(FeedbackStatusInput.class)
+            .flatMap(input -> feedback.updateStatus(request.pathVariable("name"), input.status()))
+            .flatMap(row -> ServerResponse.ok().cacheControl(CacheControl.noStore()).bodyValue(row))
+            .switchIfEmpty(ServerResponse.badRequest().build());
+    }
+
+    record FeedbackStatusInput(Feedback.Status status) {}
 
     private Mono<ServerResponse> overview(ServerRequest request) {
         return Mono.zip(probes.snapshot(), check("trial"), check("formal"), contentReport())

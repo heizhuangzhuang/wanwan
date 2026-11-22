@@ -9,11 +9,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
+import run.wanwan.feedback.FeedbackService;
 import run.wanwan.model.Enums.EntryType;
 import run.wanwan.model.Enums.LinkStatus;
 import run.wanwan.model.Enums.PublishState;
-import run.wanwan.model.Stage;
 import run.wanwan.notice.NoticeService;
+import run.wanwan.model.Stage;
 import run.wanwan.notice.CastJournalService;
 
 class PublicEndpointTest {
@@ -27,11 +28,12 @@ class PublicEndpointTest {
                 PublicQueryServiceTest.card("ok", PublishState.PUBLISHED, LinkStatus.OK))));
         when(queryService.listPosts(1, 20)).thenReturn(Mono.just(new Dtos.Page<>(1, 20, 1,
             List.of(new Dtos.PostSummary("g1", "导读一", "摘要", Instant.parse("2026-11-17T00:00:00Z"), "公开署名")))));
+        when(queryService.getPost("missing")).thenReturn(Mono.empty());
         when(queryService.listStagePosts(Stage.JUST_FOUND, 1, 3)).thenReturn(Mono.just(new Dtos.Page<>(1, 3, 1,
             List.of(new Dtos.PostSummary("g1", "刚发现导读", "", null, null)))));
-        when(queryService.getPost("missing")).thenReturn(Mono.empty());
 
-        var client = WebTestClient.bindToRouterFunction(new PublicEndpoint(queryService, mock(NoticeService.class), mock(CastJournalService.class)).endpoint())
+        var client = WebTestClient.bindToRouterFunction(new PublicEndpoint(queryService, mock(NoticeService.class),
+            mock(CastJournalService.class), mock(FeedbackService.class)).endpoint())
             .build();
 
         client.get().uri("/stages")
@@ -78,7 +80,8 @@ class PublicEndpointTest {
         when(notices.configuration()).thenReturn(new NoticeService.NoticeConfig("demo-template"));
         when(notices.subscribe(new NoticeService.NoticeRequest("demo-code", "demo-template", true)))
             .thenReturn(new NoticeService.NoticeResult(true));
-        var client = WebTestClient.bindToRouterFunction(new PublicEndpoint(mock(PublicQueryService.class), notices, mock(CastJournalService.class))
+        var client = WebTestClient.bindToRouterFunction(new PublicEndpoint(mock(PublicQueryService.class), notices,
+            mock(CastJournalService.class), mock(FeedbackService.class))
             .endpoint()).build();
 
         client.get().uri("/notice-config").exchange()

@@ -29,6 +29,7 @@ public class CastJournalService {
     private final CastJournalSettings settings;
     private final WechatNoticeClient wechat;
     private final CastJournalCipher cipher;
+    private final BraceArchiveService braceArchive;
     private final ObjectMapper json = new ObjectMapper();
 
     CastJournalService(ExtensionClient client, CastJournalSettings settings, WechatNoticeClient wechat) {
@@ -36,6 +37,11 @@ public class CastJournalService {
         this.settings = settings;
         this.wechat = wechat;
         cipher = settings.enabled ? new CastJournalCipher(settings.key) : null;
+        braceArchive = new BraceArchiveService(client, settings, wechat, cipher);
+    }
+
+    public BraceArchiveService.State accessBraceArchive(byte[] body) {
+        return braceArchive.access(body);
     }
 
     public Configuration configuration() {
@@ -193,7 +199,11 @@ public class CastJournalService {
         if (care.length() > 300) throw status(HttpStatus.BAD_REQUEST);
         if (input.visitAt() != null && (input.visitAt().isBefore(Instant.now().minus(Duration.ofDays(3650)))
             || input.visitAt().isAfter(Instant.now().plus(Duration.ofDays(366))))) throw status(HttpStatus.BAD_REQUEST);
-        return new Entry(checkedId(input.id()), input.castDate(), care, input.visitAt());
+        String side = input.side();
+        Integer sequence = input.sequence();
+        if (side != null && !List.of("左侧", "右侧", "双侧").contains(side)) throw status(HttpStatus.BAD_REQUEST);
+        if (sequence != null && (sequence < 1 || sequence > 100)) throw status(HttpStatus.BAD_REQUEST);
+        return new Entry(checkedId(input.id()), input.castDate(), care, input.visitAt(), side, sequence);
     }
 
     private static String checkedId(String id) {
@@ -238,7 +248,11 @@ public class CastJournalService {
         }
     }
     public record Entry(String id, String castDate, String care,
-                        @JsonFormat(shape = JsonFormat.Shape.STRING) Instant visitAt) {}
+                        @JsonFormat(shape = JsonFormat.Shape.STRING) Instant visitAt, String side, Integer sequence) {
+        public Entry(String id, String castDate, String care, Instant visitAt) {
+            this(id, castDate, care, visitAt, null, null);
+        }
+    }
     public record View(boolean consented, List<Entry> entries, ReminderView reminder) {}
     public record ReminderView(String entryId, @JsonFormat(shape = JsonFormat.Shape.STRING) Instant visitAt,
                                @JsonFormat(shape = JsonFormat.Shape.STRING) Instant sendAt, String state) {}

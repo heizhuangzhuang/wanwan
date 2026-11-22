@@ -4,6 +4,8 @@ export interface CastEntry {
   id: string
   castDate: string
   care: string
+  side?: string | null
+  sequence?: number | null
   visitAt: string | null
 }
 
@@ -27,16 +29,27 @@ export interface CastConfig {
   templateId: string | null
 }
 
-export function castConfig() {
-  return requestFamilyJournal<CastConfig>('/cast-journal-config')
+export function journalTimeout<T>(operation: Promise<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('连接超时')), 8000)
+    void operation.then(resolve, reject).finally(() => clearTimeout(timer))
+  })
 }
 
-export async function castCommand(action: string, values: Record<string, unknown> = {}) {
-  const code = await new Promise<string>((resolve, reject) => wx.login({
+export function castConfig() {
+  return journalTimeout(requestFamilyJournal<CastConfig>('/cast-journal-config'))
+}
+
+export function journalLogin() {
+  return new Promise<string>((resolve, reject) => wx.login({
     success: result => result.code ? resolve(result.code) : reject(new Error('微信未提供登录凭证')),
     fail: reject,
   }))
-  return requestFamilyJournal<JournalView>('/cast-journal', { ...values, action, code })
+}
+
+export async function castCommand(action: string, values: Record<string, unknown> = {}) {
+  const code = await journalTimeout(journalLogin())
+  return journalTimeout(requestFamilyJournal<JournalView>('/cast-journal', { ...values, action, code }))
 }
 
 export function chinaDateTime(value: string | number = Date.now()) {

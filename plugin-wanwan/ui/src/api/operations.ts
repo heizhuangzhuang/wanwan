@@ -2,6 +2,32 @@ import { axiosInstance } from '@halo-dev/api-client'
 
 const BASE = '/apis/console.api.xiaojiaoya.run/v1alpha1'
 
+export type FeedbackStatus = 'NEW' | 'REVIEWED' | 'PLANNED' | 'DONE'
+export type FeedbackCategory = 'FEATURE' | 'USABILITY' | 'ISSUE' | 'OTHER'
+
+export interface FeedbackEntry {
+  name: string
+  category: FeedbackCategory
+  message: string
+  channel: string
+  status: FeedbackStatus
+  createdAt: string
+}
+
+export async function getFeedback(page: number, status: FeedbackStatus | '') {
+  const { data } = await axiosInstance.get<{ total: number; size: number; items: FeedbackEntry[] }>(
+    `${BASE}/feedback`, { params: { page, status: status || undefined } },
+  )
+  return data
+}
+
+export async function saveFeedbackStatus(name: string, status: FeedbackStatus) {
+  const { data } = await axiosInstance.put<FeedbackEntry>(
+    `${BASE}/feedback/${encodeURIComponent(name)}`, { status },
+  )
+  return data
+}
+
 export type ProbeState =
   | 'OK'
   | 'REDIRECT'

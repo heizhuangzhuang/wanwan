@@ -30,10 +30,14 @@
 针对「Halo 已启动，应用 API 和插件静态文件都返回 404」的恢复包额外包含 `wanwan-plugin-recovery.yaml`，通过 Halo 的 `HALO_INITIAL_EXTENSION_LOCATIONS` 注册并启用该插件。用编译了 Console 的 JAR 生成上传包：
 
 ```bash
-python3 deploy/cloudrun/package-backend.py plugin-wanwan/build/libs/plugin-wanwan-0.1.3.jar ./release
+python3 deploy/cloudrun/package-backend.py plugin-wanwan/build/libs/plugin-wanwan-0.1.6.jar ./release \
+  --compatible-jar ./previous/plugin-wanwan-0.1.2.jar \
+  --compatible-jar ./previous/plugin-wanwan-0.1.3.jar \
+  --compatible-jar ./previous/plugin-wanwan-0.1.4.jar \
+  --compatible-jar ./previous/plugin-wanwan-0.1.5.jar
 ```
 
-已有登记若带 `halo.run/do-not-overwrite` 标记，Halo 会保留它的管理状态。若登记的版本仍旧或已停用，通过 Halo Console 升级同版本 JAR 并启用。使用新版本预览流量检查 `/stages` 与 `/resources` 的实际 JSON 响应，再切正式流量。
+已有登记若带 `halo.run/do-not-overwrite` 标记，Halo 会保留它的管理状态，并按登记版本查找 JAR。升级已安装的部署时使用上面的兼容包，保留所需旧版 JAR。若旧插件在 Halo 中被停用，通过 Halo Console 启用。通过 Console 将主插件升级为 0.1.6 以启用功能建议。使用新版本预览流量检查 `/stages` 与 `/resources` 的实际 JSON 响应，再切正式流量。
 
 已有 MySQL `SPRING_R2DBC_URL` 的版本会沿用该连接和对应的 Spring 凭据。其他版本在当前服务版本的环境变量中填写原库的 `MYSQL_ADDRESS`（内网主机与端口）、`MYSQL_USERNAME`、`MYSQL_PASSWORD` 和 `MYSQL_DATABASE`。沿用原数据库和持久化挂载。新入口脚本以 `[wanwan] Starting with` 标识插件文件和数据源配置方式，随后还需要核对 Halo 实际连接成功及插件启用状态。
 
@@ -41,9 +45,17 @@ python3 deploy/cloudrun/package-backend.py plugin-wanwan/build/libs/plugin-wanwa
 
 匿名 `GET /apis/api.xiaojiaoya.run/v1alpha1/stages` 应返回 `200 application/json` 和阶段数组。若进程健康但此接口跳到登录页，在受控的 Halo 后台核对插件的安装、启用状态和启动日志，再联调 Web 和小程序。升级前保留原镜像、持久化目录备份和上一版插件 JAR。
 
+云托管兼容包独立登记「小脚丫 Web 入口」。直接打开云托管域名根路径会跳转到访客 Web，默认进入 `http://81.71.123.100/xiaojiaoya/`。可用 `WANWAN_WEB_HOME_URL` 配置其他访客站点，填写完整的 HTTP 或 HTTPS 地址。若该 Halo 自己提供主题首页，可把变量设置为空以使用主题路由。管理入口使用 `/console/`，健康检查使用 `/actuator/health/readiness`，资料查询使用公开 API 前缀。
+
 ## API 请求来源
 
 Web 服务端发送 `X-Wanwan-Client: web`，微信小程序发送 `X-Wanwan-Client: wechat-miniprogram`。应用 API 在响应头返回识别结果。旧版小程序云请求可通过 `X-WX-SOURCE` 兼容识别，其他无法识别的请求返回 `unknown`。该标记仅用于排查调用来源，私有写入仍核验微信登录码。
+
+## 功能建议
+
+Web 的 `/feedback` 表单由 Web 服务端转发，小程序从「我的 → 功能建议」使用云托管请求。两个入口提交到 `POST /apis/api.xiaojiaoya.run/v1alpha1/feedback`，存到 Halo 的 MySQL。已设置公网请求白名单时，允许 Web 服务访问这个 POST 路径，Console 和内部资源仍使用 Halo 权限。
+
+部署时确认 Halo 主插件已在 Console 升级并启用 0.1.6。后台「弯弯导航 → 功能建议」可按状态筛选、分页和处理。单独授权的运营账号需要「功能建议处理」权限。发布验收时用虚构内容分别提交一次，确认后台来源和状态，再检查访客无法查询建议正文。
 
 
 ## 小程序新资料订阅
@@ -96,3 +108,10 @@ Web 服务端发送 `X-Wanwan-Client: web`，微信小程序发送 `X-Wanwan-Cli
 上线前在隔离环境和体验版，用两个微信账号、虚构记录确认读取隔离、换机恢复、单独同意、删除、撤回、拒绝提醒、改期、实际送达。核对微信平台隐私指引及类目、监护人同意流程和个人信息保护影响评估。按业务需要落实备份保存期及恢复后的撤回重放。启用时验证 MySQL 持久化，容器最小实例数保持 1，保证无人访问时仍能调度。公网网关仅放行公开资料读取，私有记录及微信订阅写入走小程序云托管通道。
 
 首次升级后先用 `/apis/api.xiaojiaoya.run/v1alpha1/stages` 验证匿名 JSON，再切 Web 与小程序。关闭提醒可清空复诊模板 ID。恢复服务或回退时保留原密钥和 MySQL；密钥变更须做受控迁移，直接替换会使现有记录无法定位和解密。
+
+
+## 穿戴档案同步
+
+新版插件提供 `POST /apis/api.xiaojiaoya.run/v1alpha1/brace-archive`。接口复用石膏服务的微信身份、加密密钥与启用配置。穿戴档案有独立的授权及撤回流程。小程序从「矫正鞋穿戴记录 → 档案同步」主动上传或恢复，云端依据档案版本拒绝过期的覆盖请求。Web 可继续通过 JSON 备份接续档案。
+
+验证时用同一测试微信账号在设备 A 上传，在设备 B 恢复。两台设备分别修改后，先上传 A，再用 B 尝试上传，应看到版本冲突提示。撤回穿戴同步后，石膏记录与待发提醒仍可在原页面独立管理。

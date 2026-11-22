@@ -1,4 +1,4 @@
-import { blankWearLog, dateKey, dayBoundary, normalizeWearLog, type WearLog, type WearSession } from './brace-ledger'
+import { blankWearLog, dateKey, dayBoundary, normalizeWearLog, recordId, type WearLog, type WearSession } from './brace-ledger'
 
 export { blankWearLog, dateKey, durationText, parseLocalTime, timeKey, type WearLog } from './brace-ledger'
 const LEGACY = 'wanwan-brace-wear-v1'
@@ -60,4 +60,12 @@ export function dayWear(log: WearLog, day: string, now: number) {
 
 export function lastSevenDays(today: string): string[] {
   return Array.from({ length: 7 }, (_, index) => dateKey(dayBoundary(today, -index)))
+}
+
+
+export function toggleWearSession(log: WearLog, now = Date.now()): WearLog {
+  if (log.activeStart === null) return { ...log, activeStart: now }
+  if (now <= log.activeStart) throw new Error('请核对手机时间后再结束计时。')
+  const session = { id: recordId(), start: log.activeStart, end: now }
+  return { ...log, activeStart: null, sessions: [...log.sessions, session] }
 }

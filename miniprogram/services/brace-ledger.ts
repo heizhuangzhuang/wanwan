@@ -3,13 +3,26 @@ export const MAX_BACKUP_BYTES = 24 * 1024 * 1024
 
 export interface WearSession { id: string; start: number; end: number }
 export interface WearPlan { day: string; type: 'wear' | 'followup' | 'unset'; minutes: number | null }
-export interface WearVisit { id: string; day: string; kind: '复诊' | '调整支具' | '随访'; note: string }
+export const VISIT_TYPES = ['复诊', '调整支具', '随访', '开始穿戴', '更换矫正鞋', '跟腱处理'] as const
+export const OBSERVATION_TYPES = ['脚跟易滑出', '皮肤不适', '支具损坏', '穿戴不适应', '其他困难'] as const
+export const OBSERVATION_SIDES = ['未记录', '左侧', '右侧', '双侧'] as const
+export interface WearVisit { id: string; day: string; kind: typeof VISIT_TYPES[number]; note: string }
+export interface WearObservation {
+  id: string
+  day: string
+  kind: typeof OBSERVATION_TYPES[number]
+  side: typeof OBSERVATION_SIDES[number]
+  contacted: boolean
+  outcome: string
+}
 export interface WearLog {
   sessions: WearSession[]
   activeStart: number | null
   plans: WearPlan[]
   confirmedZero: string[]
   visits: WearVisit[]
+  observations?: WearObservation[]
+  questions?: string[]
 }
 
 export const blankWearLog = (): WearLog => ({ sessions: [], activeStart: null, plans: [], confirmedZero: [], visits: [] })
@@ -97,15 +110,31 @@ export function normalizeWearLog(value: unknown, today = dateKey(Date.now())): W
   })
   const visits: WearVisit[] = rows(input.visits ?? []).map(value => {
     const row = record(value)
-    if (!validDay(row.day) || (row.kind !== '复诊' && row.kind !== '调整支具' && row.kind !== '随访') ||
+    if (!validDay(row.day) || !VISIT_TYPES.some(kind => kind === row.kind) ||
       typeof row.note !== 'string' || row.note.length > 200) throw new Error('随访记录无效')
-    return { id: identity(row.id), day: row.day, kind: row.kind, note: row.note }
+    return { id: identity(row.id), day: row.day, kind: row.kind as WearVisit['kind'], note: row.note }
   })
+  const observations = rows(input.observations ?? []).map(value => {
+    const row = record(value)
+    if (!validDay(row.day) || !OBSERVATION_TYPES.some(kind => kind === row.kind)
+      || !OBSERVATION_SIDES.some(side => side === row.side) || typeof row.contacted !== 'boolean'
+      || typeof row.outcome !== 'string' || row.outcome.length > 200) throw new Error('穿戴困难记录无效')
+    return { id: identity(row.id), day: row.day, kind: row.kind as WearObservation['kind'],
+      side: row.side as WearObservation['side'], contacted: row.contacted, outcome: row.outcome }
+  })
+  const questions = rows(input.questions ?? []).map(value => {
+    if (typeof value !== 'string' || value.length > 100) throw new Error('复诊问题无效')
+    return value
+  })
+  if (questions.length > 3 || new Set(observations.map(row => row.id)).size !== observations.length) {
+    throw new Error('复诊问题或穿戴困难记录无效')
+  }
   if (new Set(sessions.map(row => row.id)).size !== sessions.length
     || new Set(plans.map(row => row.day)).size !== plans.length
     || new Set(visits.map(row => row.id)).size !== visits.length) throw new Error('备份中存在重复记录')
   plans.sort((a, b) => a.day.localeCompare(b.day))
-  return { sessions, activeStart, plans, confirmedZero: [...new Set(confirmedZero)], visits }
+  return { sessions, activeStart, plans, confirmedZero: [...new Set(confirmedZero)], visits,
+    ...(observations.length ? { observations } : {}), ...(questions.length ? { questions } : {}) }
 }
 
 export function serializeBackup(log: WearLog): string {
@@ -128,7 +157,6 @@ export function withPlan(log: WearLog, plan: WearPlan): WearLog {
   return { ...log, plans: [...log.plans.filter(row => row.day !== plan.day), plan].sort((a, b) => a.day.localeCompare(b.day)) }
 }
 
-export const VISIT_TYPES = ['复诊', '调整支具', '随访'] as const
 export const PERIOD_OPTIONS = [
   { key: '7', label: '7 天' }, { key: '30', label: '30 天' }, { key: '90', label: '90 天' },
   { key: '1y', label: '1 年' }, { key: '10y', label: '10 年' }, { key: 'all', label: '全部' },
@@ -154,6 +182,7 @@ export function periodStart(log: WearLog, period: PeriodKey, today: string): str
   log.plans.forEach(plan => include(plan.day))
   log.confirmedZero.forEach(include)
   log.visits.forEach(visit => include(visit.day))
+  log.observations?.forEach(item => include(item.day))
   if (log.activeStart !== null) include(dateKey(log.activeStart))
   return first
 }

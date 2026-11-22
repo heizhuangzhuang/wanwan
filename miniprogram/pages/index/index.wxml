@@ -1,10 +1,43 @@
 <view class="container tab-page home">
-  <view class="home-welcome">
+  <view wx:if="{{phase === 0}}" class="home-welcome">
     <view class="home-welcome-copy">
       <view class="page-heading">一步一步了解足内翻</view>
       <view class="description">从超声提示疑似足内翻，到出生后治疗和随访，每一步都有就诊准备和资料可查。</view>
     </view>
     <image class="home-logo" src="/assets/logo.png" mode="aspectFit" aria-hidden="true" />
+  </view>
+
+  <view class="home-task {{phase ? 'home-task-active' : ''}}">
+    <picker class="home-phase" range="{{phases}}" value="{{phase}}" bindchange="choosePhase" aria-label="切换当前阶段">
+      <view>{{phase ? phases[phase] : '设置我的当前阶段'}} <text aria-hidden="true">⌄</text></view>
+    </picker>
+    <block wx:if="{{phase === 1}}">
+      <view class="tab-row-title">准备下次就诊</view>
+      <navigator class="btn home-action" url="/pages/preparation/preparation?stage=PRENATAL">整理就诊问题</navigator>
+      <view class="home-task-links">
+        <navigator url="/pages/downloads/downloads">超声复查清单 ›</navigator>
+        <navigator url="/pages/shelf/shelf?kind=saved">我的收藏 ›</navigator>
+      </view>
+    </block>
+    <block wx:elif="{{phase === 2}}">
+      <view class="tab-row-title">石膏治疗记录</view>
+      <view wx:if="{{castVisit}}" class="tab-row-caption">下次就诊 {{castVisit}}（北京时间）</view>
+      <view wx:if="{{castCare}}" class="tab-row-caption">上次交代 {{castCare}}</view>
+      <navigator class="btn home-action" url="/pages/cast/cast?add=1">记一次石膏</navigator>
+    </block>
+    <block wx:elif="{{phase === 3}}">
+      <view class="tab-row-title">今日穿戴 <text class="home-wear-state" wx:if="{{active}}">计时中</text></view>
+      <view class="home-wear-total" aria-live="polite">{{wearTime}}</view>
+      <view wx:if="{{wearGoal}}" class="tab-row-caption">每日目标 {{wearGoal}}</view>
+      <button class="btn home-action" bindtap="toggleWear">{{active ? '脱下并保存' : '穿上，开始计时'}}</button>
+      <navigator class="home-task-link" url="/pages/brace-wear/brace-wear">查看 7 天记录与补记 ›</navigator>
+    </block>
+    <block wx:elif="{{phase === 4}}">
+      <view class="tab-row-title">长期随访</view>
+      <navigator class="btn home-action" url="/pages/followup/followup">准备复诊摘要</navigator>
+      <navigator class="home-task-link" url="/pages/brace-dashboard/brace-dashboard">穿戴趋势与复诊 ›</navigator>
+    </block>
+    <view wx:if="{{actionError}}" class="tab-row-caption" aria-live="polite">{{actionError}}</view>
   </view>
 
   <view wx:if="{{demoMode}}" class="notice">当前展示示例资料。</view>
@@ -22,9 +55,9 @@
       <text class="tab-chevron" aria-hidden="true">›</text>
     </navigator>
   </view>
-  <view wx:if="{{error}}" class="reading-state tab-retry">
+  <view wx:if="{{error}}" class="home-sync">
     <text>{{error}}</text>
-    <button class="btn secondary compact" bindtap="loadHome" disabled="{{loading}}">重试</button>
+    <button class="home-sync-retry" bindtap="loadHome" disabled="{{loading}}">重试</button>
   </view>
   <navigator class="home-library motion-press" open-type="switchTab" url="/pages/library/library"
     hover-class="pressed" hover-start-time="0" hover-stay-time="90">

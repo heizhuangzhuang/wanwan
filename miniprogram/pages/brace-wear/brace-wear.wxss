@@ -1,13 +1,13 @@
-page { background: #f9f8fc; }
+page { background: #fbf7f0; }
 
 .wear-page {
-  --wear-bg: #f9f8fc;
-  --wear-ink: #23213a;
-  --wear-muted: #625e76;
-  --wear-line: #e5e1ee;
+  --wear-bg: #fbf7f0;
+  --wear-ink: #20372e;
+  --wear-muted: #516458;
+  --wear-line: #dbe4d9;
   --wear-paper: #fff;
-  --wear-primary: #433197;
-  --wear-tint: #ede8fb;
+  --wear-primary: #285143;
+  --wear-tint: #e6efe5;
   --wear-chart-height: 128rpx;
   max-width: 520px;
   padding: 18rpx 24rpx 164rpx;
@@ -41,8 +41,8 @@ page { background: #f9f8fc; }
 .wear-summary {
   padding: 27rpx 30rpx 25rpx;
   border-radius: 38rpx;
-  border: 1rpx solid #e5dcf7;
-  background: #f1ebfb;
+  border: 1rpx solid #d5e4d7;
+  background: #e8f1e7;
 }
 
 .wear-summary-top, .wear-section-header, .wear-sheet-header {
@@ -62,13 +62,13 @@ page { background: #f9f8fc; }
   gap: 9rpx;
   padding: 8rpx 16rpx;
   border-radius: 30rpx;
-  background: #fbf8ff;
-  color: #615772;
+  background: #f6faf3;
+  color: #4d6156;
   font-weight: 600;
   font-size: 24rpx;
 }
 
-.wear-state-dot { width: 10rpx; height: 10rpx; border-radius: 50%; background: #8e829e; }
+.wear-state-dot { width: 10rpx; height: 10rpx; border-radius: 50%; background: #6c8072; }
 .wear-state-running { color: #254b43; background: #dbeee7; }
 .wear-state-running .wear-state-dot { background: #34785e; }
 
@@ -100,16 +100,16 @@ page { background: #f9f8fc; }
 }
 
 .wear-goal-ring {
-  --wear-goal-track: #ddd4f0;
+  --wear-goal-track: #ceded0;
   display: grid;
   place-items: center;
   width: 83rpx;
   height: 83rpx;
   border-radius: 50%;
   background: var(--wear-goal-track);
-  background: conic-gradient(#6650bd var(--wear-goal-progress), var(--wear-goal-track) 0);
+  background: conic-gradient(#407862 var(--wear-goal-progress), var(--wear-goal-track) 0);
 }
-.wear-goal-empty { border: 2rpx dashed #9683ce; background: none; box-sizing: border-box; }
+.wear-goal-empty { border: 2rpx dashed #6a9a82; background: none; box-sizing: border-box; }
 .wear-goal-center {
   display: flex;
   align-items: center;
@@ -117,7 +117,7 @@ page { background: #f9f8fc; }
   width: 69rpx;
   height: 69rpx;
   border-radius: 50%;
-  background: #f1ebfb;
+  background: #e8f1e7;
   font-size: 24rpx;
   font-variant-numeric: tabular-nums;
 }
@@ -128,9 +128,9 @@ page { background: #f9f8fc; }
   justify-content: space-between;
   gap: 4rpx 14rpx;
   margin-top: 22rpx;
-  border-top: 1rpx solid #ded4ef;
+  border-top: 1rpx solid #d5e4d7;
   padding-top: 14rpx;
-  color: #514368;
+  color: #3b584a;
   font-size: 25rpx;
   font-variant-numeric: tabular-nums;
 }
@@ -191,7 +191,7 @@ page { background: #f9f8fc; }
   justify-content: space-between;
   pointer-events: none;
 }
-.wear-guides view { border-top: 1rpx dashed #e5dfef; }
+.wear-guides view { border-top: 1rpx dashed #d9e5da; }
 
 .wear-columns { display: flex; position: relative; padding-left: 47rpx; }
 .wear-page .wear-day {
@@ -212,15 +212,15 @@ page { background: #f9f8fc; }
   width: 41%;
   min-height: 4rpx;
   border-radius: 7rpx 7rpx 3rpx 3rpx;
-  background: #a995dd;
+  background: #95b6a1;
   transition: height 180ms ease-out, background-color 130ms ease-out;
 }
-.wear-column-empty { width: 16rpx; height: 4rpx; border-radius: 3rpx; background: #c9c1d9; }
-.wear-day-selected .wear-column-fill, .wear-day-selected .wear-column-empty { background: #654cbd; }
+.wear-column-empty { width: 16rpx; height: 4rpx; border-radius: 3rpx; background: #b8c9bd; }
+.wear-day-selected .wear-column-fill, .wear-day-selected .wear-column-empty { background: #39745c; }
 .wear-weekday, .wear-column-date { display: block; text-align: center; color: var(--wear-muted); white-space: nowrap; }
 .wear-weekday { margin-top: 10rpx; font-size: 23rpx; line-height: 1.4; }
 .wear-column-date { font-size: 21rpx; font-variant-numeric: tabular-nums; }
-.wear-page .wear-day-selected { background: #f2edfc; }
+.wear-page .wear-day-selected { background: #e8f1e7; }
 .wear-day-selected .wear-weekday, .wear-day-selected .wear-column-date { color: var(--wear-primary); font-weight: 700; }
 
 .wear-detail { margin: 18rpx 10rpx 0; border-top: 1rpx solid var(--wear-line); padding-top: 4rpx; }
@@ -245,7 +245,7 @@ page { background: #f9f8fc; }
   border-top: 1rpx solid var(--wear-line);
   font-size: 26rpx;
 }
-.wear-timeline-dot { width: 12rpx; height: 12rpx; flex: none; border-radius: 50%; background: #917acb; }
+.wear-timeline-dot { width: 12rpx; height: 12rpx; flex: none; border-radius: 50%; background: #608c75; }
 .wear-session-time { flex: 1; min-width: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .wear-session-active { color: #254b43; }
 .wear-session-active .wear-timeline-dot { background: #34785e; }
@@ -298,7 +298,7 @@ page { background: #f9f8fc; }
 }
 .wear-page .wear-toggle { flex: 1; background: var(--wear-primary); color: #fff; }
 .wear-page .wear-toggle-running { background: #254b43; }
-.wear-page .wear-add { flex: 0 0 32%; border: 1rpx solid #d7cdef; background: var(--wear-tint); color: var(--wear-primary); }
+.wear-page .wear-add { flex: 0 0 32%; border: 1rpx solid #d0e1d1; background: var(--wear-tint); color: var(--wear-primary); }
 .wear-play { border-left: 17rpx solid currentColor; border-top: 11rpx solid transparent; border-bottom: 11rpx solid transparent; width: 0; height: 0; flex: none; }
 .wear-stop { width: 20rpx; height: 20rpx; border-radius: 4rpx; background: currentColor; flex: none; }
 .wear-plus { width: 24rpx; height: 24rpx; position: relative; flex: none; }
@@ -372,10 +372,10 @@ page { background: #f9f8fc; }
 .wear-message {
   padding: 12rpx 17rpx;
   margin: 13rpx 0 0;
-  border: 1rpx solid #e1d7f2;
+  border: 1rpx solid #d2e2d4;
   border-radius: 14rpx;
-  background: #f5effc;
-  color: #493962;
+  background: #edf4eb;
+  color: #355648;
   font-size: 26rpx;
 }
 .wear-dock-message { margin: 0 0 12rpx; }
@@ -391,3 +391,7 @@ page { background: #f9f8fc; }
   .wear-button.wear-pressed { transform: none; }
   .wear-sheet { animation: none; }
 }
+
+.wear-no-record { font-size: 32rpx; font-weight: 650; }
+.wear-secondary-links { display: flex; flex-wrap: wrap; gap: 12rpx 26rpx; color: var(--wear-primary); margin-top: 8rpx; }
+.wear-secondary-links navigator { padding: 20rpx 0; }

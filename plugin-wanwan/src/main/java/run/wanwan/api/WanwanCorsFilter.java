@@ -86,7 +86,7 @@ public class WanwanCorsFilter implements BeforeSecurityWebFilter {
     }
 
     // A channel is diagnostic metadata. It never grants access or proves identity.
-    private static String clientChannel(HttpHeaders headers) {
+    static String clientChannel(HttpHeaders headers) {
         var clients = headers.get(CLIENT_HEADER);
         if (clients != null) {
             if (clients.size() != 1) return "unknown";

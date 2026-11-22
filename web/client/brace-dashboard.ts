@@ -5,7 +5,10 @@ import { wearWorkbook } from '../../miniprogram/services/brace-xlsx'
 
 const byId = <T extends HTMLElement = HTMLElement>(name: string): T => document.getElementById('brace-' + name) as T
 const value = (name: string) => byId<HTMLInputElement>(name).value
-const text = (name: string, message: string) => { byId(name).textContent = message }
+const text = (name: string, message: string) => {
+  const element = byId(name)
+  if (element.textContent !== message) element.textContent = message
+}
 const status = (message: string) => text('status', message)
 const click = (name: string, listener: () => void) => byId(name).addEventListener('click', listener)
 
@@ -64,14 +67,22 @@ function labelAt(timestamp: number) { return dateKey(timestamp) + ' ' + timeKey(
 function list(id: string, items: { label: string; actions?: [string, () => void][] }[], empty: string) {
   const rows = (items.length ? items : [{ label: empty }]).map(item => {
     const line = document.createElement('li')
-    line.textContent = item.label
+    const description = document.createElement('span')
+    description.textContent = item.label
+    line.append(description)
+    const actions = document.createElement('span')
+    actions.className = 'brace-actions'
     for (const [label, handler] of item.actions ?? []) {
       const button = document.createElement('button')
       button.type = 'button'
+      button.className = 'btn btn-outline'
       button.textContent = label
+      button.setAttribute('aria-label', `${label}，${item.label}`)
       button.addEventListener('click', handler)
-      line.append(button)
+      actions.append(button)
     }
+    if (actions.childElementCount) line.append(actions)
+    if (!items.length) line.classList.add('brace-empty')
     return line
   })
   byId(id).replaceChildren(...rows)
@@ -85,6 +96,7 @@ async function run() {
   let editing = ''
   let busy = false
   const date = byId<HTMLInputElement>('end')
+  const editor = byId<HTMLDetailsElement>('session-editor')
   date.max = day
   date.value = day
   byId<HTMLInputElement>('plan-day').value = day
@@ -93,34 +105,85 @@ async function run() {
   const togglePlanInput = () => { byId('hours-label').hidden = value('plan-type') !== 'wear' }
   byId('plan-type').addEventListener('change', togglePlanInput)
 
+  function renderToday(now: number) {
+    const today = dateKey(now)
+    date.max = today
+    const current = planOn(log, today)
+    const [todayWear] = dailyWear(log, today, today, now)
+    text('today-total', todayWear.recordedMinutes === null ? '—' : durationText(todayWear.recordedMinutes * MINUTE))
+    text('phase', current?.type === 'followup' ? '今天仅随访' :
+      current?.minutes ? '今日目标 ' + durationText(current.minutes * MINUTE) : '今日未设目标')
+    const progress = byId<HTMLProgressElement>('today-progress')
+    progress.hidden = !current?.minutes
+    if (current?.minutes) {
+      progress.max = current.minutes
+      progress.value = Math.min(current.minutes, todayWear.recordedMinutes ?? 0)
+    }
+    text('timer', log.activeStart === null ? '开始计时' : '结束并保存')
+    text('running', log.activeStart === null ? '' : '计时中 · 开始于 ' + labelAt(log.activeStart))
+  }
+
   function render() {
     const { start, end } = range()
-    const today = dateKey(Date.now())
-    const days = dailyWear(log, start, end)
+    const now = Date.now()
+    const today = dateKey(now)
+    const days = dailyWear(log, start, end, now)
     const stats = summarizeWear(days)
-    const current = planOn(log, today)
-    text('phase', current?.type === 'followup' ? '当前计划 · 仅随访' :
-      current?.minutes ? '当前目标 · ' + durationText(current.minutes * MINUTE) : '当前计划 · 未设目标')
+    renderToday(now)
     text('average', stats.recorded ? durationText(stats.minutes / stats.recorded * MINUTE) : '—')
     text('range', start + ' 至 ' + end)
+    text('detail-day', end === today ? end + '（今天）' : end)
+    const confirmZero = byId<HTMLButtonElement>('confirm-zero')
+    confirmZero.hidden = end >= today
+    text('confirm-zero', log.confirmedZero.includes(end) ? '撤回未穿确认' : '确认当天未穿')
     for (const key of ['recorded', 'below', 'missing', 'zero'] as const) text(key, String(stats[key]))
-    const chart = chartWear(days).map(item => {
+    const chart = byId('chart')
+    chart.hidden = stats.recorded === 0
+    byId('chart-caption').hidden = chart.hidden
+    text('chart-caption', '选择一列查看对应日期和平均时长。')
+    byId('chart-empty').hidden = !chart.hidden
+    text('chart-empty', '这段时间没有穿戴记录。记下一段穿戴后，趋势会显示在这里。')
+    const bars = chart.hidden ? [] : chartWear(days).map(item => {
       const column = document.createElement('div')
+      const button = document.createElement('button')
       const track = document.createElement('span')
       const fill = document.createElement('i')
-      const label = document.createElement('span')
+      const label = document.createElement('time')
       column.className = 'brace-column'
-      column.title = item.start + ' 至 ' + item.end + ' · ' + item.average
-      column.setAttribute('aria-label', column.title)
+      const description = item.start === item.end ? item.start + '，' + item.average :
+        item.start + ' 至 ' + item.end + '，' + item.average
+      column.setAttribute('role', 'listitem')
+      button.type = 'button'
+      button.title = description
+      button.setAttribute('aria-label', description)
+      button.setAttribute('aria-pressed', 'false')
+      button.addEventListener('click', () => {
+        chart.querySelector('[aria-pressed="true"]')?.setAttribute('aria-pressed', 'false')
+        button.setAttribute('aria-pressed', 'true')
+        text('chart-caption', description)
+      })
+      track.className = 'brace-track'
+      track.setAttribute('aria-hidden', 'true')
+      label.setAttribute('aria-hidden', 'true')
+      label.dateTime = item.start
+      column.toggleAttribute('data-missing', item.recorded === 0)
       fill.style.height = item.height + '%'
       label.textContent = item.label
       track.append(fill)
-      column.append(track, label)
+      button.append(track, label)
+      column.append(button)
       return column
     })
-    byId('chart').replaceChildren(...chart)
+    chart.replaceChildren(...bars)
     list('alerts', days.filter(row => ['unrecorded', 'below', 'zero'].includes(row.state)).slice(-12).reverse()
-      .map(row => ({ label: row.day + ' · ' + STATE_LABEL[row.state] })), '所选期间暂无待核对记录。')
+      .map(row => ({
+        label: row.day + ' · ' + STATE_LABEL[row.state],
+        actions: [['查看当天', () => {
+          selectDay(row.day)
+          byId('detail').focus({ preventScroll: true })
+          byId('detail').scrollIntoView({ block: 'start' })
+        }]],
+      })), '所选期间暂无待核对记录。')
     list('plans', log.plans.slice().reverse().map(plan => ({
       label: plan.day + ' · ' + (plan.type === 'wear' ? durationText(plan.minutes! * MINUTE) :
         plan.type === 'followup' ? '仅随访' : '未设目标'),
@@ -137,15 +200,21 @@ async function run() {
           byId<HTMLInputElement>('start-time').value = labelAt(row.start).replace(' ', 'T')
           byId<HTMLInputElement>('end-time').value = labelAt(row.end).replace(' ', 'T')
           byId('cancel-edit').hidden = false
+          editor.open = true
+          byId('start-time').focus()
         }], ['删除', () => {
           if (window.confirm('删除这段穿戴记录？')) void commit({ ...log, sessions: log.sessions.filter(item => item.id !== row.id) }, '已删除。')
         }]],
       })), '所选日暂无完成的时段。')
-    text('timer', log.activeStart === null ? '开始计时' : '结束并保存')
-    text('running', log.activeStart === null ? '' : '开始于 ' + labelAt(log.activeStart))
     for (const button of byId('periods').querySelectorAll('button')) {
       button.setAttribute('aria-pressed', String(button.dataset.period === period))
     }
+  }
+
+  function selectDay(nextDay: string) {
+    day = nextDay
+    date.value = day
+    render()
   }
 
   async function commit(next: WearLog, message: string): Promise<boolean> {
@@ -178,8 +247,7 @@ async function run() {
   }
   date.addEventListener('change', () => {
     if (!validDay(date.value) || date.value > dateKey(Date.now())) { date.value = day; return }
-    day = date.value
-    render()
+    selectDay(date.value)
   })
   click('timer', () => {
     const now = Date.now()
@@ -194,7 +262,15 @@ async function run() {
     byId<HTMLFormElement>('session-form').reset()
     byId('cancel-edit').hidden = true
   }
-  click('cancel-edit', resetEditor)
+  click('add-session', () => {
+    editor.open = true
+    byId('start-time').focus()
+  })
+  click('cancel-edit', () => {
+    resetEditor()
+    editor.querySelector('summary')?.focus()
+    editor.open = false
+  })
   byId('session-form').addEventListener('submit', event => {
     event.preventDefault()
     const readTime = (id: string) => { const raw = value(id); return parseLocalTime(raw.slice(0, 10), raw.slice(11)) }
@@ -204,7 +280,14 @@ async function run() {
       status('请填写有效的起止时间，结束时间不能在将来。'); return
     }
     const sessions = [...log.sessions.filter(item => item.id !== editing), { id: editing || recordId(), start, end }]
-    void commit({ ...log, sessions }, '已保存穿戴时段。').then(saved => { if (saved) resetEditor() })
+    void commit({ ...log, sessions }, '已保存穿戴时段。').then(saved => {
+      if (!saved) return
+      resetEditor()
+      const savedDay = dateKey(end)
+      if (savedDay !== day) selectDay(savedDay)
+      byId('detail').focus({ preventScroll: true })
+      editor.open = false
+    })
   })
   byId('plan-form').addEventListener('submit', event => {
     event.preventDefault()
@@ -257,7 +340,9 @@ async function run() {
     } catch { status('请选择本工具导出的有效 JSON 备份。') }
   })
   render()
-  setInterval(() => { if (log.activeStart !== null && !editing && !busy) render() }, 15_000)
+  byId<HTMLButtonElement>('timer').disabled = false
+  byId<HTMLButtonElement>('add-session').disabled = false
+  setInterval(() => { if (log.activeStart !== null && !busy) renderToday(Date.now()) }, 15_000)
 }
 
 void run().catch(() => status('无法读取本浏览器的档案。请使用支持本地存储的浏览器。'))

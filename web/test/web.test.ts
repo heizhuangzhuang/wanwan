@@ -30,6 +30,7 @@ function mockResource(overrides: Partial<ResourceView> = {}): ResourceView {
 
 function mockClient(resource: ResourceView | null = mockResource()): BackendClient {
   return {
+    async submitFeedback() {},
     async getStages() {
       return [{ key: 'JUST_FOUND', label: '刚发现', order: 0 }]
     },
@@ -63,6 +64,16 @@ function mockClient(resource: ResourceView | null = mockResource()): BackendClie
 describe('web security & SSR', () => {
   const config = loadConfig({ SITE_ORIGIN: 'https://wanwan.run' })
 
+  it('renders the feedback form inside the configured site path without depending on the backend', async () => {
+    const subpath = loadConfig({ SITE_BASE_PATH: '/xiaojiaoya' })
+    const form = await handleRequest('/xiaojiaoya/feedback', mockClient(), subpath)
+    assert.equal(form.status, 200)
+    assert.match(String(form.body), /method="post" action="\/xiaojiaoya\/feedback"/)
+    assert.match(String(form.body), /name="requestId" value="[a-f0-9-]{36}"/)
+    const success = await handleRequest('/xiaojiaoya/feedback?sent=1', mockClient(), subpath)
+    assert.match(String(success.body), /已收到你的建议/)
+  })
+
   it('renders original-guide search results and paginates when only guides have more matches', async () => {
     const client = mockClient(null)
     client.search = async () => ({
@@ -73,6 +84,16 @@ describe('web security & SSR', () => {
     assert.equal(result.status, 200)
     assert.match(String(result.body), /href="\/posts\/guide-1">导读 &lt;测试&gt;/)
     assert.match(String(result.body), /keyword=CMA&amp;type=ORIGINAL&amp;page=2/)
+  })
+
+  it('retains the search form and entered query when the resource service is unavailable', async () => {
+    const client = mockClient()
+    client.search = async () => { throw new Error('Backend unavailable') }
+    const result = await handleRequest('/search?keyword=石膏&type=PAPER', client, config)
+    assert.equal(result.status, 503)
+    assert.match(String(result.body), /name="keyword" maxlength="100" value="石膏"/)
+    assert.match(String(result.body), /value="PAPER" selected/)
+    assert.match(String(result.body), /在线资料暂时无法加载/)
   })
 
   it('escapes HTML and rejects non-http URLs', () => {
@@ -341,6 +362,15 @@ describe('web security & SSR', () => {
     assert.ok(home.body.includes('资料库正在准备中'))
     assert.ok(home.body.includes('href="/wanwan/about"'))
     assert.ok(home.body.includes('src="/wanwan/assets/logo.png"'))
+    assert.match(home.body, /href="\/wanwan\/tools\/brace-followup"/)
+    assert.match(home.body, /src="\/wanwan\/assets\/first-steps.webp"/)
+    assert.match(home.body, /href="\/wanwan\/" aria-current="page">首页/)
+
+    const photo = await handleRequest('/wanwan/assets/first-steps.webp', mockClient(), subConfig)
+    assert.equal(photo.status, 200)
+    assert.equal(photo.contentType, 'image/webp')
+    assert.ok(Buffer.isBuffer(photo.body))
+    assert.equal(photo.body.subarray(8, 12).toString(), 'WEBP')
 
     const subLogo = await handleRequest('/wanwan/assets/logo.png', mockClient(), subConfig)
     assert.equal(subLogo.status, 200)

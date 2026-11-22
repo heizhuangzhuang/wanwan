@@ -1,0 +1,23 @@
+<view class="container">
+  <view class="page-intro">
+    <view class="page-heading">功能建议</view>
+    <view class="description">告诉我们你想增加的功能，或遇到的使用问题。建议由运营人员查看。</view>
+  </view>
+  <view wx:if="{{sent}}" class="card" aria-live="polite">
+    <view class="title">已收到你的建议</view>
+    <view class="description">谢谢你告诉我们哪些地方可以做得更好。</view>
+    <button class="btn secondary" bindtap="reset">再提一条</button>
+  </view>
+  <view wx:else class="card">
+    <view class="title">建议类型</view>
+    <picker range="{{categories}}" range-key="name" value="{{selected}}" bindchange="chooseCategory" disabled="{{busy}}">
+      <view class="field feedback-picker">{{categories[selected].name}}<text aria-hidden="true">⌄</text></view>
+    </picker>
+    <view class="title">你希望改进什么？</view>
+    <textarea class="field feedback-message" maxlength="500" value="{{message}}" disabled="{{busy}}"
+      bindinput="changeMessage" aria-label="你希望改进什么？" placeholder="例如，希望穿戴记录可以按月下载。" />
+    <view class="feedback-hint muted"><text>请勿填写姓名、联系方式、病历或检查报告。</text><text>{{message.length}}/500</text></view>
+    <view wx:if="{{error}}" class="notice" aria-live="polite">{{error}}</view>
+    <button class="btn feedback-submit" loading="{{busy}}" disabled="{{busy}}" bindtap="submit">提交建议</button>
+  </view>
+</view>

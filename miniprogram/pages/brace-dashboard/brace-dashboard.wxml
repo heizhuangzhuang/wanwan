@@ -1,10 +1,11 @@
 <view class="container follow-page">
   <view class="follow-hero">
-    <view class="follow-hero-title">支具随访</view>
+    <view class="follow-hero-title">穿戴趋势与复诊</view>
     <text>当前计划 · {{phase}}</text>
     <view class="follow-metric">{{average}}</view>
-    <text>所选期间 · 有记录日均值</text>
+    <text>有记录日均值 · 已记录 {{recorded}}/{{periodDays}} 天</text>
   </view>
+  <navigator class="follow-summary-entry" url="/pages/followup/followup">复诊摘要与治疗时间线 <text>›</text></navigator>
   <view class="follow-periods">
     <button wx:for="{{periods}}" wx:key="key" class="follow-chip {{period === item.key ? 'follow-chip-on' : ''}}"
       data-period="{{item.key}}" bindtap="setPeriod">{{item.label}}</button>
@@ -13,7 +14,7 @@
     <text>{{from}} 至 {{to}}</text>
     <picker mode="date" value="{{to}}" end="{{today}}" bindchange="setEnd"><view class="follow-link">选择截止日</view></picker>
   </view>
-  <view class="follow-grid">
+  <view wx:if="{{recorded || below || missing || zero}}" class="follow-grid">
     <view class="follow-kpi"><text>{{recorded}}</text><view>有记录天数</view></view>
     <view class="follow-kpi"><text>{{below}}</text><view>记录低于目标</view></view>
     <view class="follow-kpi"><text>{{missing}}</text><view>计划日无记录</view></view>
@@ -22,20 +23,28 @@
   <view class="follow-card">
     <view class="follow-title">穿戴趋势</view>
     <view class="follow-muted">统计有记录日的平均时长 · 满格 24 小时</view>
-    <scroll-view scroll-x class="follow-scroll">
+    <view wx:if="{{!chart.length}}" class="follow-muted">这段时间还没有穿戴记录。</view>
+    <navigator wx:if="{{!chart.length}}" class="follow-link" url="/pages/brace-wear/brace-wear">去记录一次穿戴 ›</navigator>
+    <scroll-view wx:else scroll-x class="follow-scroll">
       <view class="follow-chart">
-        <view wx:for="{{chart}}" wx:key="key" class="follow-column" aria-label="{{item.label}}，{{item.average}}">
+        <button wx:for="{{chart}}" wx:key="key" class="follow-column {{selectedBucket.key === item.key ? 'follow-column-on' : ''}}"
+          data-key="{{item.key}}" bindtap="selectBucket" aria-pressed="{{selectedBucket.key === item.key}}" aria-label="{{item.label}}，{{item.average}}">
           <view class="follow-bar"><view wx:if="{{item.height}}" style="height: {{item.height}}%;" /></view>
           <text>{{item.label}}</text>
-        </view>
+        </button>
       </view>
     </scroll-view>
+    <view wx:if="{{selectedBucket}}" class="follow-muted" aria-live="polite">
+      {{selectedBucket.start}} 至 {{selectedBucket.end}} · 已记录 {{selectedBucket.recorded}} 天 · {{selectedBucket.average}}
+    </view>
   </view>
   <view class="follow-card">
     <view class="follow-row"><view class="follow-title">待核对的记录</view><button class="follow-link" data-mode="zero" bindtap="openEditor">确认未穿</button></view>
     <view class="follow-muted">只对已结束的日期归类。记录供复诊沟通，临床风险由医生评估。</view>
     <view wx:if="{{!alerts.length}}" class="follow-muted">所选日期暂无待核对记录。</view>
-    <view wx:for="{{alerts}}" wx:key="day" class="follow-row follow-list"><text>{{item.day}}</text><text>{{item.label}}</text></view>
+    <navigator wx:for="{{alerts}}" wx:key="day" class="follow-row follow-list" url="/pages/brace-wear/brace-wear?day={{item.day}}">
+      <text>{{item.day}}</text><text>{{item.label}} ›</text>
+    </navigator>
   </view>
   <view class="follow-card">
     <view class="follow-row"><view class="follow-title">计划历史</view><button class="follow-link" data-mode="plan" bindtap="openEditor">修改计划</button></view>
@@ -57,6 +66,7 @@
       <button class="btn" data-type="xlsx" bindtap="exportFile">导出 Excel</button>
       <button class="btn secondary" data-type="json" bindtap="exportFile">导出备份</button>
       <button class="btn secondary" bindtap="importBackup">恢复备份</button>
+      <navigator class="btn secondary" url="/pages/brace-sync/brace-sync">档案同步</navigator>
     </view>
   </view>
   <view wx:if="{{status && !mode}}" class="notice" aria-live="polite">{{status}}</view>
