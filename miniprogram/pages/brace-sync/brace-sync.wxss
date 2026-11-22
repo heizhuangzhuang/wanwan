@@ -3,4 +3,5 @@
 .archive-actions { display: grid; gap: 12rpx; margin-top: 22rpx; }
 .archive-actions .btn { margin: 0; }
 .archive-link, .archive-withdraw { display: block; margin: 16rpx 0; padding: 14rpx 0; color: #285143; }
+.archive-withdraw::after { border: 0; }
 .archive-withdraw { width: auto; background: transparent; color: #8e3e33; font-size: 26rpx; text-align: left; }

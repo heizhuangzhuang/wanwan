@@ -19,6 +19,25 @@ export const appointmentScript = readFileSync(new URL('../public/tools/appointme
 export const appointmentHash = 'sha256-' + createHash('sha256').update(appointmentScript).digest('base64')
 export const prenatalPaths = ['/prenatal', ...guides.map(guide => '/prenatal/' + guide.key)]
 
+const PRENATAL_ALIASES: Record<string, string[]> = {
+  amniocentesis: ['羊穿', '羊水', '核型', '微阵列', 'cma'],
+  wes: ['全外', '外显子', '基因', '测序'],
+  ultrasound: ['超声', 'b超', '四维', '排畸', '结构超声'],
+}
+
+export function searchPrenatalGuides(keyword: string): PrenatalGuide[] {
+  const q = keyword.trim().toLowerCase()
+  if (!q) return []
+  return guides.filter(guide => {
+    const aliases = PRENATAL_ALIASES[guide.key] ?? []
+    if (aliases.some(alias => alias.includes(q) || q.includes(alias))) return true
+    if (guide.title.toLowerCase().includes(q) || guide.summary.toLowerCase().includes(q)) return true
+    return guide.sections.some(
+      section => section.heading.toLowerCase().includes(q) || section.body.toLowerCase().includes(q),
+    )
+  })
+}
+
 export function renderTools(config: WebConfig) {
   const base = config.siteBasePath
   const miniProgram = config.castMiniprogramUrl

@@ -2,9 +2,14 @@ package run.wanwan.ops;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
+import java.util.Set;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
@@ -14,7 +19,10 @@ import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import org.springframework.web.server.ResponseStatusException;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import run.halo.app.core.extension.content.Category;
+import run.halo.app.core.extension.content.Post;
 import run.halo.app.core.extension.endpoint.CustomEndpoint;
 import run.halo.app.extension.ExtensionOperator;
 import run.halo.app.extension.GroupVersion;
@@ -26,16 +34,31 @@ import run.wanwan.feedback.FeedbackService;
 import run.wanwan.model.Enums.LinkStatus;
 import run.wanwan.model.Enums.PublishState;
 import run.wanwan.model.ResourceCard;
+import run.wanwan.model.Stage;
 import run.wanwan.model.Visibility;
+import run.wanwan.search.SearchIndex;
 
 @Component
-@RequiredArgsConstructor
 class OpsEndpoint implements CustomEndpoint {
     private static final Duration VALID_FOR = Duration.ofHours(24);
 
     private final OpsProbes probes;
     private final ReactiveExtensionClient client;
     private final FeedbackService feedback;
+    private final SearchIndex searchIndex;
+
+    @Autowired
+    OpsEndpoint(OpsProbes probes, ReactiveExtensionClient client, FeedbackService feedback,
+                SearchIndex searchIndex) {
+        this.probes = probes;
+        this.client = client;
+        this.feedback = feedback;
+        this.searchIndex = searchIndex;
+    }
+
+    OpsEndpoint(OpsProbes probes, ReactiveExtensionClient client, FeedbackService feedback) {
+        this(probes, client, feedback, new SearchIndex());
+    }
 
     @Override
     public GroupVersion groupVersion() {
@@ -49,6 +72,7 @@ class OpsEndpoint implements CustomEndpoint {
             .PUT("ops-miniprogram-checks/{channel}", this::save)
             .GET("feedback", this::listFeedback)
             .PUT("feedback/{name}", this::updateFeedback)
+            .DELETE("feedback/{name}", this::deleteFeedback)
             .build();
     }
 
@@ -72,6 +96,11 @@ class OpsEndpoint implements CustomEndpoint {
             .switchIfEmpty(ServerResponse.badRequest().build());
     }
 
+    private Mono<ServerResponse> deleteFeedback(ServerRequest request) {
+        return feedback.delete(request.pathVariable("name"))
+            .then(ServerResponse.noContent().cacheControl(CacheControl.noStore()).build());
+    }
+
     record FeedbackStatusInput(Feedback.Status status) {}
 
     private Mono<ServerResponse> overview(ServerRequest request) {
@@ -82,12 +111,74 @@ class OpsEndpoint implements CustomEndpoint {
     }
 
     private Mono<Optional<ContentReport>> contentReport() {
-        return client.listAll(ResourceCard.class, ListOptions.builder().build(), Sort.by("metadata.name"))
+        Mono<ContentCounts> cardsMono = safeFlux(
+            client.listAll(ResourceCard.class, ListOptions.builder().build(), Sort.by("metadata.name")))
             .filter(card -> !ExtensionOperator.isDeleted(card) && card.getSpec() != null)
-            .collect(ContentCounts::new, ContentCounts::add)
-            .map(counts -> Optional.of(new ContentReport(counts.publicCards, counts.pendingReview,
-                counts.withdrawn, counts.linksToCheck)))
+            .collect(ContentCounts::new, ContentCounts::add);
+        Mono<GuideHealth> guidesMono = guideHealth()
+            .onErrorReturn(new GuideHealth(0, 0, List.of()));
+        Mono<Long> unreadFeedbackMono = Mono.defer(() -> {
+            var res = feedback.list(1, Feedback.Status.NEW);
+            return res == null ? Mono.just(0L) : res.map(page -> page.total());
+        }).onErrorReturn(0L);
+        return Mono.zip(cardsMono, guidesMono, unreadFeedbackMono)
+            .map(tuple -> {
+                var counts = tuple.getT1();
+                var guides = tuple.getT2();
+                return Optional.of(new ContentReport(
+                    counts.publicCards,
+                    counts.pendingReview,
+                    counts.withdrawn,
+                    counts.linksToCheck,
+                    searchIndex.size(),
+                    guides.publishedGuides(),
+                    guides.uncategorizedGuides(),
+                    guides.missingStageCategories(),
+                    tuple.getT3()));
+            })
             .onErrorReturn(Optional.empty());
+    }
+
+    private Mono<GuideHealth> guideHealth() {
+        Flux<Category> categoriesFlux = safeFlux(client.list(
+            Category.class,
+            category -> !ExtensionOperator.isDeleted(category) && category.getSpec() != null,
+            Comparator.comparing(category -> category.getMetadata().getName())));
+        Flux<Post> postsFlux = safeFlux(client.list(
+            Post.class,
+            Visibility::isPublicPost,
+            Comparator.comparing(post -> post.getMetadata().getName())));
+        return Mono.zip(categoriesFlux.collectList(), postsFlux.collectList())
+            .map(tuple -> {
+                List<Category> categories = tuple.getT1();
+                List<Post> posts = tuple.getT2();
+                Set<String> stageCategoryNames = new HashSet<>();
+                List<String> missing = Arrays.stream(Stage.values())
+                    .filter(stage -> {
+                        String slug = stage.name().toLowerCase(Locale.ROOT).replace('_', '-');
+                        boolean matched = false;
+                        for (Category category : categories) {
+                            var spec = category.getSpec();
+                            if (slug.equalsIgnoreCase(spec.getSlug())
+                                || stage.getLabel().equals(spec.getDisplayName())) {
+                                stageCategoryNames.add(category.getMetadata().getName());
+                                matched = true;
+                            }
+                        }
+                        return !matched;
+                    })
+                    .map(Stage::getLabel)
+                    .toList();
+                long uncategorized = posts.stream()
+                    .filter(post -> post.getSpec().getCategories() == null
+                        || post.getSpec().getCategories().stream().noneMatch(stageCategoryNames::contains))
+                    .count();
+                return new GuideHealth(posts.size(), uncategorized, missing);
+            });
+    }
+
+    private static <T> Flux<T> safeFlux(Flux<T> flux) {
+        return flux == null ? Flux.empty() : flux;
     }
 
     private Mono<CheckView> check(String channel) {
@@ -148,7 +239,10 @@ class OpsEndpoint implements CustomEndpoint {
     record CheckView(String channel, CheckState state, String version, MiniProgramCheck.Outcome outcome,
                      Instant checkedAt) {}
     record Overview(OpsProbes.Snapshot probes, List<CheckView> miniProgramChecks, ContentReport contentReport) {}
-    record ContentReport(long publicCards, long pendingReview, long withdrawn, long linksToCheck) {}
+    record ContentReport(long publicCards, long pendingReview, long withdrawn, long linksToCheck,
+                         int searchIndexSize, long publishedGuides, long uncategorizedGuides,
+                         List<String> missingStageCategories, long unreadFeedback) {}
+    private record GuideHealth(long publishedGuides, long uncategorizedGuides, List<String> missingStageCategories) {}
 
     private static class ContentCounts {
         private long publicCards;

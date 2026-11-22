@@ -21,7 +21,7 @@ page { background: #f6f3ea; }
 .follow-list { border-top:1px solid #e6e9df; padding:8rpx 0; font-size:25rpx; }
 .follow-scroll { white-space:nowrap; margin-top:15rpx; }
 .follow-chart { display:inline-flex; min-width:100%; }
-.follow-column { min-width:55rpx; flex:1; display:flex; flex-direction:column; align-items:center; gap:8rpx; font-size:20rpx; }
+.follow-column { min-width:80rpx; flex:1; display:flex; flex-direction:column; align-items:center; gap:8rpx; font-size:24rpx; }
 .follow-bar { height:130rpx; border-bottom:1px solid #afc3b2; width:55%; display:flex; align-items:flex-end; justify-content:center; background:#eef1e8; border-radius:8rpx 8rpx 0 0; }
 .follow-bar view { width:100%; background:#5b866d; border-radius:6rpx 6rpx 0 0; }
 .follow-actions { display:flex; flex-wrap:wrap; gap:10rpx; margin-top:10rpx; }

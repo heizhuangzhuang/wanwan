@@ -187,11 +187,26 @@ async function run() {
     list('plans', log.plans.slice().reverse().map(plan => ({
       label: plan.day + ' · ' + (plan.type === 'wear' ? durationText(plan.minutes! * MINUTE) :
         plan.type === 'followup' ? '仅随访' : '未设目标'),
+      actions: [['删除', () => {
+        if (window.confirm(`删除 ${plan.day} 生效的阶段计划？`)) {
+          void commit({ ...log, plans: log.plans.filter(item => item.day !== plan.day) }, '已删除计划。')
+        }
+      }]],
     })), '暂无阶段计划。')
-    list('visits', log.visits.filter(row => row.day >= start && row.day <= end).sort((a, b) => b.day.localeCompare(a.day))
+    list('visits', log.visits.slice().sort((a, b) => b.day.localeCompare(a.day))
       .map(row => ({ label: row.day + ' · ' + row.kind + (row.note ? ' · ' + row.note : ''), actions: [['删除', () => {
         if (window.confirm('删除这条随访记录？')) void commit({ ...log, visits: log.visits.filter(item => item.id !== row.id) }, '已删除。')
-      }]] })), '所选期间暂无随访记录。')
+      }]] })), '暂无随访记录。')
+    const extraEl = document.getElementById('brace-extra')
+    if (extraEl) {
+      const obs = (log.observations ?? []).map(o => `${o.day} · ${o.kind}${o.side ? '（' + o.side + '）' : ''}${o.outcome ? '：' + o.outcome : ''}`)
+      const qs = (log.questions ?? []).filter(Boolean).map(q => '想问医生：' + q)
+      const combined = [...obs, ...qs]
+      extraEl.hidden = combined.length === 0
+      if (combined.length) list('extra-list', combined.map(label => ({ label })), '')
+    }
+    const cancelTimerBtn = document.getElementById('brace-cancel-timer')
+    if (cancelTimerBtn) cancelTimerBtn.hidden = log.activeStart === null
     list('sessions', log.sessions.filter(row => row.start < dayBoundary(end, 1) && row.end > dayBoundary(end))
       .sort((a, b) => b.start - a.start).map(row => ({
         label: labelAt(row.start) + ' 至 ' + labelAt(row.end),
@@ -255,7 +270,12 @@ async function run() {
     if (active === null) void commit({ ...log, activeStart: now }, '已开始计时。')
     else if (now > active) void commit({ ...log, activeStart: null, sessions: [...log.sessions,
       { id: recordId(), start: active, end: now }] }, '已保存穿戴时段。')
-    else status('请核对设备时间。')
+    else status('请核对设备时间，或点击「取消计时」清除异常状态。')
+  })
+  document.getElementById('brace-cancel-timer')?.addEventListener('click', () => {
+    if (log.activeStart !== null && window.confirm('放弃当前正在计时的时段？')) {
+      void commit({ ...log, activeStart: null }, '已取消本次计时。')
+    }
   })
   function resetEditor() {
     editing = ''
@@ -263,7 +283,9 @@ async function run() {
     byId('cancel-edit').hidden = true
   }
   click('add-session', () => {
+    resetEditor()
     editor.open = true
+    editor.scrollIntoView({ block: 'nearest' })
     byId('start-time').focus()
   })
   click('cancel-edit', () => {
@@ -280,7 +302,8 @@ async function run() {
       status('请填写有效的起止时间，结束时间不能在将来。'); return
     }
     const sessions = [...log.sessions.filter(item => item.id !== editing), { id: editing || recordId(), start, end }]
-    void commit({ ...log, sessions }, '已保存穿戴时段。').then(saved => {
+    const confirmedZero = log.confirmedZero.filter(d => start >= dayBoundary(d, 1) || end <= dayBoundary(d))
+    void commit({ ...log, sessions, confirmedZero }, '已保存穿戴时段。').then(saved => {
       if (!saved) return
       resetEditor()
       const savedDay = dateKey(end)
@@ -322,22 +345,29 @@ async function run() {
     try {
       const bytes = wearWorkbook(log, start, end).buffer as ArrayBuffer
       download(bytes, '矫正鞋随访-' + end + '.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+      status('已导出 Excel 统计表。')
     } catch { status('生成 Excel 失败，请尝试缩小统计区间。') }
   })
-  click('backup', () => download(serializeBackup(log), '矫正鞋档案备份.json', 'application/json;charset=utf-8'))
+  click('backup', () => {
+    download(serializeBackup(log), '矫正鞋档案备份.json', 'application/json;charset=utf-8')
+    status('已导出 JSON 备份文件。')
+  })
   byId<HTMLInputElement>('restore').addEventListener('change', async event => {
     const input = event.target as HTMLInputElement
     const file = input.files?.[0]
     input.value = ''
     if (!file) return
     try {
-      if (file.size > MAX_BACKUP_BYTES) throw new Error('备份超出限制')
+      if (file.size > MAX_BACKUP_BYTES) throw new Error('备份文件超出大小限制')
       const restore = parseBackup(await file.text())
-      if (window.confirm(`用备份的 ${restore.sessions.length} 段记录替换当前浏览器的档案？`)) {
+      const localNote = log.sessions.length ? `当前浏览器已有 ${log.sessions.length} 段记录将被替换。` : ''
+      if (window.confirm(`用备份的 ${restore.sessions.length} 段穿戴记录替换当前档案？${localNote}`)) {
         await commit(restore, '备份已恢复。')
         resetEditor()
       }
-    } catch { status('请选择本工具导出的有效 JSON 备份。') }
+    } catch (err) {
+      status(err instanceof Error && err.message ? `恢复失败：${err.message}` : '请选择本工具导出的有效 JSON 备份。')
+    }
   })
   render()
   byId<HTMLButtonElement>('timer').disabled = false

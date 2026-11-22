@@ -29,6 +29,7 @@ function confirm(title: string, content: string, confirmText: string) {
 Page({
   remote: null as CloudArchive | null,
   data: { busy: false, service: '', consented: false, hasCloud: false, cloudSaved: '',
+    localSummary: '', cloudSummary: '',
     message: '', conflict: false, recovery: false },
   onShow() {
     try {
@@ -39,7 +40,20 @@ Page({
   },
   showRemote(remote: CloudArchive) {
     this.remote = remote
+    let localSummary = ''
+    let cloudSummary = ''
+    try {
+      const local = readWearLog()
+      localSummary = `本机：${local.sessions.length} 段穿戴 · ${local.plans.length} 条计划 · ${local.visits.length} 条随访`
+    } catch { /* ignore */ }
+    if (remote.archive) {
+      try {
+        const parsed = parseBackup(remote.archive)
+        cloudSummary = `云端：${parsed.sessions.length} 段穿戴 · ${parsed.plans.length} 条计划 · ${parsed.visits.length} 条随访`
+      } catch { /* ignore */ }
+    }
     this.setData({ service: 'ready', consented: remote.consented, hasCloud: Boolean(remote.archive),
+      localSummary, cloudSummary,
       cloudSaved: remote.updatedAt ? new Date(remote.updatedAt).toLocaleString('zh-CN') : '' })
   },
   async refresh() {

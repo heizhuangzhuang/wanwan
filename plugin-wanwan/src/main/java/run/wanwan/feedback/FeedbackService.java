@@ -3,6 +3,8 @@ package run.wanwan.feedback;
 import static run.halo.app.extension.index.query.Queries.equal;
 
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -23,17 +25,24 @@ public class FeedbackService {
     public static final String STATUS_INDEX = "status";
     private static final int MAX_MESSAGE = 500;
     private static final int SUBMISSIONS_PER_MINUTE = 60;
+    private static final int SUBMISSIONS_PER_CLIENT_PER_MINUTE = 10;
+    private static final int MAX_TRACKED_CLIENTS = 4096;
     private final ReactiveExtensionClient client;
     private long minute = Long.MIN_VALUE;
     private int attempts;
+    private final Map<String, Integer> clientAttempts = new HashMap<>();
 
     public Mono<Receipt> submit(Submission submission, String channel) {
+        return submit(submission, channel, null);
+    }
+
+    public Mono<Receipt> submit(Submission submission, String channel, String clientKey) {
         String text = submission.message() == null ? "" : submission.message().strip();
         if (submission.requestId() == null || !submission.requestId().matches("[a-z0-9-]{20,64}")
             || submission.category() == null || text.length() < 3 || text.length() > MAX_MESSAGE) {
             return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid feedback"));
         }
-        if (!takeAttempt()) {
+        if (!takeAttempt(clientKey)) {
             return Mono.error(new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS));
         }
         var row = new Feedback();
@@ -81,13 +90,31 @@ public class FeedbackService {
             .map(Entry::from);
     }
 
-    private synchronized boolean takeAttempt() {
+    public Mono<Void> delete(String name) {
+        if (name == null || !name.matches("suggestion-[a-z0-9-]{20,64}")) {
+            return Mono.error(new ResponseStatusException(HttpStatus.BAD_REQUEST));
+        }
+        return client.fetch(Feedback.class, name)
+            .switchIfEmpty(Mono.error(new ResponseStatusException(HttpStatus.NOT_FOUND)))
+            .flatMap(client::delete)
+            .then();
+    }
+
+    private synchronized boolean takeAttempt(String clientKey) {
         long now = TimeUnit.NANOSECONDS.toMinutes(System.nanoTime());
         if (minute != now) {
             minute = now;
             attempts = 0;
+            clientAttempts.clear();
         }
         if (attempts >= SUBMISSIONS_PER_MINUTE) return false;
+        if (clientKey != null && !clientKey.isBlank()) {
+            int used = clientAttempts.getOrDefault(clientKey, 0);
+            if (used >= SUBMISSIONS_PER_CLIENT_PER_MINUTE) return false;
+            if (clientAttempts.size() < MAX_TRACKED_CLIENTS || clientAttempts.containsKey(clientKey)) {
+                clientAttempts.put(clientKey, used + 1);
+            }
+        }
         attempts++;
         return true;
     }

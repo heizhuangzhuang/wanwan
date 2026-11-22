@@ -1,8 +1,11 @@
 package run.wanwan.api;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferLimitException;
@@ -37,6 +40,9 @@ public class PublicEndpoint implements CustomEndpoint {
     private final NoticeService notices;
     private final CastJournalService journals;
     private final FeedbackService feedback;
+    private final RateLimiter noticeLimiter = new RateLimiter(20, 120);
+    private final RateLimiter journalLimiter = new RateLimiter(30, 180);
+    private final RateLimiter archiveLimiter = new RateLimiter(30, 180);
 
     @Override
     public RouterFunction<ServerResponse> endpoint() {
@@ -79,6 +85,9 @@ public class PublicEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> subscribeNotice(ServerRequest req) {
+        if (!noticeLimiter.tryAcquire(clientIp(req))) {
+            return ServerResponse.status(HttpStatus.TOO_MANY_REQUESTS).build();
+        }
         return req.bodyToMono(NoticeService.NoticeRequest.class)
             .flatMap(request -> Mono.fromCallable(() -> notices.subscribe(request))
                 .subscribeOn(Schedulers.boundedElastic()))
@@ -88,13 +97,21 @@ public class PublicEndpoint implements CustomEndpoint {
 
     private Mono<ServerResponse> submitFeedback(ServerRequest req) {
         return req.bodyToMono(FeedbackService.Submission.class)
-            .flatMap(input -> feedback.submit(input, WanwanCorsFilter.clientChannel(req.headers().asHttpHeaders())))
+            .flatMap(input -> feedback.submit(
+                input, WanwanCorsFilter.clientChannel(req.headers().asHttpHeaders()), clientIp(req)))
             .flatMap(receipt -> ServerResponse.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore())
                 .bodyValue(receipt))
             .switchIfEmpty(ServerResponse.badRequest().build());
     }
 
     private Mono<ServerResponse> accessBraceArchive(ServerRequest req) {
+        if (!archiveLimiter.tryAcquire(clientIp(req))) {
+            return ServerResponse.status(HttpStatus.TOO_MANY_REQUESTS).build();
+        }
+        long contentLength = req.headers().contentLength().orElse(-1L);
+        if (contentLength > BraceArchiveService.MAX_REQUEST_BYTES) {
+            return ServerResponse.status(HttpStatus.PAYLOAD_TOO_LARGE).build();
+        }
         return DataBufferUtils.join(req.bodyToFlux(DataBuffer.class), BraceArchiveService.MAX_REQUEST_BYTES)
             .map(buffer -> {
                 try {
@@ -114,10 +131,56 @@ public class PublicEndpoint implements CustomEndpoint {
     }
 
     private Mono<ServerResponse> accessJournal(ServerRequest req) {
+        if (!journalLimiter.tryAcquire(clientIp(req))) {
+            return ServerResponse.status(HttpStatus.TOO_MANY_REQUESTS).build();
+        }
         return req.bodyToMono(CastJournalService.Command.class)
             .flatMap(command -> Mono.fromCallable(() -> journals.access(command)).subscribeOn(Schedulers.boundedElastic()))
             .flatMap(result -> ServerResponse.ok().cacheControl(CacheControl.noStore()).bodyValue(result))
             .switchIfEmpty(ServerResponse.badRequest().build());
+    }
+
+    private static String clientIp(ServerRequest req) {
+        String forwarded = req.headers().firstHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            int comma = forwarded.indexOf(',');
+            String first = (comma >= 0 ? forwarded.substring(0, comma) : forwarded).trim();
+            if (!first.isEmpty()) return first;
+        }
+        return req.remoteAddress()
+            .map(addr -> addr.getAddress() != null ? addr.getAddress().getHostAddress() : addr.getHostString())
+            .orElse("unknown");
+    }
+
+    private static final class RateLimiter {
+        private static final int MAX_CLIENTS = 4096;
+        private final int perClientPerMinute;
+        private final int globalPerMinute;
+        private long minute = Long.MIN_VALUE;
+        private int total;
+        private final Map<String, Integer> perClient = new HashMap<>();
+
+        RateLimiter(int perClientPerMinute, int globalPerMinute) {
+            this.perClientPerMinute = perClientPerMinute;
+            this.globalPerMinute = globalPerMinute;
+        }
+
+        synchronized boolean tryAcquire(String key) {
+            long now = TimeUnit.NANOSECONDS.toMinutes(System.nanoTime());
+            if (minute != now) {
+                minute = now;
+                total = 0;
+                perClient.clear();
+            }
+            if (total >= globalPerMinute) return false;
+            int used = perClient.getOrDefault(key, 0);
+            if (used >= perClientPerMinute) return false;
+            if (perClient.size() < MAX_CLIENTS || perClient.containsKey(key)) {
+                perClient.put(key, used + 1);
+            }
+            total++;
+            return true;
+        }
     }
 
     private Mono<ServerResponse> listStagePosts(ServerRequest req) {

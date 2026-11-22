@@ -42,8 +42,28 @@ export function renderFeedback(config: WebConfig, options: {
       ${body}</section>`) }
 }
 
+const ipWindow = new Map<string, number[]>()
+function allowFeedbackIp(ip: string): boolean {
+  const now = Date.now()
+  const cutoff = now - 60_000
+  const recent = (ipWindow.get(ip) ?? []).filter(t => t > cutoff)
+  if (recent.length >= 10) return false
+  recent.push(now)
+  ipWindow.set(ip, recent)
+  if (ipWindow.size > 2000) {
+    for (const [k, v] of ipWindow) if (!v.some(t => t > cutoff)) ipWindow.delete(k)
+  }
+  return true
+}
+
 export async function handleFeedbackPost(req: IncomingMessage, client: BackendClient, config: WebConfig): Promise<RouteResponse> {
   const fail = (status: number, error: string) => renderFeedback(config, { status, error })
+  const forwarded = String(req.headers['x-forwarded-for'] ?? '').split(',')[0].trim()
+  const clientIp = forwarded || req.socket?.remoteAddress || 'unknown'
+  if (!allowFeedbackIp(clientIp)) {
+    req.resume()
+    return fail(429, '提交过于频繁，请 1 分钟后再试。')
+  }
   const { origin } = req.headers
   if (req.headers['sec-fetch-site'] === 'cross-site' || (origin && config.siteOrigin && origin !== config.siteOrigin)) {
     req.resume()
@@ -62,7 +82,7 @@ export async function handleFeedbackPost(req: IncomingMessage, client: BackendCl
     chunks.push(buffer)
   }
   if (length > maximumBytes) {
-    req.resume()
+    req.destroy()
     return fail(413, '建议内容太长，请缩短后再提交。')
   }
   const fields = new URLSearchParams(Buffer.concat(chunks).toString('utf8'))

@@ -104,13 +104,13 @@ describe('web security & SSR', () => {
   })
 
   it('keeps article formatting and removes embeds and external form controls', () => {
-    const source = '<h2>标题</h2><p><em>正文</em></p><iframe src="https://example.org/"></iframe>'
+    const source = '<h1>小标题</h1><h2>标题</h2><p><em>正文</em></p><iframe src="https://example.org/"></iframe>'
       + '<form action="https://example.org/"><input name="patient"></form>'
       + '<p><a href="https://example.org/" title="来源">出处</a></p>'
     const clean = sanitizePostHtml(source)
-    assert.match(clean, /<h2>标题<\/h2><p><em>正文<\/em><\/p>/)
-    assert.match(clean, /<a href="https:\/\/example.org\/" title="来源">出处<\/a>/)
-    assert.doesNotMatch(clean, /iframe|form|input/)
+    assert.match(clean, /<h2>小标题<\/h2><h2>标题<\/h2><p><em>正文<\/em><\/p>/)
+    assert.match(clean, /<a href="https:\/\/example.org\/" title="来源" rel="noopener noreferrer">出处<\/a>/)
+    assert.doesNotMatch(clean, /<h1|iframe|form|input/)
   })
 
   it('treats backend redirects as an upstream failure and only maps a true 404 to missing', async () => {
@@ -378,5 +378,19 @@ describe('web security & SSR', () => {
 
     const outside = await handleRequest('/other', mockClient(), subConfig)
     assert.equal(outside.status, 404)
+
+    const rootRobots = await handleRequest('/robots.txt', mockClient(), subConfig)
+    assert.equal(rootRobots.status, 200)
+    assert.match(String(rootRobots.body), /Sitemap: http:\/\/81\.71\.123\.100\/wanwan\/sitemap\.xml/)
+  })
+
+  it('includes brace-followup in sitemap and matches prenatal guides in search', async () => {
+    const res = await handleRequest('/sitemap.xml', mockClient(), config)
+    assert.equal(res.status, 200)
+    assert.ok(String(res.body).includes('https://wanwan.run/tools/brace-followup'))
+
+    const search = await handleRequest('/search?keyword=%E7%BE%8A%E7%A9%BF', mockClient(), config)
+    assert.equal(search.status, 200)
+    assert.match(String(search.body), /\/prenatal\/amniocentesis/)
   })
 })

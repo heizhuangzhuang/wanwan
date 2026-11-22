@@ -3,6 +3,8 @@
     <view class="title">穿戴档案同步</view>
     <view class="description">换机后，用同一微信账号在这里恢复穿戴档案。</view>
     <view wx:if="{{service === 'ready'}}" class="archive-date">云端最近保存 {{cloudSaved || '尚未上传'}}</view>
+    <view wx:if="{{localSummary}}" class="muted">{{localSummary}}</view>
+    <view wx:if="{{cloudSummary}}" class="muted">{{cloudSummary}}</view>
     <view wx:if="{{message}}" class="notice" aria-live="polite">{{message}}</view>
     <view wx:if="{{!service && busy}}" class="description">正在读取同步状态…</view>
     <view class="archive-actions">

@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -13,6 +14,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
 @Component
+@Slf4j
 class WechatNoticeClient {
     private static final ParameterizedTypeReference<Map<String, Object>> RESPONSE =
         new ParameterizedTypeReference<>() {};
@@ -45,28 +47,41 @@ class WechatNoticeClient {
                 .retrieve().body(RESPONSE);
         } catch (RestClientException e) {
             // The provider URL can include credentials. Do not attach the original exception.
+            log.warn("WeChat jscode2session transport error");
             throw new Unavailable();
         }
         if (response != null && response.get("openid") instanceof String openId
             && openId.matches("[A-Za-z0-9_-]{8,128}")) {
             return openId;
         }
-        if (errorCode(response) == 40029 || errorCode(response) == 40163) {
+        int codeNum = errorCode(response);
+        if (codeNum == 40029 || codeNum == 40163) {
             throw new InvalidCode();
         }
+        log.warn("WeChat jscode2session failed with errcode {}", codeNum);
         throw new Unavailable();
     }
 
     synchronized String accessToken(NoticeSettings.Config config) {
+        return fetchAccessToken(config, false);
+    }
+
+    synchronized String refreshAccessToken(NoticeSettings.Config config) {
+        token = null;
+        return fetchAccessToken(config, true);
+    }
+
+    private String fetchAccessToken(NoticeSettings.Config config, boolean forceRefresh) {
         Instant now = Instant.now();
-        if (token != null && now.isBefore(token.expiresAt())) {
+        if (!forceRefresh && token != null && now.isBefore(token.expiresAt())) {
             return token.value();
         }
         var response = post("/cgi-bin/stable_token", Map.of(
             "grant_type", "client_credential", "appid", config.appId(),
-            "secret", config.secret(), "force_refresh", false));
+            "secret", config.secret(), "force_refresh", forceRefresh));
         if (response == null || !(response.get("access_token") instanceof String value)
             || value.isBlank() || !(response.get("expires_in") instanceof Number ttl)) {
+            log.warn("WeChat stable_token failed with errcode {}", errorCode(response));
             throw new Unavailable();
         }
         token = new CachedToken(value, now.plusSeconds(Math.max(1, ttl.longValue() - 120)));
@@ -77,11 +92,18 @@ class WechatNoticeClient {
              String page, Instant publishedAt) {
         var format = config.timeField().startsWith("date") ? BEIJING_DATE : BEIJING_TIME;
         String date = format.format(publishedAt);
-        return errorCode(post("/cgi-bin/message/subscribe/send?access_token={token}", Map.of(
+        var payload = Map.of(
             "touser", openId, "template_id", config.template(), "page", page,
             "miniprogram_state", config.state(), "lang", "zh_CN",
             "data", Map.of(config.titleField(), Map.of("value", shortTitle(title)),
-                config.timeField(), Map.of("value", date))), accessToken));
+                config.timeField(), Map.of("value", date)));
+        int code = errorCode(post("/cgi-bin/message/subscribe/send?access_token={token}", payload, accessToken));
+        if (code == 40001 || code == 42001) {
+            log.warn("WeChat access_token expired (errcode {}), refreshing and retrying once", code);
+            String refreshed = refreshAccessToken(config);
+            code = errorCode(post("/cgi-bin/message/subscribe/send?access_token={token}", payload, refreshed));
+        }
+        return code;
     }
 
     static String shortTitle(String title) {

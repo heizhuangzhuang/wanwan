@@ -87,4 +87,12 @@ class SearchIndexTest {
         assertThat(index.search("  ", null, null)).isEmpty();
         assertThat(index.search("内".repeat(101), null, null)).isEmpty();
     }
+
+    @Test
+    void supportsSingleCharacterCjkQueries() {
+        var index = new SearchIndex();
+        index.upsert(card("a", "马蹄内翻足支具鞋", "日常穿戴指南", PublishState.PUBLISHED, Stage.BRACE_DAILY, 1));
+        assertThat(index.search("足", null, null)).containsExactly("a");
+        assertThat(index.search("鞋", null, null)).containsExactly("a");
+    }
 }

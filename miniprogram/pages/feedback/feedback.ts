@@ -15,6 +15,19 @@ function newRequestId() {
 Page({
   pending: null as { message: string; category: string; id: string } | null,
   data: { categories, selected: 0, message: '', busy: false, sent: false, error: '' },
+  onLoad(options: Record<string, string | undefined>) {
+    const updates: Record<string, unknown> = {}
+    if (options.category) {
+      const idx = categories.findIndex(item => item.value === options.category)
+      if (idx >= 0) updates.selected = idx
+    }
+    if (options.resource) {
+      let ref = options.resource
+      try { ref = decodeURIComponent(ref) } catch { /* keep raw */ }
+      updates.message = `资料编号 ${ref}：`
+    }
+    if (Object.keys(updates).length) this.setData(updates)
+  },
   chooseCategory(event: WechatMiniprogram.PickerChange) {
     this.setData({ selected: Number(event.detail.value) })
   },

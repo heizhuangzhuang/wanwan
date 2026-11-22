@@ -1,7 +1,9 @@
 package run.wanwan.notice;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.List;
 import java.util.Set;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Component;
 class CastJournalSettings {
     final boolean enabled;
     final byte[] key;
+    final List<byte[]> fallbackKeys;
     final String appId;
     final String secret;
     final NoticeSettings.Config reminder;
@@ -20,6 +23,10 @@ class CastJournalSettings {
         secret = env.getProperty("WANWAN_WECHAT_APP_SECRET", "").strip();
         contact = env.getProperty("XIAOJIAOYA_CAST_CONTACT", "").strip();
         key = decodeKey(env.getProperty("XIAOJIAOYA_CAST_ENCRYPTION_KEY", ""));
+        fallbackKeys = Arrays.stream(env.getProperty("XIAOJIAOYA_CAST_FALLBACK_KEYS", "").split(","))
+            .map(CastJournalSettings::decodeKey)
+            .filter(candidate -> candidate.length == 32)
+            .toList();
         enabled = "true".equalsIgnoreCase(env.getProperty("XIAOJIAOYA_CAST_ENABLED", "false").strip())
             && key.length == 32 && appId.matches("wx[0-9a-f]{16}") && !secret.isBlank()
             && contact.matches("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}");

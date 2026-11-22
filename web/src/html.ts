@@ -39,15 +39,28 @@ export function safeHttpUrl(url: string | null | undefined): string | null {
   }
 }
 
+const EXCLUDED_POST_TAGS = new Set(['main', 'header', 'footer', 'nav', 'aside'])
+
 /** 只渲染原创导读中需要的排版、图片与出处链接。 */
 export function sanitizePostHtml(html: string | null | undefined): string {
   return sanitizeHtml(html ?? '', {
-    allowedTags: [...sanitizeHtml.defaults.allowedTags, 'img', 'del', 's'],
+    allowedTags: [...sanitizeHtml.defaults.allowedTags.filter(tag => !EXCLUDED_POST_TAGS.has(tag)), 'img', 'del', 's'],
     allowedAttributes: {
-      a: ['href', 'title'],
-      img: ['src', 'alt', 'title', 'width', 'height'],
+      a: ['href', 'title', 'rel', 'target'],
+      img: ['src', 'alt', 'title', 'width', 'height', 'loading', 'decoding'],
       td: ['colspan', 'rowspan'],
       th: ['colspan', 'rowspan', 'scope'],
+    },
+    transformTags: {
+      h1: 'h2',
+      a: (tagName, attribs) => ({
+        tagName,
+        attribs: { ...attribs, ...(attribs.href ? { rel: 'noopener noreferrer' } : {}) },
+      }),
+      img: (tagName, attribs) => ({
+        tagName,
+        attribs: { ...attribs, loading: 'lazy', decoding: 'async' },
+      }),
     },
     allowedSchemes: ['http', 'https'],
     allowProtocolRelative: false,
@@ -81,11 +94,17 @@ export function renderLayout(config: WebConfig, title: string | null, bodyHtml: 
     ? ` · <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">${escapeHtml(config.icpNumber)}</a>`
     : ''
 
+  const robotsMeta = path === '/search' ? '\n  <meta name="robots" content="noindex, follow" />' : ''
+  const canonicalMeta = config.siteOrigin && path && path !== '/search'
+    ? `\n  <link rel="canonical" href="${escapeHtml(config.siteOrigin + base + (path === '/' ? '/' : path))}" />`
+    : ''
+
   return `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="小脚丫步步指南：从产前发现、产前复查、石膏治疗、支具穿戴到长期随访的足内翻家庭资料与工具。" />${robotsMeta}${canonicalMeta}
   <title>${fullTitle}</title>
   <link rel="icon" type="image/png" href="${config.siteBasePath}/assets/logo.png" />
   <link rel="apple-touch-icon" href="${config.siteBasePath}/assets/logo.png" />

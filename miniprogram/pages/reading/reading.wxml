@@ -27,7 +27,7 @@
 
     <scroll-view wx:if="{{kind === 'guide' && toc.length > 1}}" scroll-x class="reading-toc-scroll" show-scrollbar="{{false}}">
       <view class="filter-chips">
-        <view wx:for="{{toc}}" wx:key="id" class="filter-chip {{openSections[item.id] ? 'active' : ''}}"
+        <view wx:for="{{toc}}" wx:key="id" class="filter-chip {{activeSectionId === item.id ? 'active' : ''}}"
           role="button" data-id="{{item.id}}" bindtap="jumpToSection">{{item.title}}</view>
       </view>
     </scroll-view>

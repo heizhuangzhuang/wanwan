@@ -44,14 +44,37 @@ const form = reactive<TopicSpec>({
   priority: 1000,
 })
 
+async function loadAllCards(): Promise<ResourceCard[]> {
+  const cards = new Map<string, ResourceCard>()
+  let page = 1
+  for (;;) {
+    const result = await listResourceCards(page, 100)
+    const before = cards.size
+    for (const card of result.items ?? []) cards.set(card.metadata.name, card)
+    if (cards.size >= result.total || cards.size === before) break
+    page += 1
+  }
+  return [...cards.values()]
+}
+
+function publishedCountOf(topic: Topic): number {
+  const names = new Set(topic.spec.resourceNames ?? [])
+  return allCards.value.filter(
+    (c) =>
+      names.has(c.metadata.name)
+      && c.spec.state === 'PUBLISHED'
+      && c.spec.linkStatus !== 'SOURCE_RETRACTED',
+  ).length
+}
+
 async function load() {
   loading.value = true
   try {
-    const [topicRes, cardRes] = await Promise.all([listTopics(1, 100), listResourceCards(1, 200)])
+    const [topicRes, cards] = await Promise.all([listTopics(1, 100), loadAllCards()])
     topics.value = (topicRes.items ?? []).sort(
       (a, b) => (a.spec.priority ?? 1000) - (b.spec.priority ?? 1000),
     )
-    allCards.value = cardRes.items ?? []
+    allCards.value = cards
   } catch {
     Toast.error('加载专题失败')
   } finally {
@@ -131,13 +154,25 @@ async function save() {
 }
 
 async function setState(topic: Topic, state: PublishState) {
-  try {
-    await updateTopic({ ...topic, spec: { ...topic.spec, state } })
-    Toast.success(state === 'PUBLISHED' ? '专题已发布' : '专题已撤回')
-    await load()
-  } catch {
-    Toast.error('更新状态失败')
+  const run = async () => {
+    try {
+      await updateTopic({ ...topic, spec: { ...topic.spec, state } })
+      Toast.success(state === 'PUBLISHED' ? '专题已发布' : '专题已撤回')
+      await load()
+    } catch {
+      Toast.error('更新状态失败')
+    }
   }
+  if (state === 'WITHDRAWN') {
+    Dialog.warning({
+      title: '撤回专题',
+      description: `确定将专题「${topic.spec.title}」撤回下线？`,
+      confirmType: 'danger',
+      onConfirm: run,
+    })
+    return
+  }
+  await run()
 }
 
 function handleDelete(topic: Topic) {
@@ -191,8 +226,11 @@ onMounted(load)
                 {{ stateLabel(topic.spec.state) }}
               </VTag>
               <span class="font-medium text-gray-900">{{ topic.spec.title }}</span>
-              <span class="text-xs text-gray-500">
-                （{{ topic.spec.resourceNames?.length ?? 0 }} 条资料）
+              <span
+                class="text-xs"
+                :class="publishedCountOf(topic) === 0 ? 'text-amber-700 font-medium' : 'text-gray-500'"
+              >
+                （已公开 {{ publishedCountOf(topic) }} / 共 {{ topic.spec.resourceNames?.length ?? 0 }} 条资料）
               </span>
             </div>
             <p class="line-clamp-2 text-xs text-gray-600">{{ topic.spec.intro }}</p>
@@ -294,5 +332,9 @@ onMounted(load)
   padding: 0.375rem 0.5rem;
   font-size: 0.875rem;
   background: #fff;
+}
+select.ww-input {
+  background-image: none;
+  padding-right: 1.75rem;
 }
 </style>

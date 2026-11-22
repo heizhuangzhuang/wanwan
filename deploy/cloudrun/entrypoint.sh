@@ -35,6 +35,13 @@ esac
 
 mkdir -p "${WORK_DIR}/plugins"
 
+if [ "${WANWAN_REQUIRE_CFS:-0}" = "1" ]; then
+  if [ -r /proc/mounts ] && ! grep -qs " ${WORK_DIR%/} " /proc/mounts; then
+    printf '[wanwan] Persistent volume is not mounted at %s (WANWAN_REQUIRE_CFS=1).\n' "$WORK_DIR" >&2
+    exit 1
+  fi
+fi
+
 # Halo uses wanwan-<version>.jar when the plugin was installed via Console.
 # Also keep the original image filename for earlier registered deployments.
 for bundled in /opt/wanwan/plugins/plugin-wanwan-*.jar; do

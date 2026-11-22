@@ -24,7 +24,7 @@ Page({
       this.setData({ editor: newObservation(day) })
     }
   },
-  onShow() { this.refresh(); void this.loadCast() },
+  onShow() { this.refresh(!this.data.editingQuestions); void this.loadCast() },
   refresh(resetQuestions = true) {
     try {
       const log = readWearLog()
@@ -80,7 +80,11 @@ Page({
       `期初目标 ${s.initialPlan}`, ...s.plans.map(plan => `${plan.day} ${plan.label}`),
       `最近一次支具调整 ${s.adjustment}`, ...this.data.savedQuestions.map(q => '想问医生 ' + q),
     ]
-    wx.setClipboardData({ data: text.join('\n') })
+    wx.setClipboardData({
+      data: text.join('\n'),
+      success: () => wx.showToast({ title: '已复制复诊摘要', icon: 'none' }),
+      fail: () => wx.showToast({ title: '复制失败，请重试', icon: 'none' }),
+    })
   },
   addObservation() {
     this.setData({ editor: newObservation(this.data.today), message: '' })

@@ -103,8 +103,24 @@ Page({
       const next = toggleWearSession(this.log)
       this.persist(next, next.activeStart === null ? '已保存本次穿戴。' : '已开始记录。')
     } catch {
-      this.setData({ message: '请核对手机时间后再结束计时。' })
+      this.setData({ message: '当前手机时间早于开始穿戴时间，请检查系统时间或使用「补记」修改。' })
     }
+  },
+  cancelActive() {
+    if (this.log.activeStart === null) return
+    wx.showModal({
+      title: '放弃正在计时的这一段？',
+      content: '仅清除当前进行中的计时，不会影响已保存的历史记录。',
+      confirmText: '放弃计时',
+      success: ({ confirm }) => {
+        if (confirm) this.persist({ ...this.log, activeStart: null }, '已取消本次计时。')
+      },
+    })
+  },
+  pickPresetTarget(e: WechatMiniprogram.TouchEvent) {
+    const hours = String(e.currentTarget.dataset.hours ?? '')
+    if (!hours) return
+    this.setData({ targetHours: hours, targetMinutes: '0', message: '' })
   },
   chooseDay(e: WechatMiniprogram.TouchEvent) {
     this.setData({ selectedDay: String(e.currentTarget.dataset.day), form: null, message: '' })

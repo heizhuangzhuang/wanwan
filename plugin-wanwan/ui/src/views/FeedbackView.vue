@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { VButton, VPageHeader } from '@halo-dev/components'
-import { getFeedback, saveFeedbackStatus, type FeedbackEntry, type FeedbackStatus } from '@/api/operations'
+import { Dialog, VButton, VPageHeader } from '@halo-dev/components'
+import { deleteFeedback, getFeedback, saveFeedbackStatus, type FeedbackEntry, type FeedbackStatus } from '@/api/operations'
 
 const statuses = { NEW: '待查看', REVIEWED: '已查看', PLANNED: '已纳入计划', DONE: '已完成' }
 const categories = { FEATURE: '希望增加功能', USABILITY: '使用体验', ISSUE: '遇到问题', OTHER: '其他建议' }
@@ -51,6 +51,26 @@ async function update(entry: FeedbackEntry, event: Event) {
   if (reload) await load(1)
 }
 
+function removeEntry(entry: FeedbackEntry) {
+  Dialog.warning({
+    title: '删除功能建议',
+    description: '确定删除这条建议记录？删除后无法恢复。',
+    confirmType: 'danger',
+    onConfirm: async () => {
+      saving.value = entry.name
+      error.value = ''
+      try {
+        await deleteFeedback(entry.name)
+        rows.value = rows.value.filter(row => row.name !== entry.name)
+      } catch {
+        error.value = '删除建议失败，请重试。'
+      } finally {
+        saving.value = ''
+      }
+    },
+  })
+}
+
 onMounted(() => void load())
 </script>
 
@@ -60,7 +80,7 @@ onMounted(() => void load())
       <VButton type="secondary" :loading="loading" :disabled="!!saving" @click="load()">刷新</VButton>
     </template>
   </VPageHeader>
-  <main class="feedback-list">
+  <section class="feedback-list" aria-label="功能建议列表">
     <div class="feedback-toolbar">
       <label>处理状态
         <select v-model="selected" :disabled="loading || !!saving" @change="load(1)">
@@ -78,18 +98,21 @@ onMounted(() => void load())
         <p class="feedback-meta">{{ channels[row.channel] || '其他渠道' }} · {{ format.format(new Date(row.createdAt)) }}</p>
         <p class="feedback-text">{{ row.message }}</p>
       </div>
-      <label class="feedback-status">处理状态
-        <select :value="row.status" :disabled="loading || !!saving" @change="update(row, $event)">
-          <option v-for="(label, key) in statuses" :key="key" :value="key">{{ label }}</option>
-        </select>
-      </label>
+      <div class="feedback-actions">
+        <label class="feedback-status">处理状态
+          <select :value="row.status" :disabled="loading || !!saving" @change="update(row, $event)">
+            <option v-for="(label, key) in statuses" :key="key" :value="key">{{ label }}</option>
+          </select>
+        </label>
+        <VButton size="sm" type="danger" :disabled="loading || !!saving" @click="removeEntry(row)">删除</VButton>
+      </div>
     </article>
     <nav v-if="page > 1 || hasNext" class="feedback-toolbar" aria-label="建议分页">
       <VButton type="secondary" :disabled="page <= 1 || loading || !!saving" @click="load(page - 1)">上一页</VButton>
       <span>第 {{ page }} 页</span>
       <VButton type="secondary" :disabled="!hasNext || loading || !!saving" @click="load(page + 1)">下一页</VButton>
     </nav>
-  </main>
+  </section>
 </template>
 
 <style scoped>
@@ -100,7 +123,8 @@ onMounted(() => void load())
 .feedback-row h2 { font-weight: 650; color: #21392e; }
 .feedback-meta { color: #56625a; font-size: 13px; margin: 4px 0 8px; }
 .feedback-text { white-space: pre-wrap; overflow-wrap: anywhere; }
-.feedback-list select { margin-left: 6px; padding: 5px 8px; border: 1px solid #aab7ae; border-radius: 5px; }
+.feedback-list select { margin-left: 6px; padding: 5px 28px 5px 8px; border: 1px solid #aab7ae; border-radius: 5px; background-image: none; }
+.feedback-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .feedback-status { flex-shrink: 0; }
 .feedback-error { color: #9b2c22; }
 @media (max-width: 540px) {

@@ -10,7 +10,7 @@ const PLAN_CODES = ['wear', 'followup', 'unset'] as const
 Page({
   log: null as WearLog | null,
   data: {
-    periods: PERIOD_OPTIONS, period: '30' as PeriodKey, today: '', from: '', to: '',
+    periods: PERIOD_OPTIONS, period: '30' as PeriodKey, today: '', yesterday: '', from: '', to: '',
     mode: '', status: '', day: '', input: '', option: 0, planTypes: PLAN_TYPES, visitTypes: VISIT_TYPES,
     average: '—', periodDays: 0, recorded: 0, below: 0, missing: 0, zero: 0, met: 0,
     phase: '', chart: [] as ReturnType<typeof chartWear>,
@@ -23,7 +23,8 @@ Page({
     try {
       this.log = readWearLog()
       const today = dateKey(Date.now())
-      this.setData({ today, to: this.data.to || today, status: '',
+      const yesterday = dateKey(dayBoundary(today, -1))
+      this.setData({ today, yesterday, to: this.data.to || today, status: '',
         ...(this.openVisitOnLoad ? { mode: 'visit', day: today, input: '', option: 0 } : {}),
       })
       this.openVisitOnLoad = false
@@ -82,13 +83,17 @@ Page({
   },
   saveEditor() {
     const { mode, day, option, input, today } = this.data
-    if (!this.log || !validDay(day) || (mode === 'zero' && day >= today)) return
+    if (!this.log || !validDay(day)) return
+    if (mode === 'zero' && day >= today) {
+      this.setData({ status: '今天尚未结束，仅可对过去的日期确认未穿。' })
+      return
+    }
     if (mode === 'plan') {
       const type = PLAN_CODES[option]
       const hours = Number(input)
       const minutes = type === 'wear' ? Math.round(hours * 60) : null
       if (!type || (minutes !== null && (!/^\d+(\.\d{1,2})?$/.test(input) || minutes < 1 || hours > 24))) {
-        this.setData({ status: '请输入 0.02 至 24 小时，最多两位小数。' })
+        this.setData({ status: '请输入 1 分钟至 24 小时内的每日目标（支持两位小数，如 12.5）。' })
         return
       }
       const plan: WearPlan = { day, type, minutes }
@@ -106,6 +111,14 @@ Page({
       const confirmedZero = existing ? this.log.confirmedZero.filter(item => item !== day) : [...this.log.confirmedZero, day]
       this.persist({ ...this.log, confirmedZero }, existing ? '已取消此日的未穿确认。' : '已确认此日未穿。')
     }
+  },
+  removePlan(e: WechatMiniprogram.TouchEvent) {
+    const day = String(e.currentTarget.dataset.day ?? '')
+    if (!day || !this.log) return
+    wx.showModal({ title: '删除这条阶段计划？', content: `将移除 ${day} 生效的计划，历史统计会按剩余计划重新计算。`, confirmText: '删除',
+      success: ({ confirm }) => {
+        if (confirm && this.log) this.persist({ ...this.log, plans: this.log.plans.filter(row => row.day !== day) }, '已删除计划。')
+      } })
   },
   removeVisit(e: WechatMiniprogram.TouchEvent) {
     const id = e.currentTarget.dataset.id

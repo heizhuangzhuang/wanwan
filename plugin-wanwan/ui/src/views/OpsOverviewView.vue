@@ -102,7 +102,7 @@ onMounted(load)
     </template>
   </VPageHeader>
 
-  <main class="ops">
+  <section class="ops" aria-label="运营总览内容">
     <div class="ops-meta" aria-live="polite">
       <span v-if="overview">最近探测 {{ formatter.format(new Date(overview.probes.checkedAt)) }}（北京时间）</span>
       <span v-else-if="loading">正在检查 Web 和 Halo API…</span>
@@ -125,10 +125,23 @@ onMounted(load)
     <section class="ops-row" aria-labelledby="content-report">
       <h2 id="content-report">资料运营统计</h2>
       <ul v-if="overview?.contentReport" class="ops-checks">
-        <li><span>公开可检索</span><strong>{{ overview.contentReport.publicCards }} 条</strong></li>
+        <li><span>公开可检索</span><strong>{{ overview.contentReport.publicCards }} 条</strong><small v-if="overview.contentReport.searchIndexSize !== undefined">索引 {{ overview.contentReport.searchIndexSize }} 条</small></li>
         <li><span>待审核</span><strong>{{ overview.contentReport.pendingReview }} 条</strong></li>
         <li><span>已撤回或原文下线</span><strong>{{ overview.contentReport.withdrawn }} 条</strong></li>
         <li><span>公开资料待核对链接</span><strong>{{ overview.contentReport.linksToCheck }} 条</strong></li>
+        <li v-if="overview.contentReport.publishedGuides !== undefined">
+          <span>原创导读</span>
+          <strong data-state="OK">{{ overview.contentReport.publishedGuides }} 篇</strong>
+          <small v-if="overview.contentReport.uncategorizedGuides">其中 {{ overview.contentReport.uncategorizedGuides }} 篇未归入阶段分类</small>
+        </li>
+        <li v-if="overview.contentReport.missingStageCategories?.length">
+          <span>缺失阶段分类</span>
+          <strong data-state="HTTP_ERROR">{{ overview.contentReport.missingStageCategories.join('、') }}</strong>
+        </li>
+        <li v-if="overview.contentReport.unreadFeedback !== undefined">
+          <span>待查看建议</span>
+          <strong :data-state="overview.contentReport.unreadFeedback > 0 ? 'HTTP_ERROR' : 'OK'">{{ overview.contentReport.unreadFeedback }} 条</strong>
+        </li>
       </ul>
       <p v-else>{{ overview ? '资料统计暂无法读取。' : '等待读取资料统计' }}</p>
     </section>
@@ -175,7 +188,7 @@ onMounted(load)
       </div>
       <p v-if="saveMessage" :role="saveError ? 'alert' : 'status'">{{ saveMessage }}</p>
     </form>
-  </main>
+  </section>
 </template>
 
 <style scoped>
@@ -212,6 +225,7 @@ onMounted(load)
 .ops-inputs { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 12px; }
 .ops-inputs label { display: grid; gap: 4px; min-width: 120px; }
 .ops-inputs input, .ops-inputs select { color: var(--ops-ink); border: 1px solid #aabbb1; border-radius: 6px; padding: 6px 8px; max-width: 180px; }
+.ops-inputs select { background-image: none; padding-right: 24px; }
 .ops-inputs button { background: var(--ops-accent); color: #fff; padding: 7px 12px; border-radius: 6px; }
 .ops-inputs button:disabled { opacity: 0.55; cursor: not-allowed; }
 .ops :is(a, button, input, select):focus-visible { outline: 2px solid var(--ops-accent); outline-offset: 3px; }

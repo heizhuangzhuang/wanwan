@@ -126,10 +126,10 @@ public class PublicQueryService {
     private Mono<Dtos.Page<Dtos.PostSummary>> pagePosts(String keyword, Stage stage, int page, int size) {
         int p = normalizePage(page);
         int s = normalizeSize(size);
+        List<String> terms = keyword.isEmpty() ? List.of()
+            : java.util.Arrays.stream(keyword.split("\\s+")).filter(t -> !t.isEmpty()).toList();
         return stagePosts(stage)
-            .filter(post -> keyword.isEmpty()
-                || containsKeyword(post.getSpec().getTitle(), keyword)
-                || (post.getStatus() != null && containsKeyword(post.getStatus().getExcerpt(), keyword)))
+            .filter(post -> terms.isEmpty() || matchesAllTerms(post, terms))
             .collectList()
             .flatMap(all -> Flux.fromIterable(pageSlice(all, p, s))
                 .flatMapSequential(post -> publicAuthor(post)
@@ -139,12 +139,23 @@ public class PublicQueryService {
                 .map(items -> new Dtos.Page<>(p, s, all.size(), items)));
     }
 
+    private static boolean matchesAllTerms(Post post, List<String> terms) {
+        String title = post.getSpec().getTitle();
+        String excerpt = post.getStatus() != null ? post.getStatus().getExcerpt() : null;
+        for (String term : terms) {
+            if (!containsKeyword(title, term) && !containsKeyword(excerpt, term)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private Flux<Post> stagePosts(Stage stage) {
         if (stage == null) return client.list(Post.class, Visibility::isPublicPost, POST_ORDER);
         String slug = stage.name().toLowerCase(Locale.ROOT).replace('_', '-');
         return client.list(Category.class, category -> {
                 var spec = category.getSpec();
-                return !ExtensionOperator.isDeleted(category) && spec != null && !spec.isHideFromList()
+                return !ExtensionOperator.isDeleted(category) && spec != null
                     && (slug.equalsIgnoreCase(spec.getSlug()) || stage.getLabel().equals(spec.getDisplayName()));
             }, Comparator.comparing(category -> category.getMetadata().getName()))
             .map(category -> category.getMetadata().getName())

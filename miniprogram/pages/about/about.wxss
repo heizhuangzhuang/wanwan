@@ -1,0 +1,21 @@
+.brand-header {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  margin-bottom: 18rpx;
+}
+.brand-logo {
+  flex: none;
+  width: 96rpx;
+  height: 96rpx;
+  border-radius: 22rpx;
+  border: 1rpx solid #d3e6d9;
+  background: #f3fbf5;
+}
+.brand-meta {
+  flex: 1;
+  min-width: 0;
+}
+.about-feedback-btn {
+  margin-top: 16rpx;
+}

@@ -17,7 +17,7 @@
     <view wx:if="{{!items.length}}" class="card muted">暂无可阅读的{{kind === 'topic' ? '专题' : '导读'}}。</view>
     <view wx:for="{{items}}" wx:key="name" class="card {{kind === 'guide' ? 'guide-card' : ''}} motion-press" hover-class="pressed" data-name="{{item.name}}" bindtap="openReading">
       <view class="badge-row">
-        <text class="badge {{kind === 'guide' ? 'badge-sage' : 'badge-gold'}}">{{kind === 'guide' ? '📖 原创导读' : '📚 精选专题'}}</text>
+        <text class="badge {{kind === 'guide' ? 'badge-sage' : 'badge-gold'}}">{{kind === 'guide' ? '原创导读' : '精选专题'}}</text>
         <text wx:if="{{kind === 'topic'}}" class="badge badge-outline">{{item.resourceCount}} 条资料</text>
         <text wx:if="{{item.date}}" class="muted badge-right">{{item.date}}</text>
       </view>

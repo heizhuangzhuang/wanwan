@@ -40,7 +40,7 @@
           <navigator wx:for="{{articles}}" wx:key="name" class="card guide-card stage-guide-carousel-item motion-press" hover-class="pressed"
             url="/pages/reading/reading?kind=guide&name={{item.name}}">
             <view class="guide-card-head">
-              <text class="badge badge-sage">📖 原创导读</text>
+              <text class="badge badge-sage">原创导读</text>
               <text class="muted">分节阅读 ›</text>
             </view>
             <view class="resource-card-title clamp-2">{{item.title}}</view>
@@ -52,7 +52,7 @@
         <navigator wx:for="{{articles}}" wx:key="name" class="card guide-card motion-press" hover-class="pressed"
           url="/pages/reading/reading?kind=guide&name={{item.name}}">
           <view class="guide-card-head">
-            <text class="badge badge-sage">📖 原创导读</text>
+            <text class="badge badge-sage">原创导读</text>
             <text class="muted">分节阅读 ›</text>
           </view>
           <view class="resource-card-title clamp-2">{{item.title}}</view>

@@ -223,17 +223,24 @@ function reviewPublication(card: ResourceCard) {
   reviewing.value = true
 }
 
-async function withdraw(card: ResourceCard) {
-  try {
-    await updateResourceCard({
-      ...card,
-      spec: { ...card.spec, state: 'WITHDRAWN' },
-    })
-    Toast.success('已撤回')
-    await load()
-  } catch {
-    Toast.error('更新状态失败')
-  }
+function withdraw(card: ResourceCard) {
+  Dialog.warning({
+    title: '撤回资料卡',
+    description: `确定将「${card.spec.displayTitle || card.spec.originalTitle}」撤回下线？撤回后前台 Web 与小程序将立即隐藏该资料。`,
+    confirmType: 'danger',
+    onConfirm: async () => {
+      try {
+        await updateResourceCard({
+          ...card,
+          spec: { ...card.spec, state: 'WITHDRAWN' },
+        })
+        Toast.success('已撤回')
+        await load()
+      } catch {
+        Toast.error('更新状态失败')
+      }
+    },
+  })
 }
 
 function handleDelete(card: ResourceCard) {
@@ -578,6 +585,10 @@ onMounted(load)
   padding: 0.375rem 0.5rem;
   font-size: 0.875rem;
   background: #fff;
+}
+select.ww-input {
+  background-image: none;
+  padding-right: 1.75rem;
 }
 .ww-input--sm {
   width: auto;

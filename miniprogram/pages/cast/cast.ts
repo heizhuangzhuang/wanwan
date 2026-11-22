@@ -22,7 +22,10 @@ Page({
     sides: SIDES, today: today(), form: blank(), editing: false, busy: false, error: '', status: '',
   },
   onLoad(query: Record<string, string | undefined>) { this.addOnReady = query.add === '1' },
-  onShow() { return this.refresh() },
+  onShow() {
+    if (this.data.editing) return
+    return this.refresh()
+  },
   async refresh() {
     if (this.data.busy) return
     this.setData({ busy: true, error: '' })

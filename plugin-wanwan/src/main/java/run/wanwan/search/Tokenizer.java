@@ -13,6 +13,15 @@ public final class Tokenizer {
     }
 
     public static Set<String> tokenize(String text) {
+        return tokenize(text, false);
+    }
+
+    /** 索引分词：保留 bigram 的同时补充 CJK 单字，确保单字搜索（如「脚」「靴」「足」）可命中。 */
+    public static Set<String> indexTokens(String text) {
+        return tokenize(text, true);
+    }
+
+    private static Set<String> tokenize(String text, boolean includeCjkUnigrams) {
         Set<String> tokens = new LinkedHashSet<>();
         if (text == null || text.isBlank()) {
             return tokens;
@@ -27,15 +36,15 @@ public final class Tokenizer {
                 flushWord(word, tokens);
                 cjk.appendCodePoint(cp);
             } else if (Character.isLetterOrDigit(cp)) {
-                flushCjk(cjk, tokens);
+                flushCjk(cjk, tokens, includeCjkUnigrams);
                 word.appendCodePoint(cp);
             } else {
                 flushWord(word, tokens);
-                flushCjk(cjk, tokens);
+                flushCjk(cjk, tokens, includeCjkUnigrams);
             }
         }
         flushWord(word, tokens);
-        flushCjk(cjk, tokens);
+        flushCjk(cjk, tokens, includeCjkUnigrams);
         return tokens;
     }
 
@@ -46,7 +55,7 @@ public final class Tokenizer {
         }
     }
 
-    private static void flushCjk(StringBuilder run, Set<String> tokens) {
+    private static void flushCjk(StringBuilder run, Set<String> tokens, boolean includeUnigrams) {
         if (run.isEmpty()) {
             return;
         }
@@ -56,6 +65,11 @@ public final class Tokenizer {
         } else {
             for (int i = 0; i + 1 < cps.length; i++) {
                 tokens.add(new String(cps, i, 2));
+            }
+            if (includeUnigrams) {
+                for (int cp : cps) {
+                    tokens.add(Character.toString(cp));
+                }
             }
         }
         run.setLength(0);

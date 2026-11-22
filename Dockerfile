@@ -21,7 +21,7 @@ COPY --from=plugin-builder /src/plugin-wanwan/build/libs/plugin-wanwan-*.jar /op
 COPY deploy/cloudrun/entrypoint.sh /opt/wanwan/entrypoint.sh
 RUN chmod +x /opt/wanwan/entrypoint.sh
 
-ENV JVM_OPTS="-Xmx1024m -Xms512m" \
+ENV JVM_OPTS="-Xmx1024m -Xms512m -XX:+ExitOnOutOfMemoryError" \
     PORT="80" \
     WANWAN_REQUIRE_MYSQL="1"
 

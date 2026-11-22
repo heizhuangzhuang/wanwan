@@ -23,6 +23,7 @@ function cleanExcerpt(title: string, excerpt?: string | null): string {
 }
 
 Page({
+  requestSeq: 0,
   data: {
     stageFilters,
     selectedStage: '',
@@ -60,24 +61,30 @@ Page({
     void this.loadFeatured()
   },
   async loadFeatured() {
-    if (this.data.loading) return
+    const seq = ++this.requestSeq
     const stageKey = this.data.selectedStage
     this.setData({ loading: true, featuredError: false })
     const [topics, resources, guides] = await Promise.allSettled([
-      wanwanApi.listTopics(1, 2),
+      wanwanApi.listTopics(1, 6),
       wanwanApi.listResources({ stage: stageKey || undefined, page: 1, size: 3 }),
       stageKey ? wanwanApi.listStagePosts(stageKey, 1, 5) : wanwanApi.listPosts(1, 5),
     ])
+    if (seq !== this.requestSeq) return
     this.setData({
-      topics: topics.status === 'fulfilled' ? topics.value.items.map(topic => ({
-        ...topic,
-        url: `/pages/reading/reading?kind=topic&name=${encodeURIComponent(topic.name)}`,
-      })) : [],
+      topics: topics.status === 'fulfilled'
+        ? topics.value.items
+            .filter(topic => topic.resourceCount !== 0)
+            .slice(0, 2)
+            .map(topic => ({
+              ...topic,
+              url: `/pages/reading/reading?kind=topic&name=${encodeURIComponent(topic.name)}`,
+            }))
+        : [],
       resources: resources.status === 'fulfilled' ? resources.value.items.map(resourceLabel) : [],
       guides: guides.status === 'fulfilled'
         ? guides.value.items.map(post => ({ ...post, excerpt: cleanExcerpt(post.title, post.excerpt) }))
         : [],
-      featuredError: topics.status === 'rejected' || resources.status === 'rejected',
+      featuredError: topics.status === 'rejected' || resources.status === 'rejected' || guides.status === 'rejected',
       loading: false,
     })
   },

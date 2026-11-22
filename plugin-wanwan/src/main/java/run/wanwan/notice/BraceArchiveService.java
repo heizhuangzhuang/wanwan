@@ -56,8 +56,9 @@ public final class BraceArchiveService {
     private State apply(String owner, Command command) {
         var record = client.fetch(CastJournal.class, owner).orElse(null);
         if (record != null && ExtensionOperator.isDeleted(record)) throw status(HttpStatus.CONFLICT);
-        var current = record == null ? new State(null, CONSENT_VERSION, false, null, null)
-            : json.readValue(cipher.decrypt(owner, record.getEncryptedPayload()), State.class);
+        var current = record == null || record.getEncryptedPayload() == null
+            ? new State(null, CONSENT_VERSION, false, null, null)
+            : readState(owner, record.getEncryptedPayload());
         if ("read".equals(command.action())) return current;
         if (!Objects.equals(current.revision(), command.revision())) throw status(HttpStatus.CONFLICT);
         String revision = UUID.randomUUID().toString();
@@ -83,7 +84,7 @@ public final class BraceArchiveService {
             metadata.setName(owner);
             record.setMetadata(metadata);
         }
-        record.setEncryptedPayload(cipher.encrypt(owner, json.writeValueAsBytes(next)));
+        record.setEncryptedPayload(cipher.encryptCompressed(owner, json.writeValueAsBytes(next)));
         try {
             if (creating) client.create(record);
             else client.update(record);
@@ -94,6 +95,14 @@ public final class BraceArchiveService {
             throw e;
         }
         return next;
+    }
+
+    private State readState(String owner, String encryptedPayload) {
+        try {
+            return json.readValue(cipher.decrypt(owner, encryptedPayload), State.class);
+        } catch (JacksonException | IllegalStateException e) {
+            throw status(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     private void validateArchive(String archive) {

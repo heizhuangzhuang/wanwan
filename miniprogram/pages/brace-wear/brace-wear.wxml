@@ -85,7 +85,8 @@
         <block wx:if="{{hasDetails}}">
           <view wx:if="{{includesActive}}" class="wear-session wear-session-active">
             <view class="wear-timeline-dot" aria-hidden="true" />
-            <text>含正在计时的一段</text>
+            <text class="wear-session-time">正在计时（{{startedAt}} 开始）</text>
+            <button class="wear-button wear-link" bindtap="cancelActive" hover-class="wear-pressed">取消计时</button>
           </view>
           <view wx:for="{{sessions}}" wx:key="id" class="wear-session">
             <view class="wear-timeline-dot" aria-hidden="true" />
@@ -167,7 +168,13 @@
           <view class="wear-sheet-title">每日穿戴目标</view>
           <button wx:if="{{target}}" class="wear-button wear-delete" bindtap="clearTarget" hover-class="wear-pressed">清除</button>
         </view>
-        <view class="wear-hint">填写医生交代的每日穿戴时长。</view>
+        <view class="wear-hint">填写医生交代的每日穿戴时长，或点选常用时长。</view>
+        <view class="wear-presets">
+          <button class="wear-preset-chip" data-hours="23" bindtap="pickPresetTarget">23 小时</button>
+          <button class="wear-preset-chip" data-hours="16" bindtap="pickPresetTarget">16 小时</button>
+          <button class="wear-preset-chip" data-hours="14" bindtap="pickPresetTarget">14 小时</button>
+          <button class="wear-preset-chip" data-hours="12" bindtap="pickPresetTarget">12 小时</button>
+        </view>
         <view class="wear-target-inputs">
           <view class="wear-target-field">
             <input type="number" value="{{targetHours}}" placeholder="0" maxlength="2" aria-label="小时" bindinput="changeHours" />

@@ -65,6 +65,9 @@ function labelOf<T extends string>(options: { value: T; label: string }[], value
       </template>
       <p v-else>未发现相同的原始 URL、DOI 或 PMID。</p>
       <p v-if="!form.lastVerifiedDate">发布前需填写最后核对日期。</p>
+      <p v-if="form.state === 'PUBLISHED' && form.linkStatus !== 'OK'" class="ww-link-warn" role="alert">
+        提示：当前链接状态为「{{ labelOf(LINK_STATUS_OPTIONS, form.linkStatus) }}」，发布后前台仅显示原文出处与复制链接，不会展示直达按钮。如需允许跳转，请先将链接状态改为「正常」。
+      </p>
       <label v-if="form.state === 'PUBLISHED'" class="ww-confirm">
         <input v-model="confirmed" type="checkbox" :disabled="loading || listFailed || !form.lastVerifiedDate" />
         <span>我已核对来源、公开字段和入口状态。</span>
@@ -87,6 +90,7 @@ function labelOf<T extends string>(options: { value: T; label: string }[], value
 .ww-matches span { display: block; }
 .ww-confirm { display: flex; align-items: flex-start; gap: 8px; padding-top: 8px; }
 .ww-confirm input { margin-top: 4px; accent-color: #376052; }
+.ww-link-warn { background: #fff7ed; border: 1px solid #fdba74; color: #9a3412; padding: 8px 10px; border-radius: 8px; font-size: 13px; }
 @media (min-width: 640px) {
   .ww-review { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
 }

@@ -82,7 +82,7 @@ Page({
   },
   openFeedback() {
     const { resource } = this.data
-    if (resource) wx.navigateTo({ url: `/pages/about/about?resource=${encodeURIComponent(resource.name)}` })
+    if (resource) wx.navigateTo({ url: `/pages/feedback/feedback?category=ISSUE&resource=${encodeURIComponent(resource.name)}` })
   },
   copyCitation() {
     const resource = this.data.resource

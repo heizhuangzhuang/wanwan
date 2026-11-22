@@ -27,6 +27,7 @@ export function renderBraceDashboard(config: WebConfig): string {
     <div class="brace-today-controls">
       <div class="brace-actions">
         <button class="btn brace-primary" type="button" id="brace-timer" disabled>开始计时</button>
+        <button class="btn brace-on-dark" type="button" id="brace-cancel-timer" hidden>取消计时</button>
         <button class="btn brace-on-dark" type="button" id="brace-add-session" disabled>补记时段</button>
       </div>
       <p id="brace-running" role="status"></p>
@@ -91,16 +92,20 @@ export function renderBraceDashboard(config: WebConfig): string {
       <section class="brace-panel" aria-labelledby="brace-visit-title">
         <h3 id="brace-visit-title">复诊与调整</h3>
         <form id="brace-visit-form"><label>日期<input required id="brace-visit-day" type="date"></label>
-          <label>类型<select id="brace-visit-kind"><option>复诊</option><option>调整支具</option><option>随访</option></select></label>
+          <label>类型<select id="brace-visit-kind"><option>复诊</option><option>调整支具</option><option>随访</option><option>开始穿戴</option><option>更换矫正鞋</option><option>跟腱处理</option></select></label>
           <label class="brace-full-width">备注<input id="brace-visit-note" maxlength="200"></label><button class="btn" type="submit">加记录</button></form>
         <ul id="brace-visits"></ul>
       </section>
       <section class="brace-panel" id="brace-export" aria-labelledby="brace-export-title">
         <h3 id="brace-export-title">导出与换机</h3>
-        <p>档案保存在当前浏览器。Excel 包含所选区间，备份可在另一台设备恢复完整档案。</p>
+        <p>档案保存在当前浏览器（建议定期导出备份以防浏览器清理本地存储）。Excel 包含所选区间，备份可与微信小程序互通。</p>
         <div class="brace-actions"><button class="btn" type="button" id="brace-excel">导出 Excel</button>
           <button class="btn btn-outline" type="button" id="brace-backup">导出备份</button>
           <label class="btn btn-outline brace-upload">恢复备份<input id="brace-restore" type="file" accept=".json,application/json"></label></div>
+        <div id="brace-extra" hidden style="margin-top:14px;border-top:1px solid var(--border);padding-top:10px">
+          <h4>同步自备份的穿戴困难与复诊问题</h4>
+          <ul id="brace-extra-list"></ul>
+        </div>
       </section>
     </div>
   </section>

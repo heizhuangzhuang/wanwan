@@ -15,7 +15,7 @@
       <view class="page-heading">{{resource.title}}</view>
 
       <view class="detail-takeaway">
-        <view class="detail-takeaway-title">💡 这条资料讲了什么</view>
+        <view class="detail-takeaway-title">这条资料讲了什么</view>
         <view class="detail-takeaway-body">{{resource.intro}}</view>
       </view>
 
@@ -36,9 +36,9 @@
       </view>
 
       <view wx:if="{{resource.linkStatus === 'SOURCE_RETRACTED'}}" class="notice">原文已撤回，以下仅保留出处。</view>
-      <view wx:elif="{{resource.linkStatus !== 'OK'}}" class="notice">原文入口待核对，可以查看并复制题录。</view>
+      <view wx:elif="{{resource.linkStatus !== 'OK'}}" class="notice">原文入口待核对，可以查看并复制原文出处。</view>
       <view wx:elif="{{!allowArticle && !allowMiniProgram && !(resource.attachment && resource.linkStatus === 'OK')}}" class="detail-cite-tip">
-        该资料仅收录权威出处，可点击下方「复制出处」自行检索原文。
+        该资料仅收录权威出处，可点击下方按钮复制出处自行检索原文。
       </view>
       <view wx:if="{{entryError}}" class="notice">{{entryError}}</view>
 
@@ -51,10 +51,10 @@
 
   <view wx:if="{{!loading && !error && resource}}" class="bottom-bar">
     <button wx:if="{{resource.linkStatus !== 'SOURCE_RETRACTED'}}" class="bottom-bar-icon-btn" bindtap="toggleFavorite">
-      <image src="/assets/icons/book-open.png" mode="aspectFit" aria-hidden="true" />
+      <image src="/assets/icons/bookmark.png" mode="aspectFit" aria-hidden="true" />
       <text>{{saved ? '已收藏' : '收藏'}}</text>
     </button>
-    <button class="bottom-bar-icon-btn" bindtap="copyCitation">
+    <button wx:if="{{allowArticle || allowMiniProgram || (resource.attachment && resource.linkStatus === 'OK')}}" class="bottom-bar-icon-btn" bindtap="copyCitation">
       <image src="/assets/icons/link-2.png" mode="aspectFit" aria-hidden="true" />
       <text>复制出处</text>
     </button>

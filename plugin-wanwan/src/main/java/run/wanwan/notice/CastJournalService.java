@@ -36,7 +36,7 @@ public class CastJournalService {
         this.client = client;
         this.settings = settings;
         this.wechat = wechat;
-        cipher = settings.enabled ? new CastJournalCipher(settings.key) : null;
+        cipher = settings.enabled ? new CastJournalCipher(settings.key, settings.fallbackKeys) : null;
         braceArchive = new BraceArchiveService(client, settings, wechat, cipher);
     }
 

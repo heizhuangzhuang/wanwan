@@ -95,8 +95,8 @@ export function guideNodes(html: string, title: string): GuideNode[] {
       if (index > 0) stack.length = index
       continue
     }
-    // Native rich-text cannot navigate arbitrary external links. Keep their visible labels.
-    let style = name === 'a' ? 'color:#285143;text-decoration:underline' : styles[name]
+    // Native rich-text cannot navigate arbitrary external links. Keep readable text without fake link underline.
+    let style = name === 'a' ? 'color:#35483d;font-weight:500' : styles[name]
     if (name === 'p' && parent.name === 'li') style = 'display:inline;margin:0'
     const node: ElementNode = { name: name === 'a' ? 'span' : name, children: [], ...(style ? { attrs: { style } } : {}) }
     parent.children.push(node)

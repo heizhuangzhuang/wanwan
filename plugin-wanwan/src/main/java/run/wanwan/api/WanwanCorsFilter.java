@@ -101,6 +101,18 @@ public class WanwanCorsFilter implements BeforeSecurityWebFilter {
     }
 
     private static boolean isSameOrigin(ServerHttpRequest request, String normalizedOrigin) {
+        var headers = request.getHeaders();
+        String forwardedProto = firstForwardedValue(headers.getFirst("X-Forwarded-Proto"));
+        String forwardedHost = firstForwardedValue(headers.getFirst("X-Forwarded-Host"));
+        if (forwardedProto != null && forwardedHost != null
+            && ("http".equalsIgnoreCase(forwardedProto) || "https".equalsIgnoreCase(forwardedProto))
+            && !forwardedHost.contains("/") && !forwardedHost.contains(" ")) {
+            String proto = forwardedProto.toLowerCase(Locale.ROOT);
+            String host = stripDefaultPort(proto, forwardedHost.toLowerCase(Locale.ROOT));
+            if ((proto + "://" + host).equalsIgnoreCase(normalizedOrigin)) {
+                return true;
+            }
+        }
         var uri = request.getURI();
         String scheme = uri.getScheme();
         String host = uri.getHost();
@@ -113,5 +125,18 @@ public class WanwanCorsFilter implements BeforeSecurityWebFilter {
             ? scheme.toLowerCase(Locale.ROOT) + "://" + host.toLowerCase(Locale.ROOT)
             : scheme.toLowerCase(Locale.ROOT) + "://" + host.toLowerCase(Locale.ROOT) + ":" + port;
         return self.equalsIgnoreCase(normalizedOrigin);
+    }
+
+    private static String firstForwardedValue(String header) {
+        if (header == null || header.isBlank()) return null;
+        int comma = header.indexOf(',');
+        String value = (comma >= 0 ? header.substring(0, comma) : header).trim();
+        return value.isEmpty() ? null : value;
+    }
+
+    private static String stripDefaultPort(String proto, String host) {
+        if ("http".equals(proto) && host.endsWith(":80")) return host.substring(0, host.length() - 3);
+        if ("https".equals(proto) && host.endsWith(":443")) return host.substring(0, host.length() - 4);
+        return host;
     }
 }

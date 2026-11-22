@@ -28,6 +28,10 @@ export async function saveFeedbackStatus(name: string, status: FeedbackStatus) {
   return data
 }
 
+export async function deleteFeedback(name: string) {
+  await axiosInstance.delete(`${BASE}/feedback/${encodeURIComponent(name)}`)
+}
+
 export type ProbeState =
   | 'OK'
   | 'REDIRECT'
@@ -68,6 +72,11 @@ export interface OpsOverview {
     pendingReview: number
     withdrawn: number
     linksToCheck: number
+    searchIndexSize?: number
+    publishedGuides?: number
+    uncategorizedGuides?: number
+    missingStageCategories?: string[]
+    unreadFeedback?: number
   } | null
 }
 

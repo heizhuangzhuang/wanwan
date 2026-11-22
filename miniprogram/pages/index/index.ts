@@ -43,21 +43,21 @@ const phaseQuickTiles: Record<number, QuickTile[]> = {
   ],
   2: [
     { title: '产前检查专项', sub: '羊穿 / CMA / WES 指南', url: '/pages/prenatal/prenatal', icon: 'scan-heart', tone: 'rose' },
-    { title: '找产前与小儿骨科', sub: '门诊渠道与搜索词', url: '/pages/channels/channels?tab=doctor', icon: 'stethoscope', tone: 'blue' },
+    { title: '找产前与小儿骨科', sub: '门诊渠道与搜索词', url: '/pages/channels/channels?type=doctor&period=prenatal', icon: 'stethoscope', tone: 'blue' },
     { title: '产前问医生清单', sub: '遗传咨询与出生后规划', url: '/pages/preparation/preparation?stage=PRENATAL', icon: 'clipboard-list', tone: 'sage' },
     { title: '超声复查清单', sub: '历次超声对比记录', url: '/pages/downloads/downloads', icon: 'file-down', tone: 'gold' },
   ],
   3: [
     { title: '石膏与复诊提醒', sub: '记录次数与微信提醒', url: '/pages/cast/cast', icon: 'calendar-clock', tone: 'sage' },
     { title: '治疗期问医生清单', sub: '石膏护理与血运观察', url: '/pages/preparation/preparation?stage=POSTNATAL_TREATMENT', icon: 'clipboard-list', tone: 'peach' },
-    { title: '找小儿骨科门诊', sub: '复诊与专业医院参考', url: '/pages/channels/channels?tab=doctor', icon: 'stethoscope', tone: 'blue' },
+    { title: '找小儿骨科门诊', sub: '复诊与专业医院参考', url: '/pages/channels/channels?type=doctor&period=postnatal', icon: 'stethoscope', tone: 'blue' },
     { title: '治疗期原创导读', sub: 'Ponseti 流程与护理', url: '/pages/topics/topics?kind=guide&stage=POSTNATAL_TREATMENT', icon: 'book-open', tone: 'gold' },
   ],
   4: [
     { title: '矫正鞋穿戴计时', sub: '跨夜/午睡累计与补记', url: '/pages/brace-wear/brace-wear', icon: 'footprints', tone: 'blue' },
     { title: '穿戴趋势与复诊', sub: '看达标率与历史计划', url: '/pages/brace-dashboard/brace-dashboard', icon: 'calendar-days', tone: 'sage' },
     { title: '支具期问医生清单', sub: '磨脚红肿与换码沟通', url: '/pages/preparation/preparation?stage=BRACE_DAILY', icon: 'clipboard-list', tone: 'gold' },
-    { title: '家长经验与科普', sub: '穿鞋技巧与真实经验', url: '/pages/channels/channels?tab=social', icon: 'messages-square', tone: 'rose' },
+    { title: '家长经验与科普', sub: '穿鞋技巧与真实经验', url: '/pages/channels/channels?type=social', icon: 'messages-square', tone: 'rose' },
   ],
   5: [
     { title: '生成复诊摘要', sub: '整理穿戴与观察给医生', url: '/pages/followup/followup', icon: 'clipboard-list', tone: 'sage' },

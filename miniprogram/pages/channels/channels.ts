@@ -3,8 +3,9 @@ import { channelsFor } from '../../services/channels'
 Page({
   data: { social: false, channels: channelsFor(undefined, undefined) },
   onLoad(options: Record<string, string | undefined>) {
-    const social = options.type === 'social'
-    this.setData({ social, channels: channelsFor(options.type, options.period) })
+    const type = options.type || options.tab
+    const social = type === 'social'
+    this.setData({ social, channels: channelsFor(type, options.period) })
     if (social) wx.setNavigationBarTitle({ title: '科普与家长经验' })
   },
   copy(event: WechatMiniprogram.TouchEvent) {

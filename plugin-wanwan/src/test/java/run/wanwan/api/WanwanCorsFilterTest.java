@@ -102,4 +102,17 @@ class WanwanCorsFilterTest {
         assertThat(exchange.getResponse().getHeaders().getAccessControlAllowOrigin()).isNull();
         assertThat(exchange.getResponse().getHeaders().getFirst("X-Wanwan-Client")).isNull();
     }
+
+    @Test
+    void recognizesSameOriginBehindReverseProxy() {
+        var filter = new WanwanCorsFilter("");
+        var exchange = MockServerWebExchange.from(
+            MockServerHttpRequest.options("http://127.0.0.1:80/apis/api.xiaojiaoya.run/v1alpha1/stages")
+                .header(HttpHeaders.ORIGIN, "https://xiaojiaoya.example.com")
+                .header("X-Forwarded-Proto", "https")
+                .header("X-Forwarded-Host", "xiaojiaoya.example.com")
+                .build());
+        filter.filter(exchange, PASS).block();
+        assertThat(exchange.getResponse().getStatusCode()).isNull();
+    }
 }

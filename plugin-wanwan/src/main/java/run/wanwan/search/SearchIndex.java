@@ -42,10 +42,10 @@ public class SearchIndex {
         Set<String> tokens = new HashSet<>();
         for (String field : new String[] {s.getOriginalTitle(), s.getDisplayTitle(), s.getIntro(),
             s.getSourceName(), s.getAuthor(), s.getDoi(), s.getPmid()}) {
-            tokens.addAll(Tokenizer.tokenize(field));
+            tokens.addAll(Tokenizer.indexTokens(field));
         }
         if (s.getTags() != null) {
-            s.getTags().forEach(tag -> tokens.addAll(Tokenizer.tokenize(tag)));
+            s.getTags().forEach(tag -> tokens.addAll(Tokenizer.indexTokens(tag)));
         }
         var doc = new Doc(name, s.getStages() == null ? Set.of() : Set.copyOf(s.getStages()),
             s.getMaterialType(), s.getPriority() == null ? 1000 : s.getPriority(), tokens);

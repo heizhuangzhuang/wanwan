@@ -3,7 +3,7 @@ import { renderFeedback } from './feedback.js'
 import type { BackendClient, PageResult, PostSummary, ResourceView, StageView } from './api.js'
 import { braceScript, braceScriptHash, renderBraceDashboard } from './brace-dashboard.js'
 import type { WebConfig } from './config.js'
-import { appointmentScript, prenatalPaths, renderPrenatal, renderTools } from './tools.js'
+import { appointmentScript, prenatalPaths, renderPrenatal, renderTools, searchPrenatalGuides } from './tools.js'
 import {
   accessLabel,
   escapeHtml,
@@ -149,8 +149,19 @@ function renderPagination<T>(path: string, result: PageResult<T>, query: URLSear
   </nav>`
 }
 
+function cleanExcerpt(title: string, excerpt?: string | null): string {
+  const raw = (excerpt || '').trim()
+  if (!raw) return ''
+  const cleanTitle = title.trim()
+  if (cleanTitle && raw.startsWith(cleanTitle)) {
+    return raw.slice(cleanTitle.length).replace(/^[\s:：—\-·]+/, '').trim()
+  }
+  return raw
+}
+
 function renderGuideCard(guide: PostSummary, basePath: string, heading: 'h2' | 'h3' = 'h2') {
-  return `<article class="card"><${heading} class="card-title"><a href="${basePath}/posts/${encodeURIComponent(guide.name)}">${escapeHtml(guide.title)}</a></${heading}><p class="card-intro">${escapeHtml(guide.excerpt)}</p>${guide.author ? `<div class="meta-row">${escapeHtml(guide.author)}</div>` : ''}</article>`
+  const excerpt = cleanExcerpt(guide.title, guide.excerpt)
+  return `<article class="card"><${heading} class="card-title"><a href="${basePath}/posts/${encodeURIComponent(guide.name)}">${escapeHtml(guide.title)}</a></${heading}>${excerpt ? `<p class="card-intro">${escapeHtml(excerpt)}</p>` : ''}${guide.author ? `<div class="meta-row">${escapeHtml(guide.author)}</div>` : ''}</article>`
 }
 
 async function renderRelated(resource: ResourceView, client: BackendClient, config: WebConfig) {
@@ -229,6 +240,17 @@ export async function handleRequest(
 ): Promise<RouteResponse> {
   const url = new URL(rawUrl, 'http://localhost')
   const basePath = config.siteBasePath
+  if (url.pathname === '/robots.txt') {
+    const sitemapLine = config.siteOrigin ? `\nSitemap: ${config.siteOrigin}${basePath}/sitemap.xml` : ''
+    return {
+      status: 200,
+      contentType: 'text/plain; charset=utf-8',
+      body: `User-agent: *\nAllow: ${basePath}/${sitemapLine}\n`,
+    }
+  }
+  if (url.pathname === '/favicon.ico') {
+    return { status: 200, contentType: 'image/png', body: LOGO_PNG, cacheControl: 'public, max-age=86400' }
+  }
   if (basePath === '/xiaojiaoya' && (url.pathname === '/wanwan' || url.pathname.startsWith('/wanwan/'))) {
     return {
       status: 308, contentType: 'text/plain; charset=utf-8', body: '',
@@ -260,11 +282,11 @@ export async function handleRequest(
     return { ...htmlResponse(200, renderBraceDashboard(config)), scriptHash: braceScriptHash }
   }
   if (path === '/tools/brace-dashboard.js') {
-    return { status: 200, contentType: 'text/javascript; charset=utf-8', body: braceScript }
+    return { status: 200, contentType: 'text/javascript; charset=utf-8', body: braceScript, cacheControl: 'public, max-age=3600' }
   }
 
   if (path === '/tools/appointment.js') {
-    return { status: 200, contentType: 'text/javascript; charset=utf-8', body: appointmentScript }
+    return { status: 200, contentType: 'text/javascript; charset=utf-8', body: appointmentScript, cacheControl: 'public, max-age=3600' }
   }
 
   if (path === '/prenatal' || path.startsWith('/prenatal/')) {
@@ -278,6 +300,7 @@ export async function handleRequest(
     return {
       status: 200, contentType: 'application/pdf', body: CHECKLIST_PDF,
       contentDisposition: "attachment; filename=clubfoot-ultrasound-checklist.pdf",
+      cacheControl: 'public, max-age=3600',
     }
   }
 
@@ -307,12 +330,16 @@ export async function handleRequest(
   }
 
   if (path === '/sitemap.xml') {
-    const [stages, resources, topics, posts] = await Promise.all([
+    const [stagesRes, resourcesRes, topicsRes, postsRes] = await Promise.allSettled([
       client.getStages(),
-      client.listResources({ page: 1, size: 50 }),
-      client.listTopics(1, 50),
-      client.listPosts(1, 50),
+      client.listResources({ page: 1, size: 100 }),
+      client.listTopics(1, 100),
+      client.listPosts(1, 100),
     ])
+    const stages = stagesRes.status === 'fulfilled' ? stagesRes.value : FIXED_STAGES
+    const resources = resourcesRes.status === 'fulfilled' ? resourcesRes.value.items : []
+    const topics = topicsRes.status === 'fulfilled' ? topicsRes.value.items : []
+    const posts = postsRes.status === 'fulfilled' ? postsRes.value.items : []
     const base = `${config.siteOrigin}${basePath}`
     const urls = [
       `${base}/`,
@@ -322,11 +349,12 @@ export async function handleRequest(
       `${base}/posts`,
       `${base}/about`,
       `${base}/tools`,
+      `${base}/tools/brace-followup`,
       ...prenatalPaths.map(path => base + path),
       ...stages.map((s) => `${base}/stages/${encodeURIComponent(s.key)}`),
-      ...resources.items.map((r) => `${base}/resources/${encodeURIComponent(r.name)}`),
-      ...topics.items.map((t) => `${base}/topics/${encodeURIComponent(t.name)}`),
-      ...posts.items.map((p) => `${base}/posts/${encodeURIComponent(p.name)}`),
+      ...resources.map((r) => `${base}/resources/${encodeURIComponent(r.name)}`),
+      ...topics.map((t) => `${base}/topics/${encodeURIComponent(t.name)}`),
+      ...posts.map((p) => `${base}/posts/${encodeURIComponent(p.name)}`),
     ]
     const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
       .map((u) => `  <url><loc>${escapeHtml(u)}</loc></url>`)
@@ -341,12 +369,13 @@ export async function handleRequest(
     }
     const [stages, topics, recent, posts] = await Promise.allSettled([
       client.getStages(),
-      client.listTopics(1, 4),
+      client.listTopics(1, 3),
       client.listResources({ page: 1, size: 6 }),
-      client.listPosts(1, 4),
+      client.listPosts(1, 3),
     ])
-    const topicHtml = topics.status === 'fulfilled' && topics.value.items.length
-      ? `<section class="home-section"><header class="section-heading"><h2>精选专题</h2><a class="text-link" href="${basePath}/topics">全部专题</a></header><div class="card-list home-grid">${topics.value.items
+    const visibleTopics = topics.status === 'fulfilled' ? topics.value.items.filter(t => t.resourceCount > 0) : []
+    const topicHtml = visibleTopics.length
+      ? `<section class="home-section"><header class="section-heading"><h2>精选专题</h2><a class="text-link" href="${basePath}/topics">全部专题</a></header><div class="card-list home-grid">${visibleTopics
           .map(t => `<article class="card"><h3 class="card-title"><a href="${basePath}/topics/${encodeURIComponent(t.name)}">${escapeHtml(t.title)}</a></h3><p class="card-intro">${escapeHtml(t.intro)}</p><div class="meta-row">含 ${t.resourceCount} 条资料</div></article>`)
           .join('')}</div></section>`
       : ''
@@ -357,7 +386,7 @@ export async function handleRequest(
       : renderUnavailableResources(basePath)
     const postHtml = posts.status === 'fulfilled' && posts.value.items.length
       ? `<section class="home-section"><header class="section-heading"><h2>本站原创导读</h2><a class="text-link" href="${basePath}/posts">全部导读</a></header><div class="card-list home-grid">${posts.value.items
-          .map(p => `<article class="card"><h3 class="card-title"><a href="${basePath}/posts/${encodeURIComponent(p.name)}">${escapeHtml(p.title)}</a></h3><p class="card-intro">${escapeHtml(p.excerpt)}</p>${p.author ? `<div class="meta-row">${escapeHtml(p.author)}</div>` : ''}</article>`)
+          .map(p => renderGuideCard(p, basePath, 'h3'))
           .join('')}</div></section>`
       : ''
 
@@ -496,11 +525,11 @@ ${cards}${renderPagination(stagePath, list, query)}`,
       200,
       renderPage(post.title,
         `<p><a href="${basePath}/posts">← 返回原创导读</a></p>
-<article class="card">
-  <div class="meta-row" style="margin-bottom:6px"><span class="badge">本站原创导读</span>${post.author ? `<span>作者 ${escapeHtml(post.author)}</span>` : ''}${dateLine}</div>
+<article class="card post-prose">
+  <div class="meta-row"><span class="badge">本站原创导读</span>${post.author ? `<span>作者 ${escapeHtml(post.author)}</span>` : ''}${dateLine}</div>
   <h1>${escapeHtml(post.title)}</h1>
   <div class="notice-bar">本文为本站原创导读或使用说明，不替代门诊沟通与专业医学意见。</div>
-  <div>${sanitizePostHtml(post.content)}</div>
+  <div class="prose-body">${sanitizePostHtml(post.content)}</div>
 </article>`,
       ),
     )
@@ -516,9 +545,15 @@ ${cards}${renderPagination(stagePath, list, query)}`,
       client.getStages().catch(() => FIXED_STAGES),
     ])
     const unavailable = Boolean(keyword && !tooLong && !results)
+    const submittedEmpty = !keyword && (url.searchParams.has('keyword') || Boolean(stageFilter) || Boolean(selectedType))
+    const prenatalMatches = keyword && !tooLong && !selectedType && (!stageFilter || stageFilter === 'PRENATAL' || stageFilter === 'JUST_FOUND')
+      ? searchPrenatalGuides(keyword)
+      : []
     let resultHtml = ''
     if (tooLong) {
       resultHtml = '<div class="warn-bar">关键词超过 100 个字符限制，请缩短后重试。</div>'
+    } else if (submittedEmpty) {
+      resultHtml = `<div class="notice-bar">请输入关键词后再搜索，或直接前往<a href="${basePath}/resources">资料库</a>按类型和阶段浏览。</div>`
     } else if (unavailable) {
       resultHtml = renderUnavailableResources(basePath)
     } else if (results) {
@@ -527,7 +562,10 @@ ${cards}${renderPagination(stagePath, list, query)}`,
         ? `<h2>公开资料卡</h2><p class="meta-row">共 ${results.total} 条</p><div class="card-list">${results.items.map((item) => renderCard(item, config)).join('')}</div>`
         : ''
       if (guideItems.length) {
-        resultHtml += `<h2>本站原创导读</h2><p class="meta-row">共 ${results.guideTotal ?? guideItems.length} 篇</p><div class="card-list">${guideItems.map(guide => renderGuideCard(guide, basePath)).join('')}</div>`
+        resultHtml += `<h2>本站原创导读</h2><p class="meta-row">共 ${results.guideTotal ?? guideItems.length} 篇</p><div class="card-list">${guideItems.map(guide => renderGuideCard(guide, basePath, 'h3')).join('')}</div>`
+      }
+      if (prenatalMatches.length && page === 1) {
+        resultHtml += `<h2>产前检查专项</h2><p class="meta-row">共 ${prenatalMatches.length} 项</p><div class="card-list">${prenatalMatches.map(item => `<article class="card"><h3 class="card-title"><a href="${basePath}/prenatal/${encodeURIComponent(item.key)}">${escapeHtml(item.title)}</a></h3><p class="card-intro">${escapeHtml(item.summary)}</p></article>`).join('')}</div>`
       }
       if (!resultHtml) {
         resultHtml = `<div class="warn-bar">本页没有匹配「${escapeHtml(keyword)}」的已公开内容。可以更换关键词，或<a href="${basePath}/stages">按阶段浏览</a>。</div>`

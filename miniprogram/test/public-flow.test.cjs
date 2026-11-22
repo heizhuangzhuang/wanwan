@@ -1135,7 +1135,7 @@ test('导读目录与重点速览、资料卡折叠出处、阶段分栏与首�
   detail.page.onLoad({ name: 'r-meta' })
   await detail.page.loadDetail()
   assert.equal(detail.page.data.metaExpanded, false)
-  assert.equal(detail.page.data.resource.entryLabel, '出处题录')
+  assert.equal(detail.page.data.resource.entryLabel, '原文出处')
   detail.page.toggleMeta()
   assert.equal(detail.page.data.metaExpanded, true)
 

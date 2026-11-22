@@ -8,7 +8,9 @@ function calendarTime(date) {
 
 calendarForm.addEventListener('submit', event => {
   event.preventDefault()
-  const date = new Date(appointment.value + ':00+08:00')
+  const raw = appointment.value
+  const iso = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(raw) ? raw + ':00+08:00' : raw + '+08:00'
+  const date = new Date(iso)
   if (!Number.isFinite(date.getTime())) {
     result.textContent = '请选择完整的日期和时间。'
     return
@@ -19,7 +21,7 @@ calendarForm.addEventListener('submit', event => {
   const content = [
     'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//xiaojiaoya//Visit Calendar//ZH',
     'BEGIN:VEVENT', 'UID:' + id, 'DTSTAMP:' + calendarTime(now),
-    'DTSTART:' + time, 'SUMMARY:复诊', 'END:VEVENT', 'END:VCALENDAR', '',
+    'DTSTART:' + time, 'DURATION:PT30M', 'SUMMARY:复诊', 'END:VEVENT', 'END:VCALENDAR', '',
   ].join('\r\n')
   const file = URL.createObjectURL(new Blob([content], { type: 'text/calendar;charset=utf-8' }))
   const link = document.createElement('a')

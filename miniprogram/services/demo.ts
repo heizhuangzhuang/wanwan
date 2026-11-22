@@ -38,7 +38,7 @@ export function demoResponse(path: string, params: Record<string, string | numbe
   if (path === '/stages') return fixedStages
   if (path === '/topics') return paged([{ ...topic, resourceCount: topic.resources.length }], params)
   if (path === `/topics/${topic.name}`) return topic
-  if (path === '/posts') return paged([guide], params)
+  if (path === '/posts' || path === '/stage-posts') return paged([guide], params)
   if (path === `/posts/${guide.name}`) return guide
   if (path.startsWith('/resources/')) return resources.find(item => `/resources/${item.name}` === path)
   if (path === '/resources' || path === '/search') {

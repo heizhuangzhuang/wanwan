@@ -19,7 +19,7 @@ function entrySummary(resource: ResourceView): string {
   if (resource.attachment && resource.linkStatus === 'OK') return '可下载附件'
   if (resource.entry.type === 'MP_ARTICLE' && resource.linkStatus === 'OK') return '公众号原文'
   if (resource.entry.type === 'MINIPROGRAM' && resource.linkStatus === 'OK') return '来源小程序'
-  return '出处题录'
+  return '原文出处'
 }
 
 export function resourceLabel(resource: ResourceView) {

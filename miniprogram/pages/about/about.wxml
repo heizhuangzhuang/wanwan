@@ -33,6 +33,8 @@
       <view class="description">{{contactEmail}}</view>
       <button class="btn secondary" bindtap="copyEmail">复制邮箱</button>
     </view>
-    <view wx:else class="muted">请从网站「关于与规则」页查看联系方式。</view>
+    <navigator class="btn about-feedback-btn" url="{{resourceName ? '/pages/feedback/feedback?category=ISSUE&resource=' + resourceName : '/pages/feedback/feedback'}}">
+      在线提交纠错与功能建议
+    </navigator>
   </view>
 </view>

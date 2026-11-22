@@ -48,7 +48,10 @@
   </view>
   <view class="follow-card">
     <view class="follow-row"><view class="follow-title">计划历史</view><button class="follow-link" data-mode="plan" bindtap="openEditor">修改计划</button></view>
-    <view wx:for="{{plans}}" wx:key="day" class="follow-row follow-list"><text>{{item.day}} 生效</text><text>{{item.label}}</text></view>
+    <view wx:for="{{plans}}" wx:key="day" class="follow-row follow-list">
+      <text>{{item.day}} 生效 · {{item.label}}</text>
+      <button class="follow-link" data-day="{{item.day}}" bindtap="removePlan">删除</button>
+    </view>
     <view wx:if="{{!plans.length}}" class="follow-muted">按医生交代设定目标或切换为仅随访。</view>
   </view>
   <view class="follow-card">
@@ -74,7 +77,7 @@
     <view class="follow-scrim" bindtap="closeEditor" />
     <view class="follow-sheet">
       <view class="follow-title">{{mode === 'plan' ? '新增阶段计划' : mode === 'visit' ? '记录复诊或调整' : '确认过去某日未穿'}}</view>
-      <picker mode="date" value="{{day}}" end="{{mode === 'zero' ? today : ''}}" bindchange="changeDay"><view class="follow-field">{{day}} <text>选择日期</text></view></picker>
+      <picker mode="date" value="{{day}}" end="{{mode === 'zero' ? yesterday : ''}}" bindchange="changeDay"><view class="follow-field">{{day}} <text>选择日期</text></view></picker>
       <picker wx:if="{{mode === 'plan'}}" range="{{planTypes}}" value="{{option}}" bindchange="changeOption"><view class="follow-field">{{planTypes[option]}}</view></picker>
       <picker wx:if="{{mode === 'visit'}}" range="{{visitTypes}}" value="{{option}}" bindchange="changeOption"><view class="follow-field">{{visitTypes[option]}}</view></picker>
       <input wx:if="{{mode === 'plan' && option === 0}}" class="follow-field" type="digit" value="{{input}}" bindinput="changeInput" placeholder="每天小时数，例 12.5" />
