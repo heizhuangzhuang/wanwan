@@ -46,8 +46,9 @@ function writeLog(db: IDBDatabase, previous: WearLog, log: WearLog): Promise<voi
     latest.onsuccess = () => {
       try {
         const current = latest.result === undefined ? blankWearLog() : normalizeWearLog(latest.result)
-        if (JSON.stringify(current) !== JSON.stringify(previous)) throw new ConcurrentEdit()
-        archive.put(log, 'active')
+        const expected = normalizeWearLog(previous)
+        if (JSON.stringify(current) !== JSON.stringify(expected)) throw new ConcurrentEdit()
+        archive.put(normalizeWearLog(log), 'active')
       } catch (error) { failure = error; tx.abort() }
     }
   })
@@ -236,8 +237,9 @@ async function run() {
     if (busy) return false
     busy = true
     try {
-      await writeLog(db, log, next)
-      log = next
+      const normalized = normalizeWearLog(next)
+      await writeLog(db, log, normalized)
+      log = normalized
       render()
       status(message)
       return true
@@ -329,7 +331,7 @@ async function run() {
     const visitDay = value('visit-day')
     const kind = VISIT_TYPES.find(type => type === value('visit-kind'))
     if (!validDay(visitDay) || !kind) { status('请选择日期和记录类型。'); return }
-    void commit({ ...log, visits: [...log.visits, { id: recordId(), kind, day: visitDay, note: value('visit-note').trim() }] },
+    void commit({ ...log, visits: [...log.visits, { id: recordId(), day: visitDay, kind, note: value('visit-note').trim() }] },
       '已保存随访记录。').then(saved => { if (saved) byId<HTMLInputElement>('visit-note').value = '' })
   })
   click('confirm-zero', () => {
