@@ -48,12 +48,24 @@ export interface TopicView {
   resources: ResourceView[]
 }
 
+export interface LiteratureCitation {
+  originalTitle?: string | null
+  journal?: string | null
+  publishedYear?: string | null
+  evidenceType?: string | null
+  doi?: string | null
+  sourceUrl?: string | null
+  verifiedDate?: string | null
+}
+
 export interface PostSummary {
   author?: string | null
   name: string
   title: string
   excerpt?: string | null
   publishTime?: string | null
+  articleKind?: 'LITERATURE' | 'GUIDE' | string | null
+  citation?: LiteratureCitation | null
 }
 
 export interface PostView {
@@ -63,6 +75,8 @@ export interface PostView {
   excerpt?: string | null
   publishTime?: string | null
   content: string
+  articleKind?: 'LITERATURE' | 'GUIDE' | string | null
+  citation?: LiteratureCitation | null
 }
 
 export interface PageResult<T> {
@@ -90,8 +104,8 @@ export interface BackendClient {
   getResource(name: string): Promise<ResourceView | null>
   listTopics(page?: number, size?: number): Promise<PageResult<TopicSummary>>
   getTopic(name: string): Promise<TopicView | null>
-  listPosts(page?: number, size?: number): Promise<PageResult<PostSummary>>
-  listStagePosts(stage: string, page?: number, size?: number): Promise<PageResult<PostSummary>>
+  listPosts(page?: number, size?: number, kind?: string): Promise<PageResult<PostSummary>>
+  listStagePosts(stage: string, page?: number, size?: number, kind?: string): Promise<PageResult<PostSummary>>
   getPost(name: string): Promise<PostView | null>
   search(params: {
     keyword: string
@@ -164,8 +178,8 @@ export function createBackendClient(apiBase: string, timeoutMs = 5000): BackendC
     getResource: (name) => getJsonOrNull<ResourceView>(`/resources/${encodeURIComponent(name)}`),
     listTopics: (page = 1, size = 20) => getJson<PageResult<TopicSummary>>('/topics', { page, size }),
     getTopic: (name) => getJsonOrNull<TopicView>(`/topics/${encodeURIComponent(name)}`),
-    listPosts: (page = 1, size = 20) => getJson<PageResult<PostSummary>>('/posts', { page, size }),
-    listStagePosts: (stage, page = 1, size = 20) => getJson<PageResult<PostSummary>>('/stage-posts', { stage, page, size }),
+    listPosts: (page = 1, size = 20, kind?: string) => getJson<PageResult<PostSummary>>('/posts', { page, size, kind }),
+    listStagePosts: (stage, page = 1, size = 20, kind?: string) => getJson<PageResult<PostSummary>>('/stage-posts', { stage, page, size, kind }),
     getPost: (name) => getJsonOrNull<PostView>(`/posts/${encodeURIComponent(name)}`),
     search: (p) => getJson<SearchResult>('/search', p),
   }

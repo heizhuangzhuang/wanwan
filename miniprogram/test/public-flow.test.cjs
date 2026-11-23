@@ -1362,3 +1362,47 @@ test('阶段页为五大阶段提供重点工作摘要与二级弹出详解', ()
   page.closeStageFocus()
   assert.equal(page.data.showFocusModal, false)
 })
+
+test('文献译读展示出处卡、支持复制出处与筛选，分享标题带【文献译读】前缀', async () => {
+  const lit = {
+    name: 'lit-1',
+    title: 'Ponseti 长期随访中文译读',
+    excerpt: '30 年随访综述译读。',
+    publishTime: '2026-11-23T00:00:00Z',
+    author: '整理者',
+    articleKind: 'LITERATURE',
+    citation: {
+      originalTitle: 'Long-Term Outcomes of the Ponseti Method',
+      journal: 'JBJS',
+      publishedYear: '2024',
+      evidenceType: '长期随访',
+      doi: '10.2106/JBJS.24.00001',
+      sourceUrl: 'https://doi.org/10.2106/JBJS.24.00001',
+      verifiedDate: '2026-11-23',
+    },
+    content: '<h2>研究背景</h2><p>正文内容</p>',
+  }
+
+  const topics = openPage('topics', () => ({ data: { page: 1, size: 20, total: 1, items: [lit] } }))
+  topics.page.onLoad({ kind: 'guide' })
+  await topics.page.fetch(1)
+  assert.equal(topics.page.data.items[0].isLiterature, true)
+  assert.equal(topics.page.data.items[0].evidenceType, '长期随访')
+  assert.equal(topics.page.data.items[0].citationLine, 'JBJS · 2024')
+
+  topics.page.selectArticleKind({ currentTarget: { dataset: { value: 'LITERATURE' } } })
+  await settle()
+  assert.ok(topics.requests.some(url => url.includes('kind=LITERATURE')))
+
+  const reading = openPage('reading', () => ({ data: lit }))
+  reading.page.onLoad({ kind: 'guide', name: 'lit-1' })
+  await reading.page.load()
+  assert.equal(reading.page.data.isLiterature, true)
+  assert.equal(reading.page.data.citationPubInfo, 'JBJS · 2024')
+  assert.equal(reading.page.onShareAppMessage().title, '【文献译读】Ponseti 长期随访中文译读')
+  assert.equal(reading.page.onShareTimeline().title, '【文献译读】Ponseti 长期随访中文译读')
+
+  reading.page.copyCitation()
+  assert.match(reading.getClipboard(), /10\.2106\/JBJS\.24\.00001/)
+  assert.equal(reading.toasts.at(-1), '已复制文献出处')
+})

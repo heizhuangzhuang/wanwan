@@ -5,6 +5,7 @@ import static run.halo.app.extension.index.query.Queries.equal;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
@@ -14,6 +15,7 @@ import run.halo.app.content.PostContentService;
 import run.halo.app.core.extension.User;
 import run.halo.app.core.extension.content.Category;
 import run.halo.app.core.extension.content.Post;
+import run.halo.app.core.extension.content.Tag;
 import run.halo.app.extension.ExtensionOperator;
 import run.halo.app.extension.ListOptions;
 import run.halo.app.extension.PageRequestImpl;
@@ -114,29 +116,85 @@ public class PublicQueryService {
             .filter(Visibility::isListed);
     }
 
+    private static final Set<String> LITERATURE_TAG_SLUGS = Set.of(
+        "literature", "literature-translation", "paper", "paper-translation"
+    );
+    private static final Set<String> LITERATURE_TAG_NAMES = Set.of(
+        "文献译读", "论文译读", "文献翻译", "论文翻译"
+    );
+
     /** 本站原创导读列表：仅返回已发布且公开的文章。 */
     public Mono<Dtos.Page<Dtos.PostSummary>> listPosts(int page, int size) {
-        return pagePosts("", null, page, size);
+        return listPosts(page, size, null);
+    }
+
+    public Mono<Dtos.Page<Dtos.PostSummary>> listPosts(int page, int size, String kind) {
+        return pagePosts("", null, kind, page, size);
     }
 
     public Mono<Dtos.Page<Dtos.PostSummary>> listStagePosts(Stage stage, int page, int size) {
-        return pagePosts("", stage, page, size);
+        return listStagePosts(stage, page, size, null);
     }
 
-    private Mono<Dtos.Page<Dtos.PostSummary>> pagePosts(String keyword, Stage stage, int page, int size) {
+    public Mono<Dtos.Page<Dtos.PostSummary>> listStagePosts(Stage stage, int page, int size, String kind) {
+        return pagePosts("", stage, kind, page, size);
+    }
+
+    private Mono<Dtos.Page<Dtos.PostSummary>> pagePosts(String keyword, Stage stage, String kind, int page, int size) {
         int p = normalizePage(page);
         int s = normalizeSize(size);
+        String normalizedKind = normalizeArticleKind(kind);
         List<String> terms = keyword.isEmpty() ? List.of()
             : java.util.Arrays.stream(keyword.split("\\s+")).filter(t -> !t.isEmpty()).toList();
-        return stagePosts(stage)
-            .filter(post -> terms.isEmpty() || matchesAllTerms(post, terms))
-            .collectList()
-            .flatMap(all -> Flux.fromIterable(pageSlice(all, p, s))
-                .flatMapSequential(post -> publicAuthor(post)
-                    .map(author -> Dtos.PostSummary.of(post, author))
-                    .defaultIfEmpty(Dtos.PostSummary.of(post, null)), 4)
+        return literatureTagNames()
+            .flatMap(litTags -> stagePosts(stage)
+                .filter(post -> terms.isEmpty() || matchesAllTerms(post, terms))
+                .filter(post -> matchesKind(post, litTags, normalizedKind))
                 .collectList()
-                .map(items -> new Dtos.Page<>(p, s, all.size(), items)));
+                .flatMap(all -> Flux.fromIterable(pageSlice(all, p, s))
+                    .flatMapSequential(post -> {
+                        boolean lit = hasLiteratureTag(post, litTags);
+                        return publicAuthor(post)
+                            .map(author -> Dtos.PostSummary.of(post, author, lit))
+                            .defaultIfEmpty(Dtos.PostSummary.of(post, null, lit));
+                    }, 4)
+                    .collectList()
+                    .map(items -> new Dtos.Page<>(p, s, all.size(), items))));
+    }
+
+    private Mono<Set<String>> literatureTagNames() {
+        Flux<Tag> tags = client.list(Tag.class, tag -> {
+            var spec = tag.getSpec();
+            if (ExtensionOperator.isDeleted(tag) || spec == null) return false;
+            String slug = spec.getSlug() != null ? spec.getSlug().trim().toLowerCase(Locale.ROOT) : "";
+            String display = spec.getDisplayName() != null ? spec.getDisplayName().trim() : "";
+            return LITERATURE_TAG_SLUGS.contains(slug) || LITERATURE_TAG_NAMES.contains(display);
+        }, Comparator.comparing(tag -> tag.getMetadata().getName()));
+        if (tags == null) return Mono.just(Set.of());
+        return tags.map(tag -> tag.getMetadata().getName())
+            .collect(java.util.stream.Collectors.toSet());
+    }
+
+    private static boolean hasLiteratureTag(Post post, Set<String> literatureTags) {
+        if (literatureTags.isEmpty() || post.getSpec() == null || post.getSpec().getTags() == null) return false;
+        return post.getSpec().getTags().stream().anyMatch(literatureTags::contains);
+    }
+
+    private static boolean isLiteraturePost(Post post, Set<String> literatureTags) {
+        return hasLiteratureTag(post, literatureTags) || Dtos.LiteratureCitation.hasLiteratureAnnotation(post);
+    }
+
+    private static boolean matchesKind(Post post, Set<String> literatureTags, String normalizedKind) {
+        if (normalizedKind == null) return true;
+        boolean lit = isLiteraturePost(post, literatureTags);
+        return "LITERATURE".equals(normalizedKind) ? lit : !lit;
+    }
+
+    private static String normalizeArticleKind(String kind) {
+        if (kind == null || kind.isBlank()) return null;
+        String upper = kind.trim().toUpperCase(Locale.ROOT);
+        if ("LITERATURE".equals(upper) || "GUIDE".equals(upper)) return upper;
+        return null;
     }
 
     private static boolean matchesAllTerms(Post post, List<String> terms) {
@@ -173,10 +231,14 @@ public class PublicQueryService {
     public Mono<Dtos.PostView> getPost(String name) {
         return client.fetch(Post.class, name)
             .filter(Visibility::isPublicPost)
-            .flatMap(post -> postContentService.getReleaseContent(name)
-                .flatMap(content -> publicAuthor(post)
-                    .map(author -> Dtos.PostView.of(post, content.getContent(), author))
-                    .defaultIfEmpty(Dtos.PostView.of(post, content.getContent(), null))));
+            .flatMap(post -> Mono.zip(postContentService.getReleaseContent(name), literatureTagNames())
+                .flatMap(tuple -> {
+                    boolean lit = hasLiteratureTag(post, tuple.getT2());
+                    String html = tuple.getT1().getContent();
+                    return publicAuthor(post)
+                        .map(author -> Dtos.PostView.of(post, html, author, lit))
+                        .defaultIfEmpty(Dtos.PostView.of(post, html, null, lit));
+                }));
     }
 
     private Mono<String> publicAuthor(Post post) {
@@ -212,7 +274,7 @@ public class PublicQueryService {
                                                  int page, int size) {
         String term = keyword.strip().toLowerCase(Locale.ROOT);
         var guides = !term.isEmpty() && (type == null || type == MaterialType.ORIGINAL)
-            ? pagePosts(term, stage, page, size)
+            ? pagePosts(term, stage, null, page, size)
             : Mono.just(new Dtos.Page<Dtos.PostSummary>(normalizePage(page), normalizeSize(size), 0, List.of()));
         return Mono.zip(search(keyword, stage, type, page, size), guides, Dtos.SearchPage::of);
     }

@@ -19,6 +19,7 @@ import run.halo.app.content.PostContentService;
 import run.halo.app.core.extension.User;
 import run.halo.app.core.extension.content.Category;
 import run.halo.app.core.extension.content.Post;
+import run.halo.app.core.extension.content.Tag;
 import run.halo.app.extension.ListResult;
 import run.halo.app.extension.Metadata;
 import run.halo.app.extension.ReactiveExtensionClient;
@@ -286,5 +287,64 @@ class PublicQueryServiceTest {
         assertThat(service.searchWithGuides("CMA", Stage.PRENATAL, null, 1, 20).block().guideItems()).isEmpty();
         assertThat(service.searchWithGuides("CMA", null, MaterialType.PAPER, 1, 20).block().guideItems()).isEmpty();
         assertThat(service.searchWithGuides(" ", null, null, 1, 20).block().guideItems()).isEmpty();
+    }
+
+    @Test
+    void literaturePostsExposeCitationAndSupportKindFilter() {
+        var client = mock(ReactiveExtensionClient.class);
+        var postContent = mock(PostContentService.class);
+        var service = service(client, postContent, new SearchIndex());
+
+        var litByAnnotation = post("lit-1", true, Post.VisibleEnum.PUBLIC, false);
+        litByAnnotation.getMetadata().setAnnotations(java.util.Map.of(
+            "xiaojiaoya.run/article-kind", "LITERATURE",
+            "xiaojiaoya.run/original-title", "Ponseti Method Long-Term Follow-Up",
+            "xiaojiaoya.run/source-journal", "J Bone Joint Surg Am",
+            "xiaojiaoya.run/published-year", "2024",
+            "xiaojiaoya.run/evidence-type", "长期随访",
+            "xiaojiaoya.run/doi", "10.2106/JBJS.24.00001",
+            "xiaojiaoya.run/source-url", "https://doi.org/10.2106/JBJS.24.00001",
+            "xiaojiaoya.run/verified-date", "2026-11-23"
+        ));
+        var litByTag = post("lit-2", true, Post.VisibleEnum.PUBLIC, false);
+        litByTag.getSpec().setTags(List.of("tag-lit-id"));
+        litByTag.getMetadata().setAnnotations(java.util.Map.of(
+            "xiaojiaoya.run/source-url", "javascript:alert(1)"
+        ));
+        var normalGuide = post("guide-1", true, Post.VisibleEnum.PUBLIC, false);
+
+        var tag = new Tag();
+        var tagMeta = new Metadata();
+        tagMeta.setName("tag-lit-id");
+        tag.setMetadata(tagMeta);
+        var tagSpec = new Tag.TagSpec();
+        tagSpec.setDisplayName("文献译读");
+        tagSpec.setSlug("literature-translation");
+        tag.setSpec(tagSpec);
+
+        when(client.list(eq(Tag.class), any(), any())).thenAnswer(call -> {
+            Predicate<Tag> filter = call.getArgument(1);
+            return Flux.just(tag).filter(filter);
+        });
+        when(client.list(eq(Post.class), any(), any())).thenReturn(Flux.just(litByAnnotation, litByTag, normalGuide));
+        when(client.fetch(Post.class, "lit-1")).thenReturn(Mono.just(litByAnnotation));
+        when(postContent.getReleaseContent("lit-1"))
+            .thenReturn(Mono.just(ContentWrapper.builder().content("<p>论文译读正文</p>").build()));
+
+        var onlyLit = service.listPosts(1, 20, "LITERATURE").block();
+        assertThat(onlyLit.items()).extracting(Dtos.PostSummary::name).containsExactly("lit-1", "lit-2");
+        assertThat(onlyLit.items().get(0).articleKind()).isEqualTo("LITERATURE");
+        assertThat(onlyLit.items().get(0).citation().journal()).isEqualTo("J Bone Joint Surg Am");
+        assertThat(onlyLit.items().get(1).articleKind()).isEqualTo("LITERATURE");
+        assertThat(onlyLit.items().get(1).citation()).isNull();
+
+        var onlyGuide = service.listPosts(1, 20, "GUIDE").block();
+        assertThat(onlyGuide.items()).extracting(Dtos.PostSummary::name).containsExactly("guide-1");
+        assertThat(onlyGuide.items().get(0).articleKind()).isEqualTo("GUIDE");
+
+        var detail = service.getPost("lit-1").block();
+        assertThat(detail.articleKind()).isEqualTo("LITERATURE");
+        assertThat(detail.citation().doi()).isEqualTo("10.2106/JBJS.24.00001");
+        assertThat(detail.citation().sourceUrl()).isEqualTo("https://doi.org/10.2106/JBJS.24.00001");
     }
 }

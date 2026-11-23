@@ -526,4 +526,50 @@ describe('web security & SSR', () => {
     assert.deepEqual(seenPages, [1, 2])
     assert.ok(String(sitemap.body).includes('https://wanwan.run/resources/r-52'))
   })
+
+  it('renders 文献译读 badges, filter tabs, and citation card on Web', async () => {
+    const client = mockClient()
+    let capturedKind: string | undefined
+    const litPost = {
+      name: 'lit-ponseti',
+      title: 'Ponseti 长期随访研究中文译读',
+      excerpt: '整理 30 年随访结果。',
+      publishTime: '2026-11-23T00:00:00Z',
+      author: '整理者',
+      articleKind: 'LITERATURE' as const,
+      citation: {
+        originalTitle: 'Long-Term Outcomes of the Ponseti Method',
+        journal: 'J Bone Joint Surg Am',
+        publishedYear: '2024',
+        evidenceType: '长期随访',
+        doi: '10.2106/JBJS.24.00001',
+        sourceUrl: 'https://doi.org/10.2106/JBJS.24.00001',
+        verifiedDate: '2026-11-23',
+      },
+    }
+    client.listPosts = async (_page, _size, kind) => {
+      capturedKind = kind
+      return { page: 1, size: 20, total: 1, items: [litPost] }
+    }
+    client.getPost = async () => ({ ...litPost, content: '<h2>核心发现</h2><p>正文内容</p>' })
+
+    const listRes = await handleRequest('/posts?kind=LITERATURE', client, config)
+    assert.equal(listRes.status, 200)
+    assert.equal(capturedKind, 'LITERATURE')
+    const listHtml = String(listRes.body)
+    assert.match(listHtml, /card-literature/)
+    assert.match(listHtml, /badge-literature">文献译读/)
+    assert.match(listHtml, /J Bone Joint Surg Am · 2024/)
+    assert.match(listHtml, /href="\/posts\?kind=LITERATURE" class="active">文献译读/)
+
+    const detailRes = await handleRequest('/posts/lit-ponseti', client, config)
+    assert.equal(detailRes.status, 200)
+    const detailHtml = String(detailRes.body)
+    assert.match(detailHtml, /lit-citation-card/)
+    assert.match(detailHtml, /Long-Term Outcomes of the Ponseti Method/)
+    assert.match(detailHtml, /10\.2106\/JBJS\.24\.00001/)
+    assert.match(detailHtml, /查看论文原文/)
+    assert.match(detailHtml, /复制文献出处/)
+    assert.match(detailHtml, /【文献译读】Ponseti 长期随访研究中文译读/)
+  })
 })

@@ -1,10 +1,13 @@
 import { buildGuideOutline, guideNodes, type GuideNode, type GuideSection } from '../../services/guide-html'
-import { HttpError, wanwanApi } from '../../services/api'
+import { HttpError, type LiteratureCitation, wanwanApi } from '../../services/api'
 import { decodeOption, openResource, resourceLabel } from '../../services/reading'
 
 Page({
   data: {
     kind: '', name: '', title: '', intro: '', date: '', author: '',
+    isLiterature: false,
+    citation: null as LiteratureCitation | null,
+    citationPubInfo: '',
     body: [] as GuideNode[],
     sections: [] as GuideSection[],
     toc: [] as { id: string; title: string }[],
@@ -34,6 +37,7 @@ Page({
     if (!sameDoc) {
       this.setData({
         loading: true, error: '', retryable: false, title: '', items: [],
+        isLiterature: false, citation: null, citationPubInfo: '',
         body: [], sections: [], toc: [], highlights: [], readMinutes: 0,
         openSections: {}, activeSectionId: '', expandAll: false, showToc: false, date: '', author: '',
       })
@@ -69,10 +73,18 @@ Page({
             }
           }
         }
+        const isLiterature = guide.articleKind === 'LITERATURE'
+        const citation = isLiterature ? (guide.citation ?? null) : null
+        const citationPubInfo = citation
+          ? [citation.journal, citation.publishedYear].filter(Boolean).join(' · ')
+          : ''
         this.loadedKey = key
         this.setData({
           title: guide.title, intro: '', date: guide.publishTime?.slice(0, 10) ?? '',
           author: guide.author || '',
+          isLiterature,
+          citation,
+          citationPubInfo,
           body: nodes,
           sections: outline.sections,
           toc: outline.toc,
@@ -89,7 +101,8 @@ Page({
       const unavailable = error instanceof HttpError && error.statusCode === 404
       this.loadedKey = ''
       this.setData({
-        title: '', intro: '', items: [], body: [], sections: [], toc: [], highlights: [],
+        title: '', intro: '', items: [], isLiterature: false, citation: null, citationPubInfo: '',
+        body: [], sections: [], toc: [], highlights: [],
         error: unavailable ? '这项内容不可访问或已下线。' : '暂时无法加载，请重试。',
         retryable: !unavailable,
         loading: false,
@@ -131,18 +144,36 @@ Page({
       scroll()
     }
   },
+  copyCitation() {
+    const { title, citation, citationPubInfo } = this.data
+    const lines = [
+      title,
+      citation?.originalTitle ? `原文：${citation.originalTitle}` : '',
+      citationPubInfo ? `出处：${citationPubInfo}` : '',
+      citation?.doi ? `DOI：${citation.doi}` : '',
+      citation?.sourceUrl || '',
+    ].filter(Boolean)
+    if (!lines.length) return
+    wx.setClipboardData({
+      data: lines.join('\n'),
+      success: () => wx.showToast({ title: '已复制文献出处', icon: 'none' }),
+      fail: () => wx.showToast({ title: '未能复制，请稍后重试', icon: 'none' }),
+    })
+  },
   openDetail: openResource,
   onShareAppMessage() {
-    const { loading, error, kind, name, title } = this.data
+    const { loading, error, kind, name, title, isLiterature } = this.data
     if (!loading && !error && title && name && (kind === 'topic' || kind === 'guide')) {
-      return { title, path: `/pages/reading/reading?kind=${kind}&name=${encodeURIComponent(name)}` }
+      const shareTitle = kind === 'guide' && isLiterature ? `【文献译读】${title}` : title
+      return { title: shareTitle, path: `/pages/reading/reading?kind=${kind}&name=${encodeURIComponent(name)}` }
     }
     return { title: '小脚丫步步指南｜资料库', path: '/pages/library/library' }
   },
   onShareTimeline() {
-    const { loading, error, kind, name, title } = this.data
+    const { loading, error, kind, name, title, isLiterature } = this.data
     if (!loading && !error && title && name && (kind === 'topic' || kind === 'guide')) {
-      return { title, query: `kind=${kind}&name=${encodeURIComponent(name)}` }
+      const shareTitle = kind === 'guide' && isLiterature ? `【文献译读】${title}` : title
+      return { title: shareTitle, query: `kind=${kind}&name=${encodeURIComponent(name)}` }
     }
     return { title: '小脚丫步步指南｜足内翻家庭资料库', query: '' }
   },

@@ -45,26 +45,28 @@
       </view>
       <scroll-view wx:if="{{activeTab === 'all'}}" scroll-x class="stage-guide-carousel-scroll" show-scrollbar="{{false}}">
         <view class="stage-guide-carousel">
-          <navigator wx:for="{{articles}}" wx:key="name" class="card guide-card stage-guide-carousel-item motion-press" hover-class="pressed"
+          <navigator wx:for="{{articles}}" wx:key="name" class="card guide-card {{item.articleKind === 'LITERATURE' ? 'guide-card-literature' : ''}} stage-guide-carousel-item motion-press" hover-class="pressed"
             url="/pages/reading/reading?kind=guide&name={{item.name}}">
             <view class="guide-card-head">
-              <text class="badge badge-sage">原创导读</text>
+              <text class="badge {{item.articleKind === 'LITERATURE' ? 'badge-literature' : 'badge-sage'}}">{{item.articleKind === 'LITERATURE' ? '文献译读' : '原创导读'}}</text>
               <text class="muted">分节阅读 ›</text>
             </view>
             <view class="resource-card-title clamp-2">{{item.title}}</view>
             <view wx:if="{{item.excerpt}}" class="resource-card-intro clamp-2">{{item.excerpt}}</view>
+            <view wx:if="{{item.articleKind === 'LITERATURE' && item.citation && item.citation.journal}}" class="lit-meta-line clamp-1">{{item.citation.journal}}{{item.citation.publishedYear ? ' · ' + item.citation.publishedYear : ''}}</view>
           </navigator>
         </view>
       </scroll-view>
       <block wx:else>
-        <navigator wx:for="{{articles}}" wx:key="name" class="card guide-card motion-press" hover-class="pressed"
+        <navigator wx:for="{{articles}}" wx:key="name" class="card guide-card {{item.articleKind === 'LITERATURE' ? 'guide-card-literature' : ''}} motion-press" hover-class="pressed"
           url="/pages/reading/reading?kind=guide&name={{item.name}}">
           <view class="guide-card-head">
-            <text class="badge badge-sage">原创导读</text>
+            <text class="badge {{item.articleKind === 'LITERATURE' ? 'badge-literature' : 'badge-sage'}}">{{item.articleKind === 'LITERATURE' ? '文献译读' : '原创导读'}}</text>
             <text class="muted">分节阅读 ›</text>
           </view>
           <view class="resource-card-title clamp-2">{{item.title}}</view>
           <view wx:if="{{item.excerpt}}" class="resource-card-intro clamp-2">{{item.excerpt}}</view>
+          <view wx:if="{{item.articleKind === 'LITERATURE' && item.citation && item.citation.journal}}" class="lit-meta-line clamp-1">{{item.citation.journal}}{{item.citation.publishedYear ? ' · ' + item.citation.publishedYear : ''}}</view>
         </navigator>
         <navigator wx:if="{{moreArticles}}" class="text-link stage-more-link" url="{{articlesUrl}}">查看本阶段全部导读 ›</navigator>
       </block>

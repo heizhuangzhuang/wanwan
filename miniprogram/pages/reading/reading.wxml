@@ -9,9 +9,10 @@
     </view>
   </view>
   <block wx:else>
-    <view class="card reading-header-card">
+    <view class="card reading-header-card {{kind === 'guide' && isLiterature ? 'reading-header-literature' : ''}}">
       <view class="badge-row">
-        <text class="badge {{kind === 'guide' ? 'badge-sage' : 'badge-gold'}}">{{kind === 'guide' ? '原创导读' : '精选专题'}}</text>
+        <text class="badge {{kind === 'guide' ? (isLiterature ? 'badge-literature' : 'badge-sage') : 'badge-gold'}}">{{kind === 'guide' ? (isLiterature ? '文献译读' : '原创导读') : '精选专题'}}</text>
+        <text wx:if="{{kind === 'guide' && isLiterature && citation && citation.evidenceType}}" class="badge badge-literature-sub">{{citation.evidenceType}}</text>
         <text wx:if="{{kind === 'guide' && readMinutes}}" class="badge badge-outline">约 {{readMinutes}} 分钟</text>
         <text wx:if="{{kind === 'guide' && toc.length > 1}}" class="reading-expand-toggle badge-right" bindtap="toggleExpandAll">{{expandAll ? '折叠章节' : '展开全文'}}</text>
         <text wx:elif="{{date}}" class="muted badge-right">{{date}}</text>
@@ -23,6 +24,34 @@
         <text wx:if="{{author && date}}"> · </text>
         <text wx:if="{{date}}">{{date}}</text>
       </view>
+    </view>
+
+    <view wx:if="{{kind === 'guide' && isLiterature}}" class="lit-citation-card">
+      <view class="lit-citation-head">
+        <text class="badge badge-literature">文献译读</text>
+        <text wx:if="{{citation && citation.evidenceType}}" class="badge badge-literature-sub">{{citation.evidenceType}}</text>
+        <text class="lit-citation-title">文献出处与证据说明</text>
+      </view>
+      <view wx:if="{{citation && citation.originalTitle}}" class="lit-citation-row">
+        <text class="lit-citation-label">原文题目</text>
+        <text class="lit-citation-value">{{citation.originalTitle}}</text>
+      </view>
+      <view wx:if="{{citationPubInfo}}" class="lit-citation-row">
+        <text class="lit-citation-label">期刊/年份</text>
+        <text class="lit-citation-value">{{citationPubInfo}}</text>
+      </view>
+      <view wx:if="{{citation && citation.doi}}" class="lit-citation-row">
+        <text class="lit-citation-label">DOI 编号</text>
+        <text class="lit-citation-value">{{citation.doi}}</text>
+      </view>
+      <view wx:if="{{citation && citation.verifiedDate}}" class="lit-citation-row">
+        <text class="lit-citation-label">核对日期</text>
+        <text class="lit-citation-value">{{citation.verifiedDate}}</text>
+      </view>
+      <view wx:if="{{citation}}" class="lit-citation-copy-wrap">
+        <button class="btn lit-copy-btn" bindtap="copyCitation">复制文献出处与原文链接</button>
+      </view>
+      <view class="lit-citation-foot">本篇基于公开学术文献翻译整理，帮助你理解研究背景与常见术语，不替代主治医生的个体评估。</view>
     </view>
 
     <scroll-view wx:if="{{kind === 'guide' && toc.length > 1}}" scroll-x class="reading-toc-scroll" show-scrollbar="{{false}}">

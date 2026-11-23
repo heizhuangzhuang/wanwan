@@ -67,9 +67,14 @@ public class PublicEndpoint implements CustomEndpoint {
                     Dtos.Page.class))
             .GET("topics/{name}", req -> okOrNotFound(
                 queryService.getTopic(req.pathVariable("name"))))
-            .GET("posts", req -> ServerResponse.ok()
-                .body(queryService.listPosts(intParam(req, "page", 1), intParam(req, "size", 20)),
-                    Dtos.Page.class))
+            .GET("posts", req -> {
+                String kind = req.queryParam("kind").orElse(null);
+                int page = intParam(req, "page", 1);
+                int size = intParam(req, "size", 20);
+                return ServerResponse.ok().body(
+                    kind == null ? queryService.listPosts(page, size) : queryService.listPosts(page, size, kind),
+                    Dtos.Page.class);
+            })
             .GET("stage-posts", this::listStagePosts)
             .GET("posts/{name}", req -> okOrNotFound(
                 queryService.getPost(req.pathVariable("name"))))
@@ -186,8 +191,11 @@ public class PublicEndpoint implements CustomEndpoint {
     private Mono<ServerResponse> listStagePosts(ServerRequest req) {
         Stage stage = enumParam(req, "stage", Stage.class);
         if (stage == null) return ServerResponse.badRequest().build();
+        String kind = req.queryParam("kind").orElse(null);
+        int page = intParam(req, "page", 1);
+        int size = intParam(req, "size", 20);
         return ServerResponse.ok().body(
-            queryService.listStagePosts(stage, intParam(req, "page", 1), intParam(req, "size", 20)),
+            kind == null ? queryService.listStagePosts(stage, page, size) : queryService.listStagePosts(stage, page, size, kind),
             Dtos.Page.class);
     }
 

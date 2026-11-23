@@ -42,14 +42,15 @@
     </view>
     <scroll-view scroll-x class="guide-carousel-scroll" show-scrollbar="{{false}}">
       <view class="guide-carousel">
-        <navigator wx:for="{{guides}}" wx:key="name" class="card guide-card guide-carousel-item motion-press" hover-class="pressed"
+        <navigator wx:for="{{guides}}" wx:key="name" class="card guide-card {{item.articleKind === 'LITERATURE' ? 'guide-card-literature' : ''}} guide-carousel-item motion-press" hover-class="pressed"
           url="/pages/reading/reading?kind=guide&name={{item.name}}">
           <view class="guide-card-head">
-            <text class="badge badge-sage">原创导读</text>
+            <text class="badge {{item.articleKind === 'LITERATURE' ? 'badge-literature' : 'badge-sage'}}">{{item.articleKind === 'LITERATURE' ? '文献译读' : '原创导读'}}</text>
             <text class="muted">分节阅读 ›</text>
           </view>
           <view class="resource-card-title clamp-2">{{item.title}}</view>
           <view wx:if="{{item.excerpt}}" class="resource-card-intro clamp-2">{{item.excerpt}}</view>
+          <view wx:if="{{item.articleKind === 'LITERATURE' && item.citation && item.citation.journal}}" class="lit-meta-line clamp-1">{{item.citation.journal}}{{item.citation.publishedYear ? ' · ' + item.citation.publishedYear : ''}}</view>
         </navigator>
       </view>
     </scroll-view>

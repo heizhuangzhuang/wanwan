@@ -54,12 +54,24 @@ export interface TopicView {
   resources: ResourceView[]
 }
 
+export interface LiteratureCitation {
+  originalTitle?: string | null
+  journal?: string | null
+  publishedYear?: string | null
+  evidenceType?: string | null
+  doi?: string | null
+  sourceUrl?: string | null
+  verifiedDate?: string | null
+}
+
 export interface PostSummary {
   author?: string | null
   name: string
   title: string
   excerpt: string | null
   publishTime: string | null
+  articleKind?: 'LITERATURE' | 'GUIDE' | string | null
+  citation?: LiteratureCitation | null
 }
 
 export interface PostView extends PostSummary {
@@ -173,9 +185,9 @@ export const wanwanApi = {
   getResource: (name: string) => request<ResourceView>(`/resources/${encodeURIComponent(name)}`),
   listTopics: (page = 1, size = 20) => request<PageResult<TopicSummary>>('/topics', { page, size }),
   getTopic: (name: string) => request<TopicView>(`/topics/${encodeURIComponent(name)}`),
-  listPosts: (page = 1, size = 20) => request<PageResult<PostSummary>>('/posts', { page, size }),
-  listStagePosts: (stage: string, page = 1, size = 20) =>
-    request<PageResult<PostSummary>>('/stage-posts', { stage, page, size }),
+  listPosts: (page = 1, size = 20, kind?: string) => request<PageResult<PostSummary>>('/posts', { page, size, kind }),
+  listStagePosts: (stage: string, page = 1, size = 20, kind?: string) =>
+    request<PageResult<PostSummary>>('/stage-posts', { stage, page, size, kind }),
   getPost: (name: string) => request<PostView>(`/posts/${encodeURIComponent(name)}`),
   search: (params: { keyword: string; stage?: string; type?: string; page?: number; size?: number }) =>
     request<SearchResult>('/search', params),

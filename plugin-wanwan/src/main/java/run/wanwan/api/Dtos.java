@@ -119,31 +119,124 @@ public final class Dtos {
     public record TopicView(String name, String title, String intro, List<ResourceView> resources) {
     }
 
+    /** 文献译读的学术出处元数据（仅公开白名单字段，源自 Halo Post annotations）。 */
+    public record LiteratureCitation(
+        String originalTitle,
+        String journal,
+        String publishedYear,
+        String evidenceType,
+        String doi,
+        String sourceUrl,
+        String verifiedDate
+    ) {
+        public static LiteratureCitation fromPost(Post post) {
+            var annotations = post.getMetadata() != null ? post.getMetadata().getAnnotations() : null;
+            if (annotations == null || annotations.isEmpty()) return null;
+            String originalTitle = firstNonBlank(annotations, "xiaojiaoya.run/original-title", "wanwan.run/original-title");
+            String journal = firstNonBlank(annotations, "xiaojiaoya.run/source-journal", "wanwan.run/source-journal");
+            String publishedYear = firstNonBlank(annotations, "xiaojiaoya.run/published-year", "wanwan.run/published-year");
+            String evidenceType = firstNonBlank(annotations, "xiaojiaoya.run/evidence-type", "wanwan.run/evidence-type");
+            String doi = firstNonBlank(annotations, "xiaojiaoya.run/doi", "wanwan.run/doi");
+            String sourceUrl = safeHttpUrl(firstNonBlank(annotations, "xiaojiaoya.run/source-url", "wanwan.run/source-url"));
+            String verifiedDate = firstNonBlank(annotations, "xiaojiaoya.run/verified-date", "wanwan.run/verified-date");
+            if (originalTitle == null && journal == null && publishedYear == null
+                && evidenceType == null && doi == null && sourceUrl == null && verifiedDate == null) {
+                return null;
+            }
+            return new LiteratureCitation(originalTitle, journal, publishedYear, evidenceType, doi, sourceUrl, verifiedDate);
+        }
+
+        public static boolean hasLiteratureAnnotation(Post post) {
+            var annotations = post.getMetadata() != null ? post.getMetadata().getAnnotations() : null;
+            if (annotations == null || annotations.isEmpty()) return false;
+            String kind = firstNonBlank(annotations, "xiaojiaoya.run/article-kind", "wanwan.run/article-kind");
+            if (kind != null) {
+                String normalized = kind.trim();
+                if ("LITERATURE".equalsIgnoreCase(normalized) || "文献译读".equals(normalized) || "论文译读".equals(normalized)) {
+                    return true;
+                }
+            }
+            return fromPost(post) != null;
+        }
+
+        private static String firstNonBlank(java.util.Map<String, String> map, String... keys) {
+            for (String key : keys) {
+                String value = map.get(key);
+                if (value != null && !value.isBlank()) return value.trim();
+            }
+            return null;
+        }
+
+        private static String safeHttpUrl(String raw) {
+            if (raw == null || raw.length() > 2048) return null;
+            String lower = raw.toLowerCase(java.util.Locale.ROOT);
+            if (!lower.startsWith("https://") && !lower.startsWith("http://")) return null;
+            return raw;
+        }
+    }
+
     /** 本站原创导读摘要（来自 Halo 已发布 Post，仅白名单公开字段）。 */
-    public record PostSummary(String name, String title, String excerpt, Instant publishTime, String author) {
+    public record PostSummary(
+        String name,
+        String title,
+        String excerpt,
+        Instant publishTime,
+        String author,
+        String articleKind,
+        LiteratureCitation citation
+    ) {
+        public PostSummary(String name, String title, String excerpt, Instant publishTime, String author) {
+            this(name, title, excerpt, publishTime, author, "GUIDE", null);
+        }
+
         public static PostSummary of(Post post, String author) {
+            return of(post, author, false);
+        }
+
+        public static PostSummary of(Post post, String author, boolean literatureTag) {
             String excerpt = post.getStatus() != null ? post.getStatus().getExcerpt() : null;
+            LiteratureCitation citation = LiteratureCitation.fromPost(post);
+            boolean literature = literatureTag || LiteratureCitation.hasLiteratureAnnotation(post);
             return new PostSummary(
                 post.getMetadata().getName(),
                 post.getSpec().getTitle(),
                 excerpt,
                 post.getSpec().getPublishTime(),
-                author
+                author,
+                literature ? "LITERATURE" : "GUIDE",
+                citation
             );
         }
     }
 
     /** 本站原创导读详情（仅返回已发布快照正文）。 */
-    public record PostView(String name, String title, String excerpt, Instant publishTime, String content, String author) {
+    public record PostView(
+        String name,
+        String title,
+        String excerpt,
+        Instant publishTime,
+        String content,
+        String author,
+        String articleKind,
+        LiteratureCitation citation
+    ) {
         public static PostView of(Post post, String content, String author) {
+            return of(post, content, author, false);
+        }
+
+        public static PostView of(Post post, String content, String author, boolean literatureTag) {
             String excerpt = post.getStatus() != null ? post.getStatus().getExcerpt() : null;
+            LiteratureCitation citation = LiteratureCitation.fromPost(post);
+            boolean literature = literatureTag || LiteratureCitation.hasLiteratureAnnotation(post);
             return new PostView(
                 post.getMetadata().getName(),
                 post.getSpec().getTitle(),
                 excerpt,
                 post.getSpec().getPublishTime(),
                 content,
-                author
+                author,
+                literature ? "LITERATURE" : "GUIDE",
+                citation
             );
         }
     }

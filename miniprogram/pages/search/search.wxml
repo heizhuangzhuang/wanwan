@@ -62,6 +62,10 @@
         <view wx:for="{{guideItems}}" wx:key="name" class="tab-row motion-press"
           data-name="{{item.name}}" bindtap="openGuide" hover-class="pressed" aria-role="link">
           <view class="tab-row-copy">
+            <view wx:if="{{item.articleKind === 'LITERATURE'}}" class="badge-row" style="margin-bottom: 6rpx;">
+              <text class="badge badge-literature">文献译读</text>
+              <text wx:if="{{item.citation && item.citation.evidenceType}}" class="badge badge-literature-sub">{{item.citation.evidenceType}}</text>
+            </view>
             <view class="tab-row-title">{{item.title}}</view>
             <view wx:if="{{item.excerpt}}" class="tab-row-caption">{{item.excerpt}}</view>
           </view>

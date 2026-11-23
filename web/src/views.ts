@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { renderFeedback } from './feedback.js'
-import type { BackendClient, PageResult, PostSummary, ResourceView, StageView } from './api.js'
+import type { BackendClient, PageResult, PostSummary, PostView, ResourceView, StageView } from './api.js'
 import { braceScript, braceScriptHash, renderBraceDashboard } from './brace-dashboard.js'
 import type { WebConfig } from './config.js'
 import {
@@ -205,9 +205,65 @@ function cleanExcerpt(title: string, excerpt?: string | null): string {
   return raw
 }
 
+function isLiteratureArticle(post: Pick<PostSummary, 'articleKind'>): boolean {
+  return post.articleKind === 'LITERATURE'
+}
+
+function formatCitationSummary(citation?: PostSummary['citation']): string {
+  if (!citation) return ''
+  return [citation.journal, citation.publishedYear, citation.doi ? `DOI: ${citation.doi}` : '']
+    .filter(Boolean)
+    .join(' · ')
+}
+
+function renderLiteratureCitationCard(post: PostView): string {
+  if (!isLiteratureArticle(post)) return ''
+  const c = post.citation
+  const rows: string[] = []
+  if (c?.originalTitle) rows.push(`<div><dt>原文题目</dt><dd>${escapeHtml(c.originalTitle)}</dd></div>`)
+  const pubInfo = [c?.journal, c?.publishedYear].filter(Boolean).join(' · ')
+  if (pubInfo) rows.push(`<div><dt>期刊/年份</dt><dd>${escapeHtml(pubInfo)}</dd></div>`)
+  if (c?.evidenceType) rows.push(`<div><dt>文献类型</dt><dd>${escapeHtml(c.evidenceType)}</dd></div>`)
+  if (c?.doi) rows.push(`<div><dt>DOI / 编号</dt><dd>${escapeHtml(c.doi)}</dd></div>`)
+  if (c?.verifiedDate) rows.push(`<div><dt>核对日期</dt><dd>${escapeHtml(c.verifiedDate)}</dd></div>`)
+
+  const safeOrigin = safeHttpUrl(c?.sourceUrl)
+  const copyLines = [
+    post.title,
+    c?.originalTitle ? `原文：${c.originalTitle}` : '',
+    pubInfo ? `出处：${pubInfo}` : '',
+    c?.doi ? `DOI：${c.doi}` : '',
+    safeOrigin || '',
+  ].filter(Boolean).join('\n')
+
+  const actions: string[] = []
+  if (safeOrigin) {
+    actions.push(`<a class="btn" href="${escapeHtml(safeOrigin)}" target="_blank" rel="noopener noreferrer">查看论文原文 ↗</a>`)
+  }
+  if (rows.length) {
+    actions.push(`<button class="btn btn-outline" type="button" data-copy-text="${escapeHtml(copyLines)}" data-copy-ok="已复制文献出处信息。" data-status-id="lit-citation-status">复制文献出处</button>`)
+  }
+
+  return `<section class="lit-citation-card" aria-label="文献出处与证据说明">
+  <div class="lit-citation-head">
+    <span class="badge badge-literature">文献译读</span>
+    ${c?.evidenceType ? `<span class="badge badge-literature-sub">${escapeHtml(c.evidenceType)}</span>` : ''}
+    <strong>文献出处与证据说明</strong>
+  </div>
+  ${rows.length ? `<dl class="lit-citation-rows">${rows.join('')}</dl>` : ''}
+  ${actions.length ? `<div class="lit-citation-actions">${actions.join('')}</div><p id="lit-citation-status" class="action-status" role="status" aria-live="polite"></p>` : ''}
+  <p class="lit-citation-foot">本篇基于公开学术文献翻译整理，帮助你理解研究背景与常见术语，不替代主治医生的个体评估。</p>
+</section>`
+}
+
 function renderGuideCard(guide: PostSummary, basePath: string, heading: 'h2' | 'h3' = 'h2') {
   const excerpt = cleanExcerpt(guide.title, guide.excerpt)
-  return `<article class="card"><${heading} class="card-title"><a href="${basePath}/posts/${encodeURIComponent(guide.name)}">${escapeHtml(guide.title)}</a></${heading}>${excerpt ? `<p class="card-intro">${escapeHtml(excerpt)}</p>` : ''}${guide.author ? `<div class="meta-row">${escapeHtml(guide.author)}</div>` : ''}</article>`
+  const lit = isLiteratureArticle(guide)
+  const citationLine = lit ? formatCitationSummary(guide.citation) : ''
+  const badges = lit
+    ? `<div class="meta-row" style="margin-bottom:6px"><span class="badge badge-literature">文献译读</span>${guide.citation?.evidenceType ? `<span class="badge badge-literature-sub">${escapeHtml(guide.citation.evidenceType)}</span>` : ''}</div>`
+    : ''
+  return `<article class="card${lit ? ' card-literature' : ''}">${badges}<${heading} class="card-title"><a href="${basePath}/posts/${encodeURIComponent(guide.name)}">${escapeHtml(guide.title)}</a></${heading}>${excerpt ? `<p class="card-intro">${escapeHtml(excerpt)}</p>` : ''}${citationLine ? `<div class="lit-meta-line">${escapeHtml(citationLine)}</div>` : ''}${guide.author ? `<div class="meta-row">${escapeHtml(guide.author)}</div>` : ''}</article>`
 }
 
 async function renderRelated(resource: ResourceView, client: BackendClient, config: WebConfig) {
@@ -603,12 +659,30 @@ ${cards}${renderPagination(`${basePath}/resources`, list, query)}`,
   if (path === '/posts') {
     const stage = FIXED_STAGES.find(item => item.key === stageFilter)
     if (stageFilter && !stage) return notFoundResponse(config)
+    const rawKind = (url.searchParams.get('kind') || '').trim().toUpperCase()
+    const kindFilter = rawKind === 'LITERATURE' || rawKind === 'GUIDE' ? rawKind : ''
     const title = stage ? stage.label + ' · 原创导读' : '本站原创导读'
-    const list = await (stage ? client.listStagePosts(stage.key, page, 20) : client.listPosts(page, 20))
+    const list = await (stage
+      ? client.listStagePosts(stage.key, page, 20, kindFilter || undefined)
+      : client.listPosts(page, 20, kindFilter || undefined))
+    const kindTabs = [
+      { key: '', label: '全部导读' },
+      { key: 'LITERATURE', label: '文献译读' },
+      { key: 'GUIDE', label: '普通导读' },
+    ].map(tab => {
+      const p = new URLSearchParams()
+      if (stage) p.set('stage', stage.key)
+      if (tab.key) p.set('kind', tab.key)
+      const qs = p.toString()
+      const href = qs ? `${basePath}/posts?${qs}` : `${basePath}/posts`
+      const active = kindFilter === tab.key ? ' class="active"' : ''
+      return `<a href="${escapeHtml(href)}"${active}>${tab.label}</a>`
+    }).join('')
+    const filterHtml = `<div class="filter-bar" aria-label="导读类型筛选">${kindTabs}</div>`
     const body = list.items.length
       ? `<div class="card-list">${list.items.map(guide => renderGuideCard(guide, basePath)).join('')}</div>`
-      : '<div class="warn-bar">暂无已发布的原创导读。</div>'
-    return htmlResponse(200, renderPage(title, `<h1>${escapeHtml(title)}</h1>${body}${renderPagination(`${basePath}${path}`, list, query)}`))
+      : `<div class="warn-bar">${kindFilter === 'LITERATURE' ? '暂无已发布的文献译读文章。' : '暂无已发布的原创导读。'}</div>`
+    return htmlResponse(200, renderPage(title, `<h1>${escapeHtml(title)}</h1>${filterHtml}${body}${renderPagination(`${basePath}${path}`, list, query)}`))
   }
 
   if (path.startsWith('/posts/')) {
@@ -616,24 +690,32 @@ ${cards}${renderPagination(`${basePath}/resources`, list, query)}`,
     if (!name) return notFoundResponse(config)
     const post = await client.getPost(name)
     if (!post) return notFoundResponse(config)
+    const lit = isLiteratureArticle(post)
     const dateLine = post.publishTime ? `<span>发布日期：${escapeHtml(post.publishTime.slice(0, 10))}</span>` : ''
     const { html: proseHtml, toc, readingMinutes } = preparePostContent(post.content)
     const tocHtml = toc.length >= 2
       ? `<nav class="post-toc" aria-label="文章目录"><strong>本篇目录</strong><ol>${toc.map(item => `<li class="post-toc--${item.level}"><a href="#${item.id}">${escapeHtml(item.text)}</a></li>`).join('')}</ol></nav>`
       : ''
+    const leadBadge = lit
+      ? `<span class="badge badge-literature">文献译读</span>${post.citation?.evidenceType ? `<span class="badge badge-literature-sub">${escapeHtml(post.citation.evidenceType)}</span>` : ''}`
+      : '<span class="badge">本站原创导读</span>'
+    const sharePrefix = lit ? `小脚丫步步指南｜【文献译读】${post.title}` : `小脚丫步步指南｜${post.title}`
+    const citationCard = renderLiteratureCitationCard(post)
+    const noticeHtml = lit ? '' : '<div class="notice-bar">本文为本站原创导读或使用说明，不替代门诊沟通与专业医学意见。</div>'
     return {
       ...htmlResponse(
         200,
         renderPage(post.title,
           `<p><a href="${basePath}/posts">← 返回原创导读</a></p>
-<article class="card post-prose">
-  <div class="meta-row"><span class="badge">本站原创导读</span><span>约 ${readingMinutes} 分钟阅读</span>${post.author ? `<span>作者 ${escapeHtml(post.author)}</span>` : ''}${dateLine}</div>
+<article class="card post-prose${lit ? ' card-literature' : ''}">
+  <div class="meta-row">${leadBadge}<span>约 ${readingMinutes} 分钟阅读</span>${post.author ? `<span>作者 ${escapeHtml(post.author)}</span>` : ''}${dateLine}</div>
   <h1>${escapeHtml(post.title)}</h1>
   <div class="action-bar" style="margin:12px 0">
-    <button class="btn btn-outline" type="button" data-copy-url="current" data-copy-prefix="${escapeHtml(`小脚丫步步指南｜${post.title}`)}" data-copy-ok="已复制文章链接，可直接粘贴发给微信好友或家人。" data-status-id="post-share-status">复制文章链接分享给家人</button>
+    <button class="btn btn-outline" type="button" data-copy-url="current" data-copy-prefix="${escapeHtml(sharePrefix)}" data-copy-ok="已复制文章链接，可直接粘贴发给微信好友或家人。" data-status-id="post-share-status">复制文章链接分享给家人</button>
   </div>
   <p id="post-share-status" class="action-status" role="status" aria-live="polite"></p>
-  <div class="notice-bar">本文为本站原创导读或使用说明，不替代门诊沟通与专业医学意见。</div>
+  ${citationCard}
+  ${noticeHtml}
   ${tocHtml}
   <div class="prose-body">${proseHtml}</div>
 </article>

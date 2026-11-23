@@ -114,6 +114,8 @@ button.plain-button:not([size='mini']) { width: 100%; max-width: none; margin: 0
 .badge-blue { background: #dfebf0; color: #234d63; }
 .badge-rose { background: #f3e0de; color: #6e3531; }
 .badge-gold { background: #f3ebd3; color: #6c4f1d; }
+.badge-literature { background: #e8f1f5; color: #1e4b5c; border: 1rpx solid #b8d4df; font-weight: 700; }
+.badge-literature-sub { background: #fffdf9; color: #1e4b5c; border: 1rpx solid #b8d4df; }
 .badge-outline { background: #f9f5ee; border: 1rpx solid #ddd2c4; color: #595f54; }
 .badge-right { margin-left: auto; }
 
@@ -123,7 +125,9 @@ button.plain-button:not([size='mini']) { width: 100%; max-width: none; margin: 0
 .resource-card-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 14rpx; font-size: 23rpx; color: #687064; }
 
 .guide-card { border-left: 6rpx solid #376052; background: #fcfaf5; }
+.guide-card-literature { border-left-color: #1e4b5c; }
 .guide-card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8rpx; }
+.lit-meta-line { margin-top: 8rpx; font-size: 23rpx; color: #1e4b5c; line-height: 1.45; }
 
 .format-legend { display: flex; gap: 14rpx; margin: 18rpx 0 8rpx; }
 .format-pill { flex: 1; min-width: 0; background: #fffdf9; border: 1rpx solid #e7ddd2; border-radius: 18rpx; padding: 16rpx 18rpx; }

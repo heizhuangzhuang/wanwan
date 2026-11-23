@@ -8,21 +8,28 @@
     <button class="btn {{kind === 'topic' ? '' : 'secondary'}}" data-kind="topic" bindtap="selectKind">精选专题</button>
     <button class="btn {{kind === 'guide' ? '' : 'secondary'}}" data-kind="guide" bindtap="selectKind">原创导读</button>
   </view>
+  <view wx:if="{{kind === 'guide'}}" class="filter-chips" style="margin-bottom: 18rpx;">
+    <view class="filter-chip {{articleKind === '' ? 'active' : ''}}" role="button" data-value="" bindtap="selectArticleKind">全部导读</view>
+    <view class="filter-chip {{articleKind === 'LITERATURE' ? 'active' : ''}}" role="button" data-value="LITERATURE" bindtap="selectArticleKind">文献译读</view>
+    <view class="filter-chip {{articleKind === 'GUIDE' ? 'active' : ''}}" role="button" data-value="GUIDE" bindtap="selectArticleKind">普通导读</view>
+  </view>
   <view wx:if="{{loading}}" class="muted">加载中…</view>
   <view wx:elif="{{error}}" class="card">
     <view>{{error}}</view>
     <button class="btn" bindtap="retry">重试</button>
   </view>
   <block wx:else>
-    <view wx:if="{{!items.length}}" class="card muted">暂无可阅读的{{kind === 'topic' ? '专题' : '导读'}}。</view>
-    <view wx:for="{{items}}" wx:key="name" class="card {{kind === 'guide' ? 'guide-card' : ''}} motion-press" hover-class="pressed" data-name="{{item.name}}" bindtap="openReading">
+    <view wx:if="{{!items.length}}" class="card muted">暂无可阅读的{{kind === 'topic' ? '专题' : (articleKind === 'LITERATURE' ? '文献译读' : '导读')}}。</view>
+    <view wx:for="{{items}}" wx:key="name" class="card {{kind === 'guide' ? 'guide-card' : ''}} {{item.isLiterature ? 'guide-card-literature' : ''}} motion-press" hover-class="pressed" data-name="{{item.name}}" bindtap="openReading">
       <view class="badge-row">
-        <text class="badge {{kind === 'guide' ? 'badge-sage' : 'badge-gold'}}">{{kind === 'guide' ? '原创导读' : '精选专题'}}</text>
+        <text class="badge {{kind === 'guide' ? (item.isLiterature ? 'badge-literature' : 'badge-sage') : 'badge-gold'}}">{{kind === 'guide' ? (item.isLiterature ? '文献译读' : '原创导读') : '精选专题'}}</text>
+        <text wx:if="{{item.isLiterature && item.evidenceType}}" class="badge badge-literature-sub">{{item.evidenceType}}</text>
         <text wx:if="{{kind === 'topic'}}" class="badge badge-outline">{{item.resourceCount}} 条资料</text>
         <text wx:if="{{item.date}}" class="muted badge-right">{{item.date}}</text>
       </view>
       <view class="resource-card-title clamp-2">{{item.title}}</view>
       <view wx:if="{{item.intro}}" class="resource-card-intro clamp-2">{{item.intro}}</view>
+      <view wx:if="{{item.citationLine}}" class="lit-meta-line clamp-1">{{item.citationLine}}</view>
     </view>
     <template is="pagination" data="{{page, hasNext, loading}}" />
   </block>

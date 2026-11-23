@@ -11,6 +11,9 @@
   --honey: #f4d991;
   --warn-bg: #fcf2d8;
   --warn-text: #65451f;
+  --lit-bg: #e8f1f5;
+  --lit-text: #1e4b5c;
+  --lit-border: #b8d4df;
   --max-w: 1224px;
   --gutter: clamp(16px, 4vw, 36px);
   --serif: "Songti SC", "Noto Serif CJK SC", "SimSun", serif;
@@ -340,6 +343,34 @@ select.search-input { height: 44px; line-height: 1.3; }
 .post-toc a { display: inline-block; padding-block: 3px; text-decoration: none; }
 .post-toc a:hover { text-decoration: underline; }
 .prose-body h2[id], .prose-body h3[id] { scroll-margin-top: 20px; }
+
+.badge.badge-literature {
+  background: var(--lit-bg); color: var(--lit-text); border: 1px solid var(--lit-border); font-weight: 700;
+}
+.badge.badge-literature-sub {
+  background: var(--surface); color: var(--lit-text); border: 1px solid var(--lit-border);
+}
+.card.card-literature { border-left: 4px solid var(--lit-text); }
+.lit-meta-line {
+  margin-top: 8px; font-size: .83rem; color: var(--lit-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+.lit-citation-card {
+  margin: 16px 0 20px; padding: 16px 18px; border-radius: 12px;
+  background: var(--lit-bg); border: 1px solid var(--lit-border); border-left: 4px solid var(--lit-text);
+  color: var(--lit-text);
+}
+.lit-citation-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+.lit-citation-head strong { font-size: .96rem; color: var(--lit-text); }
+.lit-citation-rows { display: grid; gap: 6px; margin: 0; font-size: .9rem; color: var(--text); }
+.lit-citation-rows div { display: flex; flex-wrap: wrap; gap: 6px; }
+.lit-citation-rows dt { color: var(--lit-text); font-weight: 600; min-width: 5.2em; }
+.lit-citation-rows dd { margin: 0; flex: 1; min-width: 0; word-break: break-word; }
+.lit-citation-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px; }
+.lit-citation-foot {
+  margin: 12px 0 0; padding-top: 10px; border-top: 1px solid var(--lit-border);
+  font-size: .84rem; color: var(--lit-text);
+}
 
 @media (max-width: 620px) {
   .stage-tools-grid { grid-template-columns: 1fr; }
