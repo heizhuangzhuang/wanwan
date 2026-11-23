@@ -183,10 +183,11 @@ public final class Dtos {
         Instant publishTime,
         String author,
         String articleKind,
-        LiteratureCitation citation
+        LiteratureCitation citation,
+        String coverUrl
     ) {
         public PostSummary(String name, String title, String excerpt, Instant publishTime, String author) {
-            this(name, title, excerpt, publishTime, author, "GUIDE", null);
+            this(name, title, excerpt, publishTime, author, "GUIDE", null, null);
         }
 
         public static PostSummary of(Post post, String author) {
@@ -204,7 +205,8 @@ public final class Dtos {
                 post.getSpec().getPublishTime(),
                 author,
                 literature ? "LITERATURE" : "GUIDE",
-                citation
+                citation,
+                publicCover(post)
             );
         }
     }
@@ -218,7 +220,8 @@ public final class Dtos {
         String content,
         String author,
         String articleKind,
-        LiteratureCitation citation
+        LiteratureCitation citation,
+        String coverUrl
     ) {
         public static PostView of(Post post, String content, String author) {
             return of(post, content, author, false);
@@ -236,9 +239,18 @@ public final class Dtos {
                 content,
                 author,
                 literature ? "LITERATURE" : "GUIDE",
-                citation
+                citation,
+                publicCover(post)
             );
         }
+    }
+
+    private static String publicCover(Post post) {
+        String cover = post.getSpec().getCover();
+        if (cover == null || !cover.strip().startsWith("https://") || !EntryResolver.isSafeHttpUrl(cover.strip())) {
+            return null;
+        }
+        return cover.strip();
     }
 
     public record Page<T>(int page, int size, long total, List<T> items) {

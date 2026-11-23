@@ -59,6 +59,7 @@ export interface LiteratureCitation {
 }
 
 export interface PostSummary {
+  coverUrl?: string | null
   author?: string | null
   name: string
   title: string
@@ -69,6 +70,7 @@ export interface PostSummary {
 }
 
 export interface PostView {
+  coverUrl?: string | null
   author?: string | null
   name: string
   title: string

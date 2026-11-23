@@ -16,6 +16,7 @@ Page({
     openSections: {} as Record<string, boolean>,
     activeSectionId: '',
     expandAll: false,
+    fullReading: false,
     showToc: false,
     items: [] as ReturnType<typeof resourceLabel>[],
     loading: true, error: '', retryable: false,
@@ -23,7 +24,7 @@ Page({
   loadedKey: '',
   requestSeq: 0,
   onLoad(options: Record<string, string | undefined>) {
-    this.setData({ kind: options.kind ?? '', name: decodeOption(options.name) })
+    this.setData({ kind: options.kind ?? '', name: decodeOption(options.name), fullReading: options.mode === 'full' })
   },
   onShow() {
     void this.load()
@@ -62,7 +63,7 @@ Page({
         if (!sameDoc) {
           let openedChapter = false
           for (const sec of outline.sections) {
-            if (!sec.title) {
+            if (!sec.title || this.data.fullReading) {
               openSections[sec.id] = true
             } else if (!openedChapter) {
               openSections[sec.id] = true
@@ -92,7 +93,7 @@ Page({
           readMinutes: outline.readMinutes,
           openSections,
           activeSectionId: activeSectionId || outline.toc[0]?.id || '',
-          expandAll: sameDoc ? this.data.expandAll : outline.toc.length <= 1,
+          expandAll: sameDoc ? this.data.expandAll : this.data.fullReading || outline.toc.length <= 1,
           error: '', retryable: false, loading: false,
         })
       }
@@ -165,7 +166,7 @@ Page({
     const { loading, error, kind, name, title, isLiterature } = this.data
     if (!loading && !error && title && name && (kind === 'topic' || kind === 'guide')) {
       const shareTitle = kind === 'guide' && isLiterature ? `【文献译读】${title}` : title
-      return { title: shareTitle, path: `/pages/reading/reading?kind=${kind}&name=${encodeURIComponent(name)}` }
+      return { title: shareTitle, path: `/pages/reading/reading?kind=${kind}&name=${encodeURIComponent(name)}${this.data.fullReading ? '&mode=full' : ''}` }
     }
     return { title: '小脚丫步步指南｜资料库', path: '/pages/library/library' }
   },
@@ -173,7 +174,7 @@ Page({
     const { loading, error, kind, name, title, isLiterature } = this.data
     if (!loading && !error && title && name && (kind === 'topic' || kind === 'guide')) {
       const shareTitle = kind === 'guide' && isLiterature ? `【文献译读】${title}` : title
-      return { title: shareTitle, query: `kind=${kind}&name=${encodeURIComponent(name)}` }
+      return { title: shareTitle, query: `kind=${kind}&name=${encodeURIComponent(name)}${this.data.fullReading ? '&mode=full' : ''}` }
     }
     return { title: '小脚丫步步指南｜足内翻家庭资料库', query: '' }
   },

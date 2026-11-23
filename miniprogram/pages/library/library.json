@@ -1,1 +1,1 @@
-{ "navigationBarTitleText": "资料", "enablePullDownRefresh": true }
+{ "navigationBarTitleText": "资料", "enablePullDownRefresh": true, "onReachBottomDistance": 180 }

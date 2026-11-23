@@ -1470,3 +1470,161 @@ test('文献译读展示出处卡、支持复制出处与筛选，分享标题�
   assert.match(reading.getClipboard(), /10\.2106\/JBJS\.24\.00001/)
   assert.equal(reading.toasts.at(-1), '已复制文献出处')
 })
+
+test('图文流追加内容时保持已读顺序，文章与同名资料卡分别保留', () => {
+  const { readingFeed } = require(join(compiled, 'services/reading-feed.js'))
+  const { resourceLabel } = require(join(compiled, 'services/reading.js'))
+  const posts = ['a', 'b', 'c'].map(name => ({ name, title: `文章 ${name}`, excerpt: '阅读介绍', coverUrl: 'https://cdn.example.test/cover.jpg' }))
+  const resources = ['a', 'r2'].map(name => resourceLabel(item(name)))
+  const first = readingFeed(posts.slice(0, 2), resources)
+  const next = readingFeed(posts, resources, first)
+  assert.deepEqual(next.slice(0, first.length).map(row => row.id), first.map(row => row.id))
+  assert.equal(next.length, 5)
+  assert.equal(next[0].coverUrl, 'https://cdn.example.test/cover.jpg')
+  assert.match(next[0].url, /mode=full$/)
+  assert.ok(next.some(row => row.id === 'resource:a'))
+  assert.equal(readingFeed(posts.slice(1), resources, next).some(row => row.id === 'guide:a'), false)
+})
+
+test('阅读流分别记录文章和资料页码，单路失败重试不重复、不丢失已读内容', async () => {
+  let fail = true
+  const { page, requests } = openPage('library', url => {
+    const p = Number(url.searchParams.get('page') || 1)
+    if (url.pathname.endsWith('/topics')) return { data: { items: [], page: 1, size: 6, total: 0 } }
+    const posts = url.pathname.endsWith('/posts')
+    if (posts && p === 2 && fail) return undefined
+    return { data: { items: posts ? [{ name: `g${p}`, title: '导读', excerpt: '介绍' }] : [item(`r${p}`)], page: p, size: posts ? 5 : 3, total: posts ? 10 : 6 } }
+  })
+  await page.onShow()
+  const first = page.data.feed.map(row => row.id)
+  await page.loadMore()
+  assert.equal(page.data.moreError, true)
+  assert.equal(page.data.guidePage, 1)
+  assert.equal(page.data.resourcePage, 2)
+  assert.deepEqual(page.data.feed.slice(0, 2).map(row => row.id), first)
+  fail = false
+  await page.loadMore()
+  assert.equal(page.data.moreError, false)
+  assert.equal(page.data.guidePage, 2)
+  assert.equal(page.data.resourcePage, 2)
+  assert.equal(new Set(page.data.feed.map(row => row.id)).size, 4)
+  assert.equal(page.data.hasMoreGuides || page.data.hasMoreResources, false)
+  const count = requests.length
+  await page.onReachBottom()
+  assert.equal(requests.length, count)
+})
+
+test('从文章返回时保留已加载批次与摘要展开状态，同时移除撤回文章', async () => {
+  let withdrawn = false
+  const { page } = openPage('library', url => {
+    const p = Number(url.searchParams.get('page') || 1)
+    if (url.pathname.endsWith('/topics')) return { data: { items: [], page: 1, size: 6, total: 0 } }
+    if (url.pathname.endsWith('/posts')) return { data: { items: withdrawn && p === 1 ? [] : [{ name: `g${p}`, title: '文章', excerpt: '摘要' }], page: p, size: 5, total: 10 } }
+    return { data: { items: [], page: p, size: 3, total: 0 } }
+  })
+  await page.onShow()
+  await page.loadMore()
+  page.toggleExcerpt({ currentTarget: { dataset: { id: 'guide:g2' } } })
+  const ids = page.data.feed.map(row => row.id)
+  await page.onShow()
+  assert.deepEqual(page.data.feed.map(row => row.id), ids)
+  assert.equal(page.data.expanded['guide:g2'], true)
+  withdrawn = true
+  await page.onShow()
+  assert.deepEqual(page.data.feed.map(row => row.id), ['guide:g2'])
+})
+
+test('阶段切换会丢弃旧阶段尚未完成的追加请求', async () => {
+  const { page } = openPage('library', url => ({ data: { items: [], page: 1, size: 5, total: 0 } }))
+  const pending = []
+  wx.request = req => pending.push(req)
+  page.setData({ hasMoreGuides: true, guidePage: 1 })
+  const more = page.loadMore()
+  page.applyStage('PRENATAL')
+  assert.equal(page.data.feed.length, 0)
+  const old = pending.find(req => new URL(req.url).pathname.endsWith('/posts'))
+  old.success({ statusCode: 200, data: { items: [{ name: 'old', title: '旧阶段', excerpt: '' }], page: 2, size: 5, total: 10 } })
+  for (const req of pending.filter(req => req !== old)) {
+    const posts = new URL(req.url).pathname.endsWith('/stage-posts')
+    req.success({ statusCode: 200, data: { items: posts ? [{ name: 'prenatal', title: '产前', excerpt: '' }] : [], page: 1, size: posts ? 5 : 3, total: posts ? 1 : 0 } })
+  }
+  await more
+  await settle()
+  assert.equal(page.data.selectedStage, 'PRENATAL')
+  assert.deepEqual(page.data.feed.map(row => row.name), ['prenatal'])
+  assert.equal(page.data.loadingMore, false)
+})
+
+test('图片只接受公开 HTTPS 栅格图片，正文图片不保留可执行属性', () => {
+  const { contentImageUrl } = require(join(compiled, 'services/content-image.js'))
+  const { guideNodes } = require(join(compiled, 'services/guide-html.js'))
+  for (const invalid of ['javascript:alert(1)', 'http://cdn.example.test/a.jpg', 'https://user:pass@example.test/a.jpg', 'https://example.test/a.svg', 'https://example.test/a.pdf?next=a.jpg', 'file:///a.jpg', 'https://127.0.0.1/a.jpg']) {
+    assert.equal(contentImageUrl(invalid), '')
+  }
+  const url = 'https://cdn.example.test/a.jpg?width=900&quality=80'
+  assert.equal(contentImageUrl(url), url)
+  const nodes = guideNodes('<p>说明</p><img src="https://cdn.example.test/a.jpg?width=900&amp;quality=80" alt="流程示意" onerror="evil()" style="position:fixed"><img src="data:image/svg+xml,invalid" alt="原图不可用">', '文章')
+  assert.equal(nodes[1].name, 'img')
+  assert.equal(nodes[1].attrs.src, url)
+  assert.equal(nodes[1].attrs.alt, '流程示意')
+  assert.doesNotMatch(JSON.stringify(nodes), /evil|onerror|position:fixed|data:image/)
+  assert.equal(nodes[2].text, '原图不可用')
+})
+
+test('图文流支持图片预览、失败回退与逐篇分享，分享不误发整个资料库', async () => {
+  const { page } = openPage('library', url => ({ data: { items: url.pathname.endsWith('/posts') ? [{ name: 'g 1', title: '文章标题', excerpt: '摘要', coverUrl: 'https://cdn.example.test/a.png' }] : [], page: 1, size: 5, total: 1 } }))
+  await page.onShow()
+  const event = { currentTarget: { dataset: { id: 'guide:g 1' } } }
+  let preview
+  wx.previewImage = opts => { preview = opts.urls }
+  page.previewCover(event)
+  assert.deepEqual(preview, ['https://cdn.example.test/a.png'])
+  page.imageError({ currentTarget: { dataset: { id: 'guide:g 1', url: 'https://cdn.example.test/old.png' } } })
+  assert.equal(page.data.brokenImages['guide:g 1'], undefined)
+  page.imageError({ currentTarget: { dataset: { id: 'guide:g 1', url: 'https://cdn.example.test/a.png' } } })
+  assert.equal(page.data.brokenImages['guide:g 1'], 'https://cdn.example.test/a.png')
+  assert.deepEqual(page.onShareAppMessage({ target: { dataset: { id: 'guide:g 1' } } }), {
+    title: '文章标题', path: '/pages/reading/reading?kind=guide&name=g%201&mode=full',
+  })
+})
+
+test('阅读流打开文章时默认展开全文，再次进入保留用户折叠的章节', async () => {
+  const { page } = openPage('reading', () => ({ data: { name: 'g1', title: '文章', content: '<h2>第一节</h2><p>正文</p><h2>第二节</h2><p>正文</p>' } }))
+  page.onLoad({ kind: 'guide', name: 'g1', mode: 'full' })
+  await page.load()
+  assert.equal(page.data.expandAll, true)
+  assert.ok(page.data.toc.every(section => page.data.openSections[section.id]))
+  assert.match(page.onShareAppMessage().path, /&mode=full$/)
+  assert.match(page.onShareTimeline().query, /&mode=full$/)
+  page.toggleSection({ currentTarget: { dataset: { id: page.data.toc[1].id } } })
+  await page.load()
+  assert.equal(page.data.openSections[page.data.toc[1].id], false)
+})
+
+test('头部阅读目录默认收起，选择阶段或进入目录项目后收起，并保留对应阶段路径', async () => {
+  const { page } = openPage('library', () => ({ data: { items: [], page: 1, size: 5, total: 0 } }))
+  assert.equal(page.data.directoryOpen, false)
+  page.toggleDirectory()
+  assert.equal(page.data.directoryOpen, true)
+  page.closeDirectory()
+  assert.equal(page.data.directoryOpen, false)
+  page.toggleDirectory()
+  page.selectStage({ currentTarget: { dataset: { key: 'PRENATAL' } } })
+  await settle()
+  assert.equal(page.data.directoryOpen, false)
+  assert.match(page.data.guidesUrl, /stage=PRENATAL/)
+  assert.match(page.data.stageUrl, /key=PRENATAL/)
+  page.toggleDirectory()
+  assert.equal(page.data.directoryOpen, true)
+  assert.equal(page.data.selectedStage, 'PRENATAL')
+})
+
+test('自动触底不会在错误状态反复请求，点击重试仍可加载后续内容', async () => {
+  const { page, requests } = openPage('library', () => ({ data: { items: [], page: 2, size: 5, total: 0 } }))
+  page.setData({ hasMoreGuides: true, guidePage: 1, moreError: true })
+  await page.onReachBottom()
+  assert.equal(requests.length, 0)
+  await page.loadMore()
+  assert.equal(requests.length, 1)
+  assert.equal(page.data.moreError, false)
+})

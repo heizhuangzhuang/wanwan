@@ -211,6 +211,7 @@ class PublicQueryServiceTest {
 
         var pub = post("guide-1", true, Post.VisibleEnum.PUBLIC, false);
         pub.getSpec().setOwner("author-login");
+        pub.getSpec().setCover("https://cdn.example.test/guide-cover.jpg");
         var author = new User();
         author.setMetadata(new Metadata());
         author.getMetadata().setName("author-login");
@@ -236,11 +237,14 @@ class PublicQueryServiceTest {
         assertThat(view).isNotNull();
         assertThat(view.content()).isEqualTo("<p>已发布正文</p>");
         assertThat(view.author()).isEqualTo("公开署名");
+        assertThat(view.coverUrl()).isEqualTo("https://cdn.example.test/guide-cover.jpg");
         assertThat(service.listPosts(1, 20).block().items())
             .extracting(Dtos.PostSummary::name).containsExactly("guide-1");
         assertThat(service.listPosts(Integer.MAX_VALUE, 50).block().items()).isEmpty();
         assertThat(service.listPosts(1, 20).block().items())
             .extracting(Dtos.PostSummary::author).containsExactly("公开署名");
+        assertThat(service.listPosts(1, 20).block().items())
+            .extracting(Dtos.PostSummary::coverUrl).containsExactly("https://cdn.example.test/guide-cover.jpg");
     }
 
     @Test

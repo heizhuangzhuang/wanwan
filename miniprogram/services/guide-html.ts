@@ -1,3 +1,5 @@
+import { contentImageUrl } from './content-image'
+
 interface TextNode { type: 'text'; text: string }
 interface ElementNode {
   name: string
@@ -86,7 +88,13 @@ export function guideNodes(html: string, title: string): GuideNode[] {
     }
     if (name === 'img' && !tag?.[1]) {
       const alt = /\balt\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(token)
-      if (alt) parent.children.push({ type: 'text', text: decodeEntities(alt[1] ?? alt[2]) })
+      const source = /\bsrc\s*=\s*(?:"([^"]*)"|'([^']*)')/i.exec(token)
+      const src = contentImageUrl(source ? decodeEntities(source[1] ?? source[2]) : '')
+      const caption = alt ? decodeEntities(alt[1] ?? alt[2]) : ''
+      if (src) {
+        parent.children.push({ name: 'img', attrs: { src, alt: caption,
+          style: 'display:block;width:100%;max-width:100%;height:auto;margin:16px 0;border-radius:8px' }, children: [] })
+      } else if (caption) parent.children.push({ type: 'text', text: caption })
       continue
     }
     if (!allowed.has(name)) continue

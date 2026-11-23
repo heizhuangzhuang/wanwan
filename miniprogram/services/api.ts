@@ -65,6 +65,7 @@ export interface LiteratureCitation {
 }
 
 export interface PostSummary {
+  coverUrl?: string | null
   author?: string | null
   name: string
   title: string

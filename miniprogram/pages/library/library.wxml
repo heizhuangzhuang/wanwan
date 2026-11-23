@@ -35,72 +35,71 @@
     <text class="tab-chevron" aria-hidden="true">›</text>
   </navigator>
 
-  <block wx:if="{{guides.length}}">
-    <view class="library-bar">
-      <text class="library-section-title">{{selectedStage ? selectedStageLabel + ' · 原创导读' : '精选原创导读'}}</text>
-      <navigator class="library-more-link" url="{{guidesUrl}}">全部导读 ›</navigator>
-    </view>
-    <scroll-view scroll-x class="guide-carousel-scroll" show-scrollbar="{{false}}">
-      <view class="guide-carousel">
-        <navigator wx:for="{{guides}}" wx:key="name" class="card guide-card {{item.articleKind === 'LITERATURE' ? 'guide-card-literature' : ''}} guide-carousel-item motion-press" hover-class="pressed"
-          url="/pages/reading/reading?kind=guide&name={{item.name}}">
-          <view class="guide-card-head">
-            <text class="badge {{item.articleKind === 'LITERATURE' ? 'badge-literature' : 'badge-sage'}}">{{item.articleKind === 'LITERATURE' ? '文献译读' : '原创导读'}}</text>
-            <text class="muted">分节阅读 ›</text>
-          </view>
-          <view class="resource-card-title clamp-2">{{item.title}}</view>
-          <view wx:if="{{item.excerpt}}" class="resource-card-intro clamp-2">{{item.excerpt}}</view>
-          <view wx:if="{{item.articleKind === 'LITERATURE' && item.citation && item.citation.journal}}" class="lit-meta-line clamp-1">{{item.citation.journal}}{{item.citation.publishedYear ? ' · ' + item.citation.publishedYear : ''}}</view>
-        </navigator>
+  <view class="library-bar feed-heading">
+    <text class="library-section-title">{{selectedStage ? selectedStageLabel + ' · 阅读' : '精选阅读'}}</text>
+    <button class="directory-toggle {{directoryOpen ? 'directory-toggle-open' : ''}}" bindtap="toggleDirectory" aria-expanded="{{directoryOpen}}" aria-controls="reading-directory">阅读目录<text class="directory-caret" aria-hidden="true">{{directoryOpen ? '⌃' : '⌄'}}</text></button>
+  </view>
+  <view wx:if="{{directoryOpen}}" id="reading-directory" class="reading-directory">
+    <navigator class="directory-row" url="{{guidesUrl}}" bindtap="closeDirectory" hover-class="pressed">
+      <view class="icon-tile icon-blue" aria-hidden="true"><image src="/assets/icons/book-open.png" mode="aspectFit" /></view>
+      <view class="directory-copy"><view class="directory-title">{{selectedStage ? '本阶段原创导读' : '原创导读'}}</view><view class="directory-caption">站内长文，按章节阅读</view></view>
+      <text class="tab-chevron" aria-hidden="true">›</text>
+    </navigator>
+    <navigator class="directory-row" url="{{stageUrl}}" bindtap="closeDirectory" hover-class="pressed">
+      <view class="icon-tile icon-sage" aria-hidden="true"><image src="/assets/icons/files.png" mode="aspectFit" /></view>
+      <view class="directory-copy"><view class="directory-title">{{selectedStage ? '本阶段资料卡' : '全部资料卡'}}</view><view class="directory-caption">按类型与标签核对资料出处</view></view>
+      <text class="tab-chevron" aria-hidden="true">›</text>
+    </navigator>
+    <navigator class="directory-row" url="/pages/topics/topics" bindtap="closeDirectory" hover-class="pressed">
+      <view class="icon-tile icon-gold" aria-hidden="true"><image src="/assets/icons/layers.png" mode="aspectFit" /></view>
+      <view class="directory-copy"><view class="directory-title">阅读专题</view><view class="directory-caption">围绕一个问题，连着看相关资料</view></view>
+      <text class="tab-chevron" aria-hidden="true">›</text>
+    </navigator>
+    <block wx:if="{{!selectedStage && topics.length}}">
+      <view class="directory-topics-label">精选专题</view>
+      <navigator wx:for="{{topics}}" wx:key="name" class="directory-topic" url="{{item.url}}" bindtap="closeDirectory" hover-class="pressed"><text>{{item.title}}</text><text aria-hidden="true">›</text></navigator>
+    </block>
+  </view>
+  <view wx:if="{{loading && !feed.length}}" class="feed-loading" aria-live="polite">正在整理阅读内容…</view>
+  <view class="reading-feed">
+    <view wx:for="{{feed}}" wx:key="id" class="feed-item">
+      <view class="feed-byline">
+        <view class="feed-source-icon {{item.kind === 'guide' ? 'feed-source-editor' : ''}}" aria-hidden="true">
+          <image src="{{item.kind === 'guide' ? '/assets/logo.png' : '/assets/icons/files.png'}}" mode="aspectFit" />
+        </view>
+        <view class="feed-source-copy">
+          <view class="feed-source-name">{{item.source}}</view>
+          <view class="feed-meta">{{item.label}}{{item.date ? ' · ' + item.date : ''}}</view>
+        </view>
+        <text wx:if="{{item.literature}}" class="feed-literature-label">文献译读</text>
       </view>
-    </scroll-view>
-  </block>
-  <view wx:elif="{{selectedStage && !loading && !featuredError}}" class="card muted library-empty">
-    「{{selectedStageLabel}}」暂未发布原创导读，可查看下方资料卡或切换其他阶段。
-  </view>
-
-  <view class="library-bar">
-    <text class="library-section-title">{{selectedStage ? selectedStageLabel + ' · 资料卡' : '精选资料卡'}}</text>
-    <navigator class="library-more-link" url="{{stageUrl}}">{{selectedStage ? '查看全部 ›' : '全部资料卡 ›'}}</navigator>
-  </view>
-  <view wx:if="{{loading}}" class="card muted library-empty">正在加载「{{selectedStageLabel}}」内容…</view>
-  <template wx:elif="{{resources.length}}" is="resourceCards" data="{{items: resources}}" />
-  <view wx:elif="{{!featuredError}}" class="card muted library-empty">
-    <view>「{{selectedStageLabel}}」暂未收录资料卡。</view>
-    <view wx:if="{{selectedStage}}" class="library-empty-action" bindtap="resetStage">查看全部阶段资料 ›</view>
-  </view>
-
-  <view wx:if="{{featuredError}}" class="reading-state tab-retry">
-    <text>部分内容暂时无法加载。</text>
-    <button class="btn secondary compact" bindtap="loadFeatured" disabled="{{loading}}">重试</button>
-  </view>
-
-  <block wx:if="{{!selectedStage}}">
-    <view class="section-heading">按形态浏览</view>
-    <view class="tab-list">
-      <navigator class="tab-row" url="/pages/topics/topics?kind=guide" hover-class="pressed">
-        <view class="icon-tile icon-blue" aria-hidden="true"><image src="/assets/icons/book-open.png" mode="aspectFit" /></view>
-        <view class="tab-row-copy"><view class="tab-row-title">原创导读（站内长文）</view><view class="tab-row-caption clamp-1">白话拆解权威文献与流程，点开直接读完</view></view>
-        <text class="tab-chevron" aria-hidden="true">›</text>
-      </navigator>
-      <navigator class="tab-row" url="/pages/stage/stage" hover-class="pressed">
-        <view class="icon-tile icon-sage" aria-hidden="true"><image src="/assets/icons/files.png" mode="aspectFit" /></view>
-        <view class="tab-row-copy"><view class="tab-row-title">全部资料卡（出处索引）</view><view class="tab-row-caption clamp-1">按阶段、材料类型或标签查权威出处</view></view>
-        <text class="tab-chevron" aria-hidden="true">›</text>
-      </navigator>
-      <navigator class="tab-row" url="/pages/topics/topics" hover-class="pressed">
-        <view class="icon-tile icon-gold" aria-hidden="true"><image src="/assets/icons/layers.png" mode="aspectFit" /></view>
-        <view class="tab-row-copy"><view class="tab-row-title">阅读专题（主题合集）</view><view class="tab-row-caption clamp-1">按话题串联的资料合集</view></view>
-        <text class="tab-chevron" aria-hidden="true">›</text>
-      </navigator>
+      <navigator class="feed-title" url="{{item.url}}" hover-class="pressed">{{item.title}}</navigator>
+      <view wx:if="{{item.excerpt}}" class="feed-excerpt {{expanded[item.id] ? '' : 'feed-excerpt-collapsed'}}"><text selectable>{{item.excerpt}}</text></view>
+      <button wx:if="{{item.excerpt.length > 72}}" class="feed-expand" data-id="{{item.id}}" bindtap="toggleExcerpt">{{expanded[item.id] ? '收起摘要' : '展开摘要'}}</button>
+      <view wx:if="{{item.coverUrl && brokenImages[item.id] !== item.coverUrl}}" class="feed-image-wrap" role="button" aria-label="查看文章配图" data-id="{{item.id}}" bindtap="previewCover">
+        <image class="feed-cover" src="{{item.coverUrl}}" mode="aspectFill" lazy-load data-id="{{item.id}}" data-url="{{item.coverUrl}}" binderror="imageError" />
+        <text class="feed-image-label">查看大图</text>
+      </view>
+      <view wx:if="{{item.citation}}" class="feed-citation">文献出处：{{item.citation}}</view>
+      <view class="feed-actions">
+        <navigator class="feed-read" url="{{item.url}}" hover-class="pressed">{{item.action}}<text aria-hidden="true"> ›</text></navigator>
+        <button class="feed-share" open-type="share" data-id="{{item.id}}" aria-label="分享这篇内容"><text>分享给家人</text></button>
+      </view>
     </view>
+  </view>
+  <view wx:if="{{featuredError}}" class="reading-state tab-retry" aria-live="polite">
+    <text>部分内容暂时无法加载，已加载的内容仍可阅读。</text>
+    <button class="btn secondary compact" bindtap="retryFeed" disabled="{{loading}}">重试</button>
+  </view>
+  <view wx:elif="{{!loading && !feed.length}}" class="card library-empty">
+    <view>「{{selectedStageLabel}}」暂未发布文章或资料。</view>
+    <button wx:if="{{selectedStage}}" class="feed-reset" bindtap="resetStage">查看全部阶段资料</button>
+  </view>
+  <view wx:if="{{feed.length && !featuredError}}" class="feed-end" aria-live="polite">
+    <text wx:if="{{loadingMore}}">正在加载更多…</text>
+    <block wx:elif="{{moreError}}"><text>后面的内容暂时无法加载。</text><button class="feed-load-more" bindtap="loadMore">重试加载</button></block>
+    <button wx:elif="{{hasMoreGuides || hasMoreResources}}" class="feed-load-more" bindtap="loadMore" disabled="{{loading}}">继续往下读</button>
+    <text wx:else>本阶段内容已读到底，之后还会继续整理。</text>
+  </view>
 
-    <view wx:if="{{topics.length}}" class="section-heading">精选专题</view>
-    <view wx:if="{{topics.length}}" class="tab-list">
-      <navigator wx:for="{{topics}}" wx:key="name" class="tab-row" url="{{item.url}}" hover-class="pressed">
-        <view class="tab-row-copy"><view class="tab-row-title">{{item.title}}</view><view class="tab-row-caption">{{item.resourceCount}} 条资料</view></view>
-        <text class="tab-chevron" aria-hidden="true">›</text>
-      </navigator>
-    </view>
-  </block>
 </view>

@@ -30,14 +30,15 @@
 针对「Halo 已启动，应用 API 和插件静态文件都返回 404」的恢复包额外包含 `wanwan-plugin-recovery.yaml`，通过 Halo 的 `HALO_INITIAL_EXTENSION_LOCATIONS` 注册并启用该插件。用编译了 Console 的 JAR 生成上传包：
 
 ```bash
-python3 deploy/cloudrun/package-backend.py plugin-wanwan/build/libs/plugin-wanwan-0.1.6.jar ./release \
+python3 deploy/cloudrun/package-backend.py plugin-wanwan/build/libs/plugin-wanwan-0.1.7.jar ./release \
   --compatible-jar ./previous/plugin-wanwan-0.1.2.jar \
   --compatible-jar ./previous/plugin-wanwan-0.1.3.jar \
   --compatible-jar ./previous/plugin-wanwan-0.1.4.jar \
-  --compatible-jar ./previous/plugin-wanwan-0.1.5.jar
+  --compatible-jar ./previous/plugin-wanwan-0.1.5.jar \
+  --compatible-jar ./previous/plugin-wanwan-0.1.6.jar
 ```
 
-已有登记若带 `halo.run/do-not-overwrite` 标记，Halo 会保留它的管理状态，并按登记版本查找 JAR。升级已安装的部署时使用上面的兼容包，保留所需旧版 JAR。若旧插件在 Halo 中被停用，通过 Halo Console 启用。通过 Console 将主插件升级为 0.1.6 以启用功能建议。使用新版本预览流量检查 `/stages` 与 `/resources` 的实际 JSON 响应，再切正式流量。
+已有登记若带 `halo.run/do-not-overwrite` 标记，Halo 会保留它的管理状态，并按登记版本查找 JAR。升级已安装的部署时使用上面的兼容包，保留所需旧版 JAR。若旧插件在 Halo 中被停用，通过 Halo Console 启用。通过 Console 将主插件升级为 0.1.7，以使用功能建议与文章封面字段。使用新版本预览流量检查 `/stages` 与 `/resources` 的实际 JSON 响应，再切正式流量。
 
 已有 MySQL `SPRING_R2DBC_URL` 的版本会沿用该连接和对应的 Spring 凭据。其他版本在当前服务版本的环境变量中填写原库的 `MYSQL_ADDRESS`（内网主机与端口）、`MYSQL_USERNAME`、`MYSQL_PASSWORD` 和 `MYSQL_DATABASE`。沿用原数据库和持久化挂载。新入口脚本以 `[wanwan] Starting with` 标识插件文件和数据源配置方式，随后还需要核对 Halo 实际连接成功及插件启用状态。
 
@@ -55,7 +56,7 @@ Web 服务端发送 `X-Wanwan-Client: web`，微信小程序发送 `X-Wanwan-Cli
 
 Web 的 `/feedback` 表单由 Web 服务端转发，小程序从「我的 → 功能建议」使用云托管请求。两个入口提交到 `POST /apis/api.xiaojiaoya.run/v1alpha1/feedback`，存到 Halo 的 MySQL。已设置公网请求白名单时，允许 Web 服务访问这个 POST 路径，Console 和内部资源仍使用 Halo 权限。
 
-部署时确认 Halo 主插件已在 Console 升级并启用 0.1.6。后台「弯弯导航 → 功能建议」可按状态筛选、分页和处理。单独授权的运营账号需要「功能建议处理」权限。发布验收时用虚构内容分别提交一次，确认后台来源和状态，再检查访客无法查询建议正文。
+部署时确认 Halo 主插件已在 Console 升级并启用 0.1.7。后台「弯弯导航 → 功能建议」可按状态筛选、分页和处理。单独授权的运营账号需要「功能建议处理」权限。发布验收时用虚构内容分别提交一次，确认后台来源和状态，再检查访客无法查询建议正文。
 
 
 ## 小程序新资料订阅
