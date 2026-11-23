@@ -2,13 +2,11 @@ import type { IAppOption } from '../../app'
 import { wanwanApi, type StageView } from '../../services/api'
 import { fixedStages, stageIntro } from '../../services/stages'
 import { selectTab } from '../../services/tabs'
+import { phases, homePhase, saveHomePhase } from '../../services/home-stage'
 
 import { dateKey, durationText, planOn } from '../../services/brace-ledger'
 import { dayWear, readWearLog, saveWearLog, toggleWearSession } from '../../services/brace-wear'
 import { castCommand, castConfig, chinaDateTime } from '../../services/cast-journal'
-
-const PREFERENCE = 'wanwan-home-stage'
-const phases = ['按阶段查找', '刚发现', '产前准备', '石膏治疗', '支具穿戴', '长期随访']
 
 interface QuickTile {
   title: string
@@ -103,14 +101,12 @@ Page({
   },
   choosePhase(e: WechatMiniprogram.PickerChange) {
     const phase = Number(e.detail.value)
-    if (!phases[phase]) return
-    wx.setStorageSync(PREFERENCE, phase)
+    if (!saveHomePhase(phase)) return
     this.refreshToday()
   },
   selectPhase(e: WechatMiniprogram.TouchEvent) {
     const phase = Number(e.currentTarget.dataset.phase)
-    if (!phases[phase]) return
-    wx.setStorageSync(PREFERENCE, phase)
+    if (!saveHomePhase(phase)) return
     this.refreshToday()
   },
   refreshToday() {
@@ -119,12 +115,7 @@ Page({
       const day = dateKey(now)
       const log = readWearLog()
       const plan = planOn(log, day)
-      const stored = wx.getStorageSync(PREFERENCE)
-      const hasManualPreference = typeof stored === 'number' && Boolean(phases[stored])
-      const inferred = log.activeStart !== null ? 4
-        : plan?.type === 'followup' ? 5
-        : plan?.type === 'wear' || log.sessions.length ? 4 : 0
-      const phase = hasManualPreference ? stored : inferred
+      const phase = homePhase(log, now)
       const wear = dayWear(log, day, now)
       this.setData({
         phase,

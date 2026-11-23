@@ -3,13 +3,15 @@
   <view class="stage-intro motion-reveal">
     <view class="stage-intro-head">
       <view class="page-heading">{{heading}}</view>
-      <view wx:if="{{guide}}" class="stage-focus-pill" role="button" bindtap="openStageFocus">本阶段重点 ›</view>
     </view>
-    <view class="description clamp-2">{{intro}}</view>
-    <view wx:if="{{guide && focusSummaryText}}" class="stage-focus-strip" role="button" bindtap="openStageFocus">
-      <text class="stage-focus-strip-label">重点</text>
-      <text class="stage-focus-strip-text clamp-1">{{focusSummaryText}}</text>
-      <text class="stage-focus-strip-more">详解 ›</text>
+    <view class="description">{{intro}}</view>
+    <view wx:if="{{guide}}" class="stage-focus-strip">
+      <view class="stage-focus-strip-label">本阶段重点</view>
+      <view wx:for="{{guide.focus.items}}" wx:key="title" class="stage-focus-summary-item">
+        <text class="stage-focus-summary-number">{{index + 1}}</text>
+        <text>{{item.title}}</text>
+      </view>
+      <button class="stage-focus-pill" bindtap="openStageFocus" aria-label="查看本阶段重点详解">查看重点详解 ›</button>
     </view>
   </view>
 
@@ -21,8 +23,8 @@
           <image src="/assets/icons/{{item.icon}}.png" mode="aspectFit" />
         </view>
         <view class="stage-tool-copy">
-          <view class="stage-tool-title clamp-1">{{item.title}}</view>
-          <view class="stage-tool-sub clamp-1">{{item.sub}}</view>
+          <view class="stage-tool-title">{{item.title}}</view>
+          <view class="stage-tool-sub">{{item.sub}}</view>
         </view>
       </navigator>
     </view>

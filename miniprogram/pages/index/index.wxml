@@ -8,25 +8,16 @@
     <image class="home-logo" src="/assets/logo.png" mode="aspectFit" aria-hidden="true" />
   </view>
 
-  <scroll-view scroll-x class="home-journey-scroll" show-scrollbar="{{false}}">
-    <view class="home-journey">
-      <navigator wx:for="{{stages}}" wx:key="key" class="journey-pill {{phase === index + 1 ? 'journey-pill-active' : (item.key === 'JUST_FOUND' && phase === 0 ? 'journey-pill-start' : '')}}" url="{{item.url}}" hover-class="pressed">
-        <text class="journey-step">{{index + 1}}</text>
-        <text class="journey-label">{{item.label}}</text>
-      </navigator>
-    </view>
-  </scroll-view>
-
   <view class="home-task {{phase ? 'home-task-active' : 'home-task-onboard'}}">
     <view class="home-task-head">
       <text class="home-task-badge">{{phase ? '当前阶段 · ' + phases[phase] : '第一步 · 选当前阶段'}}</text>
-      <picker class="home-phase" range="{{phases}}" value="{{phase}}" bindchange="choosePhase" aria-label="切换当前阶段">
+      <picker wx:if="{{phase}}" class="home-phase" range="{{phases}}" value="{{phase}}" bindchange="choosePhase" aria-label="切换当前阶段">
         <view>{{phase ? '切换 ⌄' : '选择阶段 ⌄'}}</view>
       </picker>
     </view>
 
     <block wx:if="{{phase === 0}}">
-      <view class="tab-row-title">宝宝现在处于哪一步？选好后首页只留最常用的工具</view>
+      <view class="tab-row-title">选一个当前阶段，优先查看相关资料与工具</view>
       <button class="phase-pick-btn phase-pick-start" data-phase="1" bindtap="selectPhase">刚拿到超声提示 · 刚发现</button>
       <view class="home-phase-grid">
         <button class="phase-pick-btn" data-phase="2" bindtap="selectPhase">产前了解与准备</button>
@@ -87,7 +78,7 @@
     </navigator>
   </view>
 
-  <view class="section-heading">按阶段看资料</view>
+  <view class="section-heading">全部阶段资料</view>
   <view class="tab-list home-stages">
     <navigator wx:for="{{stages}}" wx:key="key" class="tab-row home-stage motion-press {{item.key === 'JUST_FOUND' ? 'home-stage-start' : ''}}"
       hover-class="pressed" hover-start-time="0" hover-stay-time="90" url="{{item.url}}">

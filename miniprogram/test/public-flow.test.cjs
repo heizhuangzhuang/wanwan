@@ -1349,7 +1349,7 @@ test('阶段页为五大阶段提供重点工作摘要与二级弹出详解', ()
   const { page, navigations } = openPage('stage', () => ({ data: { page: 1, size: 20, total: 0, items: [] } }))
   page.onLoad({ key: 'PRENATAL', label: '产前了解与等待' })
   assert.equal(page.data.showFocusModal, false)
-  assert.match(page.data.focusSummaryText, /按日期归档报告/)
+  assert.ok(page.data.guide.focus.tags.includes('按日期归档报告'))
 
   page.openStageFocus()
   assert.equal(page.data.showFocusModal, true)
@@ -1361,6 +1361,70 @@ test('阶段页为五大阶段提供重点工作摘要与二级弹出详解', ()
   page.openStageFocus()
   page.closeStageFocus()
   assert.equal(page.data.showFocusModal, false)
+})
+
+test('首页阶段与工具页在每次返回时同步，重排后所有工具仍可访问', () => {
+  const storage = new Map()
+  const { page: tools } = openPage('tools', () => undefined, { storage })
+  const { page: home } = openPage('index', () => undefined, { storage })
+  const expected = ['prenatal', 'prenatal', 'prenatal', 'cast', 'brace', 'brace']
+  for (let phase = 0; phase <= 5; phase++) {
+    home.selectPhase({ currentTarget: { dataset: { phase: String(phase) } } })
+    tools.onShow()
+    assert.equal(home.data.phase, phase)
+    assert.equal(tools.data.phaseLabel, phase ? home.data.phases[phase] : '')
+    assert.equal(tools.data.groups[0].key, expected[phase])
+    const urls = tools.data.groups.flatMap(group => group.items.map(item => item.url))
+    assert.equal(urls.length, 7)
+    assert.equal(new Set(urls).size, 7)
+    if (phase === 5) assert.equal(tools.data.groups[0].items[0].url, '/pages/followup/followup')
+  }
+  home.choosePhase({ detail: { value: '2' } })
+  tools.onShow()
+  assert.equal(tools.data.phaseLabel, '产前准备')
+  home.selectPhase({ currentTarget: { dataset: { phase: '2.5' } } })
+  assert.equal(storage.get('wanwan-home-stage'), 2)
+})
+
+test('阶段推断与手动偏好共用规则，计时中仍尊重已选的产前阶段', () => {
+  const storage = new Map()
+  openPage('tools', () => undefined, { storage })
+  const { homePhase } = require(join(compiled, 'services/home-stage.js'))
+  const { blankWearLog, dateKey } = require(join(compiled, 'services/brace-ledger.js'))
+  const log = blankWearLog()
+  assert.equal(homePhase(log), 0)
+  log.activeStart = Date.now()
+  assert.equal(homePhase(log), 4)
+  storage.set('wanwan-home-stage', 2)
+  assert.equal(homePhase(log), 2)
+  storage.set('wanwan-home-stage', 99)
+  log.activeStart = null
+  log.plans.push({ day: dateKey(Date.now()), type: 'followup', minutes: null })
+  assert.equal(homePhase(log), 5)
+})
+
+test('导读预览保留正常摘要，出处开头和空摘要只显示如实的阅读提示', async () => {
+  const { postPreview } = require(join(compiled, 'services/post-preview.js'))
+  const post = { name: 'paper', title: '足内翻综述译读', articleKind: 'LITERATURE',
+    excerpt: '足内翻综述译读 一、 原始英文综述出处（权威来源信息） 英文原题：Diagnosis and Treatment' }
+  assert.equal(postPreview(post), '查看文献译读、原文出处与阅读说明。')
+  assert.equal(postPreview({ title: '复查准备', excerpt: '复查准备：整理历次超声报告，准备要问医生的问题。' }),
+    '整理历次超声报告，准备要问医生的问题。')
+  assert.equal(postPreview({ title: '导读', excerpt: '' }), '打开导读，查看内容与资料出处。')
+  assert.equal(postPreview({ title: 'DOI 是什么', excerpt: '了解 DOI 与原文检索的关系。' }), '了解 DOI 与原文检索的关系。')
+  const respond = url => ({ data: { items: /\/(?:stage-)?posts$/.test(url.pathname) ? [post] : [], page: 1, size: 5, total: 1 } })
+  const library = openPage('library', respond)
+  await library.page.loadFeatured()
+  assert.equal(library.page.data.guides[0].excerpt, postPreview(post))
+  const stage = openPage('stage', respond)
+  stage.page.onLoad({ key: 'PRENATAL' })
+  await stage.page.fetchArticles()
+  assert.equal(stage.page.data.articles[0].excerpt, postPreview(post))
+  const topics = openPage('topics', respond)
+  topics.page.onLoad({ kind: 'guide' })
+  await topics.page.fetch(1)
+  assert.equal(topics.page.data.items[0].intro, postPreview(post))
+  assert.equal(post.excerpt.includes('英文原题'), true)
 })
 
 test('文献译读展示出处卡、支持复制出处与筛选，分享标题带【文献译读】前缀', async () => {

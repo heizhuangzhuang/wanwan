@@ -1,3 +1,4 @@
+import { postPreview } from '../../services/post-preview'
 import { wanwanApi } from '../../services/api'
 import { fixedStages } from '../../services/stages'
 
@@ -69,7 +70,7 @@ Page({
             return {
               name: post.name,
               title: post.title,
-              intro: post.excerpt ?? '',
+              intro: postPreview(post),
               date: post.publishTime?.slice(0, 10),
               isLiterature,
               evidenceType: isLiterature ? (post.citation?.evidenceType ?? '') : '',

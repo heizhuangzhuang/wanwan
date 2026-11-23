@@ -1,3 +1,4 @@
+import { postPreview } from '../../services/post-preview'
 import { wanwanApi, type PostSummary } from '../../services/api'
 import type { IAppOption } from '../../app'
 import { familyGuide } from '../../services/family-guide'
@@ -46,15 +47,6 @@ const stageToolMap: Record<string, StageToolTile[]> = {
   ],
 }
 
-function cleanExcerpt(title: string, excerpt?: string | null): string {
-  const raw = (excerpt || '').trim()
-  if (!raw) return ''
-  const cleanTitle = title.trim()
-  if (cleanTitle && raw.startsWith(cleanTitle)) {
-    return raw.slice(cleanTitle.length).replace(/^[\s:：—\-·]+/, '').trim()
-  }
-  return raw
-}
 
 Page({
   requestSeq: 0,
@@ -64,7 +56,6 @@ Page({
     activeTab: 'all' as 'all' | 'guides' | 'resources',
     showTagFilter: false,
     showFocusModal: false,
-    focusSummaryText: '',
     stageTools: [] as StageToolTile[],
     guide: null as ReturnType<typeof familyGuide>, prepareUrl: '',
     articles: [] as PostSummary[], articlesUrl: '', moreArticles: false,
@@ -85,7 +76,6 @@ Page({
       demoMode: getApp<IAppOption>().globalData.demoMode,
       guide,
       showFocusModal: false,
-      focusSummaryText: guide ? guide.focus.tags.join(' · ') : '',
       stageTools: stageToolMap[key] ?? [],
       activeTab: guide ? 'all' : 'resources',
       prepareUrl: guide ? '/pages/preparation/preparation?stage=' + encodeURIComponent(key) : '',
@@ -103,7 +93,7 @@ Page({
     try {
       const result = await wanwanApi.listStagePosts(stageKey, 1, 3)
       if (seq !== this.articleSeq) return
-      const articles = result.items.map(post => ({ ...post, excerpt: cleanExcerpt(post.title, post.excerpt) }))
+      const articles = result.items.map(post => ({ ...post, excerpt: postPreview(post) }))
       this.setData({ articles, moreArticles: result.total > result.items.length })
     } catch {
       if (seq !== this.articleSeq) return

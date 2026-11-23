@@ -28,7 +28,7 @@
     <view class="library-prenatal-copy">
       <view class="library-prenatal-head">
         <text class="library-prenatal-title">产前检查专项</text>
-        <text class="library-prenatal-tag">孕期必查</text>
+        <text class="library-prenatal-tag">检查说明</text>
       </view>
       <view class="library-prenatal-desc clamp-1">结构超声 · 羊水穿刺 · CMA · 全外显子测序</view>
     </view>

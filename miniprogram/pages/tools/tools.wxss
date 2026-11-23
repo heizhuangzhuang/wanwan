@@ -1,6 +1,4 @@
-.tools-heading { margin:4rpx 0 24rpx; }
-.tools-brace { background:#e3eddf; border-color:#c5d8c6; border-radius:25rpx 25rpx 0 0; }
-.tools-follow-tab { display:flex; align-items:center; gap:14rpx; border:1rpx solid #c5d8c6; border-top:0; border-radius:0 0 25rpx 25rpx; background:#f0f4e9; color:#28523d; padding:16rpx 24rpx; margin-bottom:14rpx; min-height:54rpx; font-size:26rpx; font-weight:650; }
-.tools-follow-tab image { width:32rpx; height:32rpx; }
-.tools-follow-arrow { margin-left:auto; font-size:35rpx; }
-.tools-cast { background:#f5ead8; border-color:#e4d3ba; }
+.tools-heading { margin: 4rpx 0 12rpx; }
+.tools-context { color: #61695d; font-size: 25rpx; line-height: 1.5; margin-bottom: 20rpx; }
+.tools-section-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 12rpx; }
+.tools-recommended { color: #28523d; background: #e3eddf; padding: 5rpx 12rpx; border-radius: 8rpx; font-size: 22rpx; font-weight: 600; }

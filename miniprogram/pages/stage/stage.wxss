@@ -13,46 +13,36 @@
 }
 .stage-intro .page-heading { color: #244a3b; font-size: 38rpx; }
 .stage-intro .description { margin: 8rpx 0 0; line-height: 1.5; font-size: 26rpx; color: #43574a; }
-.stage-focus-pill {
-  flex: none;
-  font-size: 23rpx;
-  font-weight: 700;
-  color: #fffdf9;
-  background: #2c5a49;
-  padding: 8rpx 18rpx;
-  border-radius: 999rpx;
-}
 .stage-focus-strip {
+  margin-top: 16rpx;
+  padding: 18rpx 20rpx 0;
+  background: #fffdf9;
+  border: 1rpx solid #c8ddd0;
+  border-radius: 16rpx;
+}
+.stage-focus-strip-label { font-size: 24rpx; font-weight: 700; color: #244a3b; margin-bottom: 12rpx; }
+.stage-focus-summary-item { display: flex; gap: 12rpx; margin: 10rpx 0; color: #2e4539; font-size: 25rpx; line-height: 1.5; }
+.stage-focus-summary-number { flex: none; color: #577d65; font-weight: 700; }
+.stage-focus-pill, button.stage-focus-pill:not([size='mini']) {
   display: flex;
   align-items: center;
-  gap: 10rpx;
-  margin-top: 14rpx;
-  padding: 12rpx 16rpx;
-  background: rgba(255, 253, 249, 0.85);
-  border: 1rpx solid #c8ddd0;
-  border-radius: 14rpx;
-}
-.stage-focus-strip-label {
-  flex: none;
-  font-size: 20rpx;
+  justify-content: center;
+  width: 100%;
+  max-width: none;
+  min-height: 44px;
+  box-sizing: border-box;
+  margin: 12rpx 0 0;
+  padding: 10rpx 0;
+  border: 0;
+  border-top: 1rpx solid #e0e8df;
+  border-radius: 0;
+  font-size: 25rpx;
   font-weight: 700;
-  color: #244a3b;
-  background: #d7e9dd;
-  padding: 2rpx 10rpx;
-  border-radius: 8rpx;
-}
-.stage-focus-strip-text {
-  flex: 1;
-  min-width: 0;
-  font-size: 23rpx;
-  color: #2e4539;
-}
-.stage-focus-strip-more {
-  flex: none;
-  font-size: 22rpx;
-  font-weight: 700;
+  line-height: 1.4;
   color: #2c5a49;
+  background: transparent;
 }
+.stage-focus-pill::after { border: 0; }
 .stage-tabs-wrap { margin-bottom: 6rpx; }
 .stage-format-hint {
   text-align: right;
@@ -183,13 +173,13 @@
 }
 .stage-focus-close {
   flex: none;
-  width: 60rpx;
-  height: 60rpx;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   background: #f1ede4;
   color: #3e4c44;
   font-size: 38rpx;
-  line-height: 58rpx;
+  line-height: 44px;
   text-align: center;
 }
 .stage-focus-scroll {
@@ -296,3 +286,7 @@
 }
 .stage-focus-cta { flex: 1.45; }
 .stage-focus-ok { flex: 1; }
+
+.stage-format-hint, .stage-source-foot, .stage-focus-source, .stage-more-inline, .stage-tag-toggle { min-height: 44px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+.stage-format-hint { justify-content: flex-end; }
+.stage-focus-footer .btn { min-height: 44px; }

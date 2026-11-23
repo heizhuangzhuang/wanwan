@@ -1,3 +1,4 @@
+import { postPreview } from '../../services/post-preview'
 import { wanwanApi, type PostSummary, type TopicSummary } from '../../services/api'
 import { openResource, resourceLabel } from '../../services/reading'
 import { fixedStages } from '../../services/stages'
@@ -12,15 +13,6 @@ const stageFilters = [
   { key: 'LONG_TERM', label: '长期随访' },
 ]
 
-function cleanExcerpt(title: string, excerpt?: string | null): string {
-  const raw = (excerpt || '').trim()
-  if (!raw) return ''
-  const cleanTitle = title.trim()
-  if (cleanTitle && raw.startsWith(cleanTitle)) {
-    return raw.slice(cleanTitle.length).replace(/^[\s:：—\-·]+/, '').trim()
-  }
-  return raw
-}
 
 Page({
   requestSeq: 0,
@@ -98,7 +90,7 @@ Page({
       topics: nextTopics,
       resources: resources.status === 'fulfilled' ? resources.value.items.map(resourceLabel) : [],
       guides: guides.status === 'fulfilled'
-        ? guides.value.items.map(post => ({ ...post, excerpt: cleanExcerpt(post.title, post.excerpt) }))
+        ? guides.value.items.map(post => ({ ...post, excerpt: postPreview(post) }))
         : [],
       featuredError: topicsFailed || resources.status === 'rejected' || guides.status === 'rejected',
       loading: false,
