@@ -195,9 +195,15 @@ public final class Dtos {
         }
 
         public static PostSummary of(Post post, String author, boolean literatureTag) {
+            return of(post, author, literatureTag, null);
+        }
+
+        public static PostSummary of(Post post, String author, boolean literatureTag, String fallbackCover) {
             String excerpt = post.getStatus() != null ? post.getStatus().getExcerpt() : null;
             LiteratureCitation citation = LiteratureCitation.fromPost(post);
             boolean literature = literatureTag || LiteratureCitation.hasLiteratureAnnotation(post);
+            String cover = publicCover(post);
+            if (cover == null) cover = safeCoverUrl(fallbackCover);
             return new PostSummary(
                 post.getMetadata().getName(),
                 post.getSpec().getTitle(),
@@ -206,7 +212,7 @@ public final class Dtos {
                 author,
                 literature ? "LITERATURE" : "GUIDE",
                 citation,
-                publicCover(post)
+                cover
             );
         }
     }
@@ -231,6 +237,8 @@ public final class Dtos {
             String excerpt = post.getStatus() != null ? post.getStatus().getExcerpt() : null;
             LiteratureCitation citation = LiteratureCitation.fromPost(post);
             boolean literature = literatureTag || LiteratureCitation.hasLiteratureAnnotation(post);
+            String cover = publicCover(post);
+            if (cover == null) cover = firstContentImage(content);
             return new PostView(
                 post.getMetadata().getName(),
                 post.getSpec().getTitle(),
@@ -240,17 +248,44 @@ public final class Dtos {
                 author,
                 literature ? "LITERATURE" : "GUIDE",
                 citation,
-                publicCover(post)
+                cover
             );
         }
     }
 
-    private static String publicCover(Post post) {
-        String cover = post.getSpec().getCover();
-        if (cover == null || !cover.strip().startsWith("https://") || !EntryResolver.isSafeHttpUrl(cover.strip())) {
+    private static final java.util.regex.Pattern IMG_SRC_PATTERN = java.util.regex.Pattern.compile(
+        "<img\\b[^>]*?\\bsrc\\s*=\\s*(?:\"([^\"]+)\"|'([^']+)')",
+        java.util.regex.Pattern.CASE_INSENSITIVE
+    );
+
+    static String publicCover(Post post) {
+        return post.getSpec() != null ? safeCoverUrl(post.getSpec().getCover()) : null;
+    }
+
+    static String firstContentImage(String html) {
+        if (html == null || html.isBlank()) return null;
+        var matcher = IMG_SRC_PATTERN.matcher(html);
+        while (matcher.find()) {
+            String raw = matcher.group(1) != null ? matcher.group(1) : matcher.group(2);
+            String safe = safeCoverUrl(raw);
+            if (safe != null) return safe;
+        }
+        return null;
+    }
+
+    static String safeCoverUrl(String raw) {
+        if (raw == null) return null;
+        String value = raw.strip();
+        if (value.isEmpty() || value.length() > 2048) return null;
+        if (value.startsWith("/upload/")) {
+            if (value.contains("..") || value.contains("//") || value.matches(".*[\\s<>\"'\\\\].*")) return null;
+            String path = value.split("[?#]", 2)[0].toLowerCase(java.util.Locale.ROOT);
+            return path.matches(".+\\.(?:png|jpe?g|webp|gif|avif)$") ? value : null;
+        }
+        if (!value.startsWith("https://") || !EntryResolver.isSafeHttpUrl(value)) {
             return null;
         }
-        return cover.strip();
+        return value;
     }
 
     public record Page<T>(int page, int size, long total, List<T> items) {

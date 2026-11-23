@@ -41,8 +41,15 @@ export function safeHttpUrl(url: string | null | undefined): string | null {
 
 const EXCLUDED_POST_TAGS = new Set(['main', 'header', 'footer', 'nav', 'aside'])
 
+function resolveUploadImageSrc(src: string | undefined, mediaOrigin?: string): string | undefined {
+  if (!src || !mediaOrigin) return src
+  const trimmed = src.trim()
+  if (!trimmed.startsWith('/upload/') || /(?:^|\/)\.{1,2}(?:\/|$)|\/\//.test(trimmed)) return src
+  return `${mediaOrigin.replace(/\/+$/, '')}${trimmed}`
+}
+
 /** 只渲染原创导读中需要的排版、图片与出处链接。 */
-export function sanitizePostHtml(html: string | null | undefined): string {
+export function sanitizePostHtml(html: string | null | undefined, mediaOrigin?: string): string {
   return sanitizeHtml(html ?? '', {
     allowedTags: [...sanitizeHtml.defaults.allowedTags.filter(tag => !EXCLUDED_POST_TAGS.has(tag)), 'img', 'del', 's'],
     allowedAttributes: {
@@ -57,10 +64,18 @@ export function sanitizePostHtml(html: string | null | undefined): string {
         tagName,
         attribs: { ...attribs, ...(attribs.href ? { rel: 'noopener noreferrer' } : {}) },
       }),
-      img: (tagName, attribs) => ({
-        tagName,
-        attribs: { ...attribs, loading: 'lazy', decoding: 'async' },
-      }),
+      img: (tagName, attribs) => {
+        const resolvedSrc = resolveUploadImageSrc(attribs.src, mediaOrigin)
+        return {
+          tagName,
+          attribs: {
+            ...attribs,
+            ...(resolvedSrc ? { src: resolvedSrc } : {}),
+            loading: 'lazy',
+            decoding: 'async',
+          },
+        }
+      },
     },
     allowedSchemes: ['http', 'https'],
     allowProtocolRelative: false,
@@ -74,12 +89,12 @@ export interface PostTocItem {
   text: string
 }
 
-export function preparePostContent(rawHtml: string | null | undefined): {
+export function preparePostContent(rawHtml: string | null | undefined, mediaOrigin?: string): {
   html: string
   toc: PostTocItem[]
   readingMinutes: number
 } {
-  const clean = sanitizePostHtml(rawHtml)
+  const clean = sanitizePostHtml(rawHtml, mediaOrigin)
   const plainText = clean
     .replace(/<[^>]+>/g, ' ')
     .replace(/&[a-z#0-9]+;/gi, ' ')

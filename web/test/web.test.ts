@@ -571,5 +571,19 @@ describe('web security & SSR', () => {
     assert.match(detailHtml, /查看论文原文/)
     assert.match(detailHtml, /复制文献出处/)
     assert.match(detailHtml, /【文献译读】Ponseti 长期随访研究中文译读/)
+
+    const uploadClient = mockClient()
+    uploadClient.getPost = async () => ({
+      name: 'upload-img',
+      title: '含 Halo 相对图片文章',
+      content: '<p><img src="/upload/image-TukT.png" alt="image-TukT.png"></p>',
+    })
+    const uploadConfig = loadConfig({
+      SITE_ORIGIN: 'https://wanwan.run',
+      BACKEND_API_BASE: 'https://halo.example.test/apis/api.xiaojiaoya.run/v1alpha1',
+    })
+    const uploadRes = await handleRequest('/posts/upload-img', uploadClient, uploadConfig)
+    assert.equal(uploadRes.status, 200)
+    assert.match(String(uploadRes.body), /src="https:\/\/halo\.example\.test\/upload\/image-TukT\.png"/)
   })
 })

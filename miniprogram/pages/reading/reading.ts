@@ -1,4 +1,4 @@
-import { buildGuideOutline, guideNodes, type GuideNode, type GuideSection } from '../../services/guide-html'
+import { buildGuideOutline, guideNodes, guideNodesToHtml, type GuideNode, type GuideSection } from '../../services/guide-html'
 import { HttpError, type LiteratureCitation, wanwanApi } from '../../services/api'
 import { decodeOption, openResource, resourceLabel } from '../../services/reading'
 
@@ -9,6 +9,7 @@ Page({
     citation: null as LiteratureCitation | null,
     citationPubInfo: '',
     body: [] as GuideNode[],
+    bodyHtml: '',
     sections: [] as GuideSection[],
     toc: [] as { id: string; title: string }[],
     highlights: [] as string[],
@@ -39,7 +40,7 @@ Page({
       this.setData({
         loading: true, error: '', retryable: false, title: '', items: [],
         isLiterature: false, citation: null, citationPubInfo: '',
-        body: [], sections: [], toc: [], highlights: [], readMinutes: 0,
+        body: [], bodyHtml: '', sections: [], toc: [], highlights: [], readMinutes: 0,
         openSections: {}, activeSectionId: '', expandAll: false, showToc: false, date: '', author: '',
       })
     }
@@ -87,6 +88,7 @@ Page({
           citation,
           citationPubInfo,
           body: nodes,
+          bodyHtml: guideNodesToHtml(nodes),
           sections: outline.sections,
           toc: outline.toc,
           highlights: outline.highlights,

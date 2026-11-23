@@ -74,11 +74,14 @@
         <text wx:if="{{item.literature}}" class="feed-literature-label">文献译读</text>
       </view>
       <navigator class="feed-title" url="{{item.url}}" hover-class="pressed">{{item.title}}</navigator>
-      <view wx:if="{{item.excerpt}}" class="feed-excerpt {{expanded[item.id] ? '' : 'feed-excerpt-collapsed'}}"><text selectable>{{item.excerpt}}</text></view>
-      <button wx:if="{{item.excerpt.length > 72}}" class="feed-expand" data-id="{{item.id}}" bindtap="toggleExcerpt">{{expanded[item.id] ? '收起摘要' : '展开摘要'}}</button>
-      <view wx:if="{{item.coverUrl && brokenImages[item.id] !== item.coverUrl}}" class="feed-image-wrap" role="button" aria-label="查看文章配图" data-id="{{item.id}}" bindtap="previewCover">
-        <image class="feed-cover" src="{{item.coverUrl}}" mode="aspectFill" lazy-load data-id="{{item.id}}" data-url="{{item.coverUrl}}" binderror="imageError" />
-        <text class="feed-image-label">查看大图</text>
+      <view wx:if="{{item.excerpt || (item.coverUrl && brokenImages[item.id] !== item.coverUrl)}}" class="feed-body-row">
+        <view class="feed-body-copy">
+          <view wx:if="{{item.excerpt}}" class="feed-excerpt {{expanded[item.id] ? '' : 'feed-excerpt-collapsed'}}"><text selectable>{{item.excerpt}}</text></view>
+          <button wx:if="{{item.excerpt.length > 72}}" class="feed-expand" data-id="{{item.id}}" bindtap="toggleExcerpt">{{expanded[item.id] ? '收起摘要' : '展开摘要'}}</button>
+        </view>
+        <view wx:if="{{item.coverUrl && brokenImages[item.id] !== item.coverUrl}}" class="feed-image-wrap" role="button" aria-label="查看文章配图" data-id="{{item.id}}" bindtap="previewCover">
+          <image class="feed-cover" src="{{item.coverUrl}}" mode="aspectFill" lazy-load data-id="{{item.id}}" data-url="{{item.coverUrl}}" binderror="imageError" />
+        </view>
       </view>
       <view wx:if="{{item.citation}}" class="feed-citation">文献出处：{{item.citation}}</view>
       <view class="feed-actions">

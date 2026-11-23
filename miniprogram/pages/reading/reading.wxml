@@ -69,12 +69,12 @@
             <text class="chapter-arrow">{{openSections[item.id] ? '收起 ▴' : '展开 ▾'}}</text>
           </view>
           <view wx:if="{{!item.title || openSections[item.id]}}" class="chapter-body">
-            <rich-text class="guide-article" nodes="{{item.nodes}}" user-select />
+            <mp-html class="guide-article" content="{{item.html}}" preview-img="{{true}}" show-img-menu="{{true}}" scroll-table="{{true}}" selectable="{{true}}" lazy-load="{{true}}" set-title="{{false}}" />
           </view>
         </view>
       </block>
-      <view wx:elif="{{body.length}}" class="card reading-body-card">
-        <rich-text class="guide-article" nodes="{{body}}" user-select />
+      <view wx:elif="{{bodyHtml}}" class="card reading-body-card">
+        <mp-html class="guide-article" content="{{bodyHtml}}" preview-img="{{true}}" show-img-menu="{{true}}" scroll-table="{{true}}" selectable="{{true}}" lazy-load="{{true}}" set-title="{{false}}" />
       </view>
       <view wx:else class="card description">暂无可显示的正文。</view>
     </block>

@@ -28,8 +28,14 @@
         <text wx:if="{{item.date}}" class="muted badge-right">{{item.date}}</text>
       </view>
       <view class="resource-card-title clamp-2">{{item.title}}</view>
-      <view wx:if="{{item.intro}}" class="resource-card-intro clamp-2">{{item.intro}}</view>
-      <view wx:if="{{item.citationLine}}" class="lit-meta-line clamp-1">{{item.citationLine}}</view>
+      <view wx:if="{{item.intro || item.coverUrl}}" class="zhihu-card-body">
+        <view class="zhihu-card-copy">
+          <view wx:if="{{item.intro}}" class="resource-card-intro clamp-3">{{item.intro}}</view>
+          <view wx:if="{{item.citationLine}}" class="lit-meta-line clamp-1">{{item.citationLine}}</view>
+        </view>
+        <image wx:if="{{item.coverUrl}}" class="zhihu-card-thumb" src="{{item.coverUrl}}" mode="aspectFill" lazy-load />
+      </view>
+      <view wx:elif="{{item.citationLine}}" class="lit-meta-line clamp-1">{{item.citationLine}}</view>
     </view>
     <template is="pagination" data="{{page, hasNext, loading}}" />
   </block>

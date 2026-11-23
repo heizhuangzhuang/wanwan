@@ -1,5 +1,6 @@
 import { postPreview } from '../../services/post-preview'
 import { wanwanApi } from '../../services/api'
+import { contentImageUrl } from '../../services/content-image'
 import { fixedStages } from '../../services/stages'
 
 type ReadingLink = {
@@ -11,6 +12,7 @@ type ReadingLink = {
   isLiterature?: boolean
   evidenceType?: string
   citationLine?: string
+  coverUrl?: string
 }
 
 Page({
@@ -75,6 +77,7 @@ Page({
               isLiterature,
               evidenceType: isLiterature ? (post.citation?.evidenceType ?? '') : '',
               citationLine,
+              coverUrl: contentImageUrl(post.coverUrl),
             }
           }),
           page: res.page, hasNext: res.page * res.size < res.total, loading: false,

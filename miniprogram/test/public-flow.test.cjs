@@ -1563,12 +1563,19 @@ test('图片只接受公开 HTTPS 栅格图片，正文图片不保留可执行�
   }
   const url = 'https://cdn.example.test/a.jpg?width=900&quality=80'
   assert.equal(contentImageUrl(url), url)
-  const nodes = guideNodes('<p>说明</p><img src="https://cdn.example.test/a.jpg?width=900&amp;quality=80" alt="流程示意" onerror="evil()" style="position:fixed"><img src="data:image/svg+xml,invalid" alt="原图不可用">', '文章')
+  assert.equal(
+    contentImageUrl('/upload/image-TukT.png', 'https://halo.example.test'),
+    'https://halo.example.test/upload/image-TukT.png',
+  )
+  assert.equal(contentImageUrl('/upload/../secret.png', 'https://halo.example.test'), '')
+  const nodes = guideNodes('<p>说明</p><img src="https://cdn.example.test/a.jpg?width=900&amp;quality=80" alt="流程示意" onerror="evil()" style="position:fixed"><img src="/upload/image-TukT.png" alt="image-TukT.png"><img src="data:image/svg+xml,invalid" alt="原图不可用">', '文章')
   assert.equal(nodes[1].name, 'img')
   assert.equal(nodes[1].attrs.src, url)
   assert.equal(nodes[1].attrs.alt, '流程示意')
+  assert.equal(nodes[2].name, 'img')
+  assert.match(nodes[2].attrs.src, /^https:\/\/.*\/upload\/image-TukT\.png$/)
   assert.doesNotMatch(JSON.stringify(nodes), /evil|onerror|position:fixed|data:image/)
-  assert.equal(nodes[2].text, '原图不可用')
+  assert.equal(nodes[3].text, '原图不可用')
 })
 
 test('图文流支持图片预览、失败回退与逐篇分享，分享不误发整个资料库', async () => {

@@ -351,4 +351,30 @@ class PublicQueryServiceTest {
         assertThat(detail.citation().doi()).isEqualTo("10.2106/JBJS.24.00001");
         assertThat(detail.citation().sourceUrl()).isEqualTo("https://doi.org/10.2106/JBJS.24.00001");
     }
+
+    @Test
+    void postCoverSupportsHaloUploadAndFallsBackToFirstBodyImage() {
+        var client = mock(ReactiveExtensionClient.class);
+        var postContent = mock(PostContentService.class);
+        var service = service(client, postContent, new SearchIndex());
+
+        var withUploadCover = post("p-cover", true, Post.VisibleEnum.PUBLIC, false);
+        withUploadCover.getSpec().setCover("/upload/cover-a.png");
+
+        var noCoverWithBodyImg = post("p-body-img", true, Post.VisibleEnum.PUBLIC, false);
+        when(postContent.getReleaseContent("p-body-img"))
+            .thenReturn(Mono.just(ContentWrapper.builder()
+                .content("<p>前言</p><img src=\"/upload/first-fig.png\" alt=\"图1\"><img src=\"/upload/second.png\">")
+                .build()));
+
+        var textOnly = post("p-text", true, Post.VisibleEnum.PUBLIC, false);
+        when(postContent.getReleaseContent("p-text"))
+            .thenReturn(Mono.just(ContentWrapper.builder().content("<p>纯文字文章</p>").build()));
+
+        when(client.list(eq(Post.class), any(), any())).thenReturn(Flux.just(withUploadCover, noCoverWithBodyImg, textOnly));
+
+        var items = service.listPosts(1, 20).block().items();
+        assertThat(items).extracting(Dtos.PostSummary::coverUrl)
+            .containsExactly("/upload/cover-a.png", "/upload/first-fig.png", null);
+    }
 }

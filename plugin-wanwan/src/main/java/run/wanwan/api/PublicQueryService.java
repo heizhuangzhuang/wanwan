@@ -154,12 +154,26 @@ public class PublicQueryService {
                 .flatMap(all -> Flux.fromIterable(pageSlice(all, p, s))
                     .flatMapSequential(post -> {
                         boolean lit = hasLiteratureTag(post, litTags);
-                        return publicAuthor(post)
-                            .map(author -> Dtos.PostSummary.of(post, author, lit))
-                            .defaultIfEmpty(Dtos.PostSummary.of(post, null, lit));
+                        Mono<String> fallbackCover = Dtos.publicCover(post) != null
+                            ? Mono.just("")
+                            : firstImageFromRelease(post.getMetadata().getName()).defaultIfEmpty("");
+                        return Mono.zip(publicAuthor(post).defaultIfEmpty(""), fallbackCover)
+                            .map(tuple -> Dtos.PostSummary.of(
+                                post,
+                                tuple.getT1().isEmpty() ? null : tuple.getT1(),
+                                lit,
+                                tuple.getT2().isEmpty() ? null : tuple.getT2()));
                     }, 4)
                     .collectList()
                     .map(items -> new Dtos.Page<>(p, s, all.size(), items))));
+    }
+
+    private Mono<String> firstImageFromRelease(String postName) {
+        var release = postContentService.getReleaseContent(postName);
+        if (release == null) return Mono.empty();
+        return release
+            .mapNotNull(content -> Dtos.firstContentImage(content.getContent()))
+            .onErrorResume(err -> Mono.empty());
     }
 
     private Mono<Set<String>> literatureTagNames() {

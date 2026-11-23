@@ -12,6 +12,7 @@ export interface GuideSection {
   id: string
   title: string
   nodes: GuideNode[]
+  html: string
 }
 
 export interface GuideOutline {
@@ -34,9 +35,9 @@ const styles: Record<string, string> = {
   hr: 'border:0;border-top:1px solid #e2dcd2;margin:20px 0',
   pre: 'padding:12px;background:#eef3ec;border-radius:8px;white-space:pre-wrap;word-break:break-all;margin:12px 0',
   code: 'font-family:monospace;background:#eef3ec;padding:1px 4px;border-radius:4px',
-  table: 'width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px;margin:12px 0 16px',
-  th: 'border:1px solid #ccdace;padding:7px 6px;background:#edf3ec;color:#1d3a2f;text-align:left;word-break:break-all',
-  td: 'border:1px solid #ccdace;padding:7px 6px;word-break:break-all',
+  table: 'border-collapse:collapse;font-size:13px;margin:12px 0 16px;min-width:100%',
+  th: 'border:1px solid #ccdace;padding:8px 10px;background:#edf3ec;color:#1d3a2f;text-align:left;min-width:72px;line-height:1.5',
+  td: 'border:1px solid #ccdace;padding:8px 10px;min-width:72px;line-height:1.55',
 }
 const allowed = new Set([...Object.keys(styles), 'h5', 'h6', 'br', 'strong', 'b', 'em', 'i', 's',
   'del', 'sup', 'sub', 'div', 'span', 'thead', 'tbody', 'tfoot', 'tr', 'a'])
@@ -120,9 +121,40 @@ export function guideNodes(html: string, title: string): GuideNode[] {
   return root.children
 }
 
+function escapeAttr(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+function escapeText(value: string): string {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+/** Serialize sanitized GuideNode tree into safe HTML for mp-html (tap-to-zoom images & scrollable tables). */
+export function guideNodesToHtml(nodes: GuideNode[]): string {
+  let out = ''
+  for (const node of nodes) {
+    if ('text' in node) {
+      out += escapeText(node.text)
+      continue
+    }
+    const attrs = node.attrs
+      ? Object.entries(node.attrs)
+        .filter(([, v]) => v !== undefined && v !== null && v !== '')
+        .map(([k, v]) => ` ${k}="${escapeAttr(v)}"`)
+        .join('')
+      : ''
+    if (voids.has(node.name)) {
+      out += `<${node.name}${attrs} />`
+    } else {
+      out += `<${node.name}${attrs}>${guideNodesToHtml(node.children)}</${node.name}>`
+    }
+  }
+  return out
+}
+
 export function buildGuideOutline(nodes: GuideNode[]): GuideOutline {
   const sections: GuideSection[] = []
-  let current: GuideSection = { id: 'sec-0', title: '', nodes: [] }
+  let current: GuideSection = { id: 'sec-0', title: '', nodes: [], html: '' }
   const highlights: string[] = []
   let totalChars = 0
 
@@ -130,14 +162,20 @@ export function buildGuideOutline(nodes: GuideNode[]): GuideOutline {
     const text = ('text' in node ? node.text : nodeText(node.children)).trim()
     totalChars += text.length
     if ('name' in node && node.name === 'h2' && text) {
-      if (current.nodes.length || current.title) sections.push(current)
-      current = { id: `sec-${sections.length + 1}`, title: text, nodes: [] }
+      if (current.nodes.length || current.title) {
+        current.html = guideNodesToHtml(current.nodes)
+        sections.push(current)
+      }
+      current = { id: `sec-${sections.length + 1}`, title: text, nodes: [], html: '' }
       if (highlights.length < 3) highlights.push(text)
     } else {
       current.nodes.push(node)
     }
   }
-  if (current.nodes.length || current.title) sections.push(current)
+  if (current.nodes.length || current.title) {
+    current.html = guideNodesToHtml(current.nodes)
+    sections.push(current)
+  }
 
   if (!highlights.length) {
     for (const node of nodes) {

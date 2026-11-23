@@ -8,6 +8,8 @@ export interface IAppOption {
     cloudService: string
     /** 游客 AppID 本地联调地址，留空时使用演示数据 */
     apiBase: string
+    /** 后端公网 HTTPS 源站，用于补全 Halo /upload/ 相对路径图片 */
+    publicOrigin?: string
     contactEmail: string
     demoMode: boolean
   }
@@ -19,6 +21,7 @@ App<IAppOption>({
     cloudEnv: 'prod-d1gm7gr9e711335be',
     cloudService: 'xiaojiaoya',
     apiBase: 'http://127.0.0.1:18090/apis/api.xiaojiaoya.run/v1alpha1',
+    publicOrigin: 'https://xiaojiaoya-331697-11-1510985006.sh.run.tcloudbase.com',
     contactEmail: '',
     demoMode: false,
   },

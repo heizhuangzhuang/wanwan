@@ -1,1 +1,6 @@
-{"navigationBarTitleText":"阅读资料"}
+{
+  "navigationBarTitleText": "阅读资料",
+  "usingComponents": {
+    "mp-html": "/components/mp-html/index"
+  }
+}

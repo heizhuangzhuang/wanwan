@@ -256,14 +256,28 @@ function renderLiteratureCitationCard(post: PostView): string {
 </section>`
 }
 
-function renderGuideCard(guide: PostSummary, basePath: string, heading: 'h2' | 'h3' = 'h2') {
+function resolveGuideCoverUrl(coverUrl: string | null | undefined, mediaOrigin?: string): string {
+  const raw = (coverUrl || '').trim()
+  if (!raw || raw.length > 2048 || /[\s<>"'\\]/.test(raw)) return ''
+  if (raw.startsWith('/upload/')) {
+    if (!mediaOrigin || /(?:^|\/)\.{1,2}(?:\/|$)|\/\//.test(raw)) return ''
+    return `${mediaOrigin.replace(/\/+$/, '')}${raw}`
+  }
+  return safeHttpUrl(raw) || ''
+}
+
+function renderGuideCard(guide: PostSummary, basePath: string, heading: 'h2' | 'h3' = 'h2', mediaOrigin?: string) {
   const excerpt = cleanExcerpt(guide.title, guide.excerpt)
   const lit = isLiteratureArticle(guide)
   const citationLine = lit ? formatCitationSummary(guide.citation) : ''
+  const thumb = resolveGuideCoverUrl(guide.coverUrl, mediaOrigin)
   const badges = lit
     ? `<div class="meta-row" style="margin-bottom:6px"><span class="badge badge-literature">文献译读</span>${guide.citation?.evidenceType ? `<span class="badge badge-literature-sub">${escapeHtml(guide.citation.evidenceType)}</span>` : ''}</div>`
     : ''
-  return `<article class="card${lit ? ' card-literature' : ''}">${badges}<${heading} class="card-title"><a href="${basePath}/posts/${encodeURIComponent(guide.name)}">${escapeHtml(guide.title)}</a></${heading}>${excerpt ? `<p class="card-intro">${escapeHtml(excerpt)}</p>` : ''}${citationLine ? `<div class="lit-meta-line">${escapeHtml(citationLine)}</div>` : ''}${guide.author ? `<div class="meta-row">${escapeHtml(guide.author)}</div>` : ''}</article>`
+  const bodyBlock = thumb
+    ? `<div class="guide-body-row"><div class="guide-body-copy">${excerpt ? `<p class="card-intro guide-excerpt">${escapeHtml(excerpt)}</p>` : ''}${citationLine ? `<div class="lit-meta-line">${escapeHtml(citationLine)}</div>` : ''}</div><a class="guide-thumb-wrap" href="${basePath}/posts/${encodeURIComponent(guide.name)}" aria-hidden="true" tabindex="-1"><img class="guide-thumb" src="${escapeHtml(thumb)}" alt="" loading="lazy" decoding="async" /></a></div>`
+    : `${excerpt ? `<p class="card-intro">${escapeHtml(excerpt)}</p>` : ''}${citationLine ? `<div class="lit-meta-line">${escapeHtml(citationLine)}</div>` : ''}`
+  return `<article class="card${lit ? ' card-literature' : ''}">${badges}<${heading} class="card-title"><a href="${basePath}/posts/${encodeURIComponent(guide.name)}">${escapeHtml(guide.title)}</a></${heading}>${bodyBlock}${guide.author ? `<div class="meta-row" style="margin-top:8px">${escapeHtml(guide.author)}</div>` : ''}</article>`
 }
 
 async function renderRelated(resource: ResourceView, client: BackendClient, config: WebConfig) {
@@ -354,6 +368,10 @@ export async function handleRequest(
 ): Promise<RouteResponse> {
   const url = new URL(rawUrl, 'http://localhost')
   const basePath = config.siteBasePath
+  let mediaOrigin: string | undefined
+  if (config.backendApiBase) {
+    try { mediaOrigin = new URL(config.backendApiBase).origin } catch { mediaOrigin = undefined }
+  }
   if (url.pathname === '/robots.txt') {
     const sitemapLine = config.siteOrigin ? `\nSitemap: ${config.siteOrigin}${basePath}/sitemap.xml` : ''
     return {
@@ -525,7 +543,7 @@ export async function handleRequest(
       : renderUnavailableResources(basePath)
     const postHtml = posts.status === 'fulfilled' && posts.value.items.length
       ? `<section class="home-section"><header class="section-heading"><h2>本站原创导读</h2><a class="text-link" href="${basePath}/posts">全部导读</a></header><div class="card-list home-grid">${posts.value.items
-          .map(p => renderGuideCard(p, basePath, 'h3'))
+          .map(p => renderGuideCard(p, basePath, 'h3', mediaOrigin))
           .join('')}</div></section>`
       : ''
 
@@ -558,7 +576,7 @@ export async function handleRequest(
       client.listStagePosts(stage.key, 1, 3).catch(() => null),
     ])
     const stageGuides = posts?.items.length
-      ? `<section class="stage-guides"><h2>这一阶段的原创导读</h2><div class="card-list">${posts.items.map(guide => renderGuideCard(guide, basePath, 'h3')).join('')}</div>
+      ? `<section class="stage-guides"><h2>这一阶段的原创导读</h2><div class="card-list">${posts.items.map(guide => renderGuideCard(guide, basePath, 'h3', mediaOrigin)).join('')}</div>
 ${posts.total > posts.items.length ? `<a href="${basePath}/posts?stage=${encodeURIComponent(stage.key)}">查看本阶段全部导读</a>` : ''}</section>`
       : ''
     const stageToolsHtml = renderStageToolsSection(stage.key, basePath, pageActionsHash)
@@ -680,7 +698,7 @@ ${cards}${renderPagination(`${basePath}/resources`, list, query)}`,
     }).join('')
     const filterHtml = `<div class="filter-bar" aria-label="导读类型筛选">${kindTabs}</div>`
     const body = list.items.length
-      ? `<div class="card-list">${list.items.map(guide => renderGuideCard(guide, basePath)).join('')}</div>`
+      ? `<div class="card-list">${list.items.map(guide => renderGuideCard(guide, basePath, 'h2', mediaOrigin)).join('')}</div>`
       : `<div class="warn-bar">${kindFilter === 'LITERATURE' ? '暂无已发布的文献译读文章。' : '暂无已发布的原创导读。'}</div>`
     return htmlResponse(200, renderPage(title, `<h1>${escapeHtml(title)}</h1>${filterHtml}${body}${renderPagination(`${basePath}${path}`, list, query)}`))
   }
@@ -692,7 +710,7 @@ ${cards}${renderPagination(`${basePath}/resources`, list, query)}`,
     if (!post) return notFoundResponse(config)
     const lit = isLiteratureArticle(post)
     const dateLine = post.publishTime ? `<span>发布日期：${escapeHtml(post.publishTime.slice(0, 10))}</span>` : ''
-    const { html: proseHtml, toc, readingMinutes } = preparePostContent(post.content)
+    const { html: proseHtml, toc, readingMinutes } = preparePostContent(post.content, mediaOrigin)
     const tocHtml = toc.length >= 2
       ? `<nav class="post-toc" aria-label="文章目录"><strong>本篇目录</strong><ol>${toc.map(item => `<li class="post-toc--${item.level}"><a href="#${item.id}">${escapeHtml(item.text)}</a></li>`).join('')}</ol></nav>`
       : ''
@@ -756,7 +774,7 @@ ${cards}${renderPagination(`${basePath}/resources`, list, query)}`,
         ? `<h2>公开资料卡</h2><p class="meta-row">共 ${results.total} 条</p><div class="card-list">${results.items.map((item) => renderCard(item, config)).join('')}</div>`
         : ''
       if (guideItems.length) {
-        resultHtml += `<h2>本站原创导读</h2><p class="meta-row">共 ${results.guideTotal ?? guideItems.length} 篇</p><div class="card-list">${guideItems.map(guide => renderGuideCard(guide, basePath, 'h3')).join('')}</div>`
+        resultHtml += `<h2>本站原创导读</h2><p class="meta-row">共 ${results.guideTotal ?? guideItems.length} 篇</p><div class="card-list">${guideItems.map(guide => renderGuideCard(guide, basePath, 'h3', mediaOrigin)).join('')}</div>`
       }
       if (prenatalHtml) {
         resultHtml += prenatalHtml
