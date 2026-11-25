@@ -1,21 +1,27 @@
 {
   "name": "wanwan-web",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json && esbuild client/brace-dashboard.ts --bundle --target=es2022 --platform=browser --outfile=dist/brace-client.js",
-    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.brace.json",
-    "test": "pnpm build && node --experimental-strip-types --test test/*.test.ts",
-    "start": "node dist/server.js"
+    "dev": "nuxt dev",
+    "build": "nuxt build && node scripts/write-server-entry.mjs",
+    "preview": "node dist/server.js",
+    "start": "node dist/server.js",
+    "postinstall": "nuxt prepare",
+    "typecheck": "nuxt typecheck",
+    "test": "node --experimental-strip-types --test test/*.test.ts"
+  },
+  "dependencies": {
+    "nuxt": "^3.16.2",
+    "sanitize-html": "2.18.2",
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "@types/sanitize-html": "2.16.2",
-    "esbuild": "0.28.2",
-    "typescript": "^5.8.0"
-  },
-  "dependencies": {
-    "sanitize-html": "2.18.2"
+    "typescript": "^5.8.0",
+    "vue-tsc": "^2.2.8"
   }
 }

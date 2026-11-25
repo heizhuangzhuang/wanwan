@@ -499,11 +499,19 @@ async function run() {
   render()
   byId<HTMLButtonElement>('timer').disabled = false
   byId<HTMLButtonElement>('add-session').disabled = false
-  setInterval(() => {
+  const timerId = setInterval(() => {
     if (busy) return
     const now = Date.now()
     if (log.activeStart !== null || date.max !== dateKey(now)) renderToday(now)
   }, 15_000)
+  return () => clearInterval(timerId)
 }
 
-void run().catch(() => status('无法读取本浏览器的档案。请使用支持本地存储的浏览器。'))
+export async function mountBraceDashboard(): Promise<() => void> {
+  try {
+    return await run()
+  } catch {
+    status('无法读取本浏览器的档案。请使用支持本地存储的浏览器。')
+    return () => {}
+  }
+}
