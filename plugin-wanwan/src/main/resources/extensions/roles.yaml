@@ -23,6 +23,14 @@ rules:
   - apiGroups: [ "api.xiaojiaoya.run" ]
     resources: [ "cast-journal", "brace-archive", "feedback" ]
     verbs: [ "create" ]
+  # Halo routes these transport endpoints; FamilyEndpoint verifies its own session on each private action.
+  - apiGroups: [ "family.xiaojiaoya.run" ]
+    resources: [ "status" ]
+    verbs: [ "get", "list" ]
+  - apiGroups: [ "family.xiaojiaoya.run" ]
+    resources: [ "login", "pair", "approve", "exchange", "logout", "me", "cast", "brace" ]
+    verbs: [ "create" ]
+
 ---
 apiVersion: v1alpha1
 kind: Role
@@ -75,3 +83,19 @@ rules:
   - apiGroups: [ "console.api.xiaojiaoya.run" ]
     resources: [ "feedback" ]
     verbs: [ "list", "update" ]
+---
+apiVersion: v1alpha1
+kind: Role
+metadata:
+  name: role-template-wanwan-family-accounts
+  labels:
+    halo.run/role-template: "true"
+  annotations:
+    rbac.authorization.halo.run/module: "小脚丫指南"
+    rbac.authorization.halo.run/display-name: "查看家庭账号的登录来源"
+    rbac.authorization.halo.run/ui-permissions: |
+      ["plugin:wanwan:family-accounts"]
+rules:
+  - apiGroups: [ "console.api.xiaojiaoya.run" ]
+    resources: [ "family-users" ]
+    verbs: [ "get", "list" ]

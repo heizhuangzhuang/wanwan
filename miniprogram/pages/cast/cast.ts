@@ -1,4 +1,5 @@
 import { HttpError } from '../../services/api'
+import { familyRequest, familySignIn } from '../../services/family-access'
 import { castCommand, castConfig, chinaDateTime, type CastConfig, type CastEntry, type JournalView } from '../../services/cast-journal'
 
 const LABELS = {
@@ -16,10 +17,13 @@ function blank() {
 
 Page({
   addOnReady: false,
+  revision: null as number | null,
+  editingRevision: null as number | null,
+  account: '',
   data: {
     config: null as CastConfig | null, consented: false, entries: [] as (CastEntry & { visitText: string; upcoming: boolean })[],
     reminder: null as (NonNullable<JournalView['reminder']> & { sendText: string; label: string }) | null,
-    sides: SIDES, today: today(), form: blank(), editing: false, busy: false, error: '', status: '',
+    sides: SIDES, today: today(), form: blank(), editing: false, busy: false, error: '', status: '', family: false, signedIn: false,
   },
   onLoad(query: Record<string, string | undefined>) { this.addOnReady = query.add === '1' },
   onShow() {
@@ -35,12 +39,41 @@ Page({
         throw error
       })
       this.setData({ config })
-      if (config?.enabled) this.showJournal(await castCommand('read'))
+      if (config?.enabled) {
+        this.setData({ family: Boolean(config.familyEnabled) })
+        if (!config.familyEnabled || this.data.signedIn) this.showJournal(await this.requestCast('read'))
+      }
     } catch {
       this.setData({ error: '暂时无法连接石膏记录服务，请稍后重试。' })
     } finally {
       this.setData({ busy: false })
     }
+  },
+  async signIn() {
+    if (this.data.busy) return
+    this.setData({ busy: true, error: '' })
+    try {
+      this.account = (await familySignIn()).account
+      this.showJournal(await this.requestCast('read'))
+      this.setData({ signedIn: true })
+      const pending = wx.getStorageSync('xiaojiaoya-cast-draft:' + this.account) as
+        { form: ReturnType<typeof blank>; revision: number | null } | undefined
+      if (!this.data.consented) wx.removeStorageSync('xiaojiaoya-cast-draft:' + this.account)
+      else if (pending) {
+        this.editingRevision = pending.revision
+        this.setData({ editing: true, form: pending.form, status: '已恢复本机待同步记录，核对后可重试保存。' })
+      }
+    } catch {
+      this.setData({ error: '微信登录暂未完成，请稍后重试。' })
+    } finally { this.setData({ busy: false }) }
+  },
+  async requestCast(action: string, values: Record<string, unknown> = {}) {
+    if (!this.data.family) return castCommand(action, values)
+    const response = await familyRequest<{ journal: JournalView; revision: number | null }>('cast', {
+      command: { ...values, action }, revision: action === 'save' ? this.editingRevision : this.revision,
+    })
+    this.revision = response.revision
+    return response.journal
   },
   showJournal(journal: JournalView) {
     const { reminder } = journal
@@ -57,12 +90,16 @@ Page({
     if (this.data.busy) return false
     this.setData({ busy: true, status: '', error: '' })
     try {
-      this.showJournal(await castCommand(action, values))
+      this.showJournal(await this.requestCast(action, values))
       this.setData({ status: message })
       return true
     } catch (e) {
       const status = e instanceof HttpError ? e.statusCode : 0
-      const error = status === 422 && action === 'schedule' ? '当前只能为未来两分钟至 90 天内的下次治疗设置提醒。'
+      if ([401, 412].includes(status) && this.data.family) {
+        this.setData({ signedIn: false, entries: [], consented: false, reminder: null, form: blank(), editing: false })
+      }
+      const error = status === 409 ? '云端记录已变更。请保留当前填写内容，核对另一端记录后再编辑。'
+        : status === 422 && action === 'schedule' ? '当前只能为未来两分钟至 90 天内的下次治疗设置提醒。'
         : status === 422 && action === 'save' ? '最多可保存 100 条记录，请先清理不再需要的记录。'
         : '操作未完成。请核对日期、授权和网络后重试。'
       this.setData({ status: error })
@@ -76,11 +113,13 @@ Page({
     if (config?.enabled) return this.apply('consent', { consentVersion: config.consentVersion }, '已同意云端保存。')
   },
   add() {
+    this.editingRevision = this.revision
     this.setData({ editing: true, status: '', form: { ...blank(), id: 'cast-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2) } })
   },
   edit(e: WechatMiniprogram.TouchEvent) {
     const entry = this.data.entries.find(item => item.id === e.currentTarget.dataset.id)
     if (!entry) return
+    this.editingRevision = this.revision
     const visit = entry.visitAt ? chinaDateTime(entry.visitAt) : ''
     this.setData({ editing: true, status: '', form: { id: entry.id, castDate: entry.castDate,
       care: entry.care, visitDate: visit.slice(0, 10), visitTime: visit.slice(11),
@@ -94,7 +133,10 @@ Page({
     }
   },
   clearVisit() { this.setData({ form: { ...this.data.form, visitDate: '', visitTime: '' } }) },
-  closeForm() { this.setData({ form: blank(), editing: false }) },
+  closeForm() {
+    if (this.account) wx.removeStorageSync('xiaojiaoya-cast-draft:' + this.account)
+    this.setData({ form: blank(), editing: false })
+  },
   async save() {
     const { id, castDate, care, visitDate, visitTime, sequence, side } = this.data.form
     if (!castDate || Boolean(visitDate) !== Boolean(visitTime)) {
@@ -112,6 +154,15 @@ Page({
     }
     const entry = { id, castDate, care: care.trim(), visitAt: visit?.toISOString() ?? null,
       side: side ? SIDES[side] : null, sequence: sequence ? Number(sequence) : null }
+    if (this.data.family && this.account) {
+      try {
+        wx.setStorageSync('xiaojiaoya-cast-draft:' + this.account,
+          { form: this.data.form, revision: this.editingRevision })
+      } catch {
+        this.setData({ status: '本机未能保存草稿，请保留当前页面后重试。' })
+        return
+      }
+    }
     if (await this.apply('save', { entry }, '记录已保存。修改复诊时间后可重新授权提醒。')) this.closeForm()
   },
   remove(e: WechatMiniprogram.TouchEvent) {

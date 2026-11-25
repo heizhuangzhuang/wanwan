@@ -56,9 +56,15 @@ class CastJournalServiceTest {
             .thenAnswer(call -> Optional.ofNullable(rows.get(call.getArgument(1))));
         org.mockito.Mockito.doAnswer(call -> {
             CastJournal journal = call.getArgument(0);
+            journal.getMetadata().setVersion(1L);
             rows.put(journal.getMetadata().getName(), journal);
             return null;
         }).when(store).create(any(CastJournal.class));
+        org.mockito.Mockito.doAnswer(call -> {
+            CastJournal journal = call.getArgument(0);
+            journal.getMetadata().setVersion(journal.getMetadata().getVersion() + 1);
+            return null;
+        }).when(store).update(any(CastJournal.class));
     }
 
     @Test
@@ -84,6 +90,43 @@ class CastJournalServiceTest {
             .isInstanceOf(ResponseStatusException.class).hasMessageContaining("400");
         assertThat(brace(A, "clear", saved.revision(), null).consented()).isFalse();
         assertThat(brace(A, "read", null, null).archive()).isNull();
+    }
+
+    @Test
+    void sharedTimerUsesLegacyBackupAndFencesLaterSnapshotWrites() {
+        var old = brace(A, "consent", null, null);
+        var legacyArchive = """
+            {"format":"wanwan-brace-ledger","version":1,"log":{"sessions":[],"plans":[],
+            "confirmedZero":[],"visits":[],"activeStart":1000,"questions":["父母的旧记录"]}}
+            """;
+        var saved = brace(A, "save", old.revision(), legacyArchive);
+        var stop = new BraceArchiveService.FamilyCommand("stop", saved.revision(), "operation-one",
+            null, "legacy-1000", 2000L, null, null);
+        var finished = service.familyBrace(USER_A, stop);
+        assertThat(finished.archive()).contains("legacy-1000", "父母的旧记录");
+        assertThat(service.familyBrace(USER_A, stop)).isEqualTo(finished);
+        assertThatThrownBy(() -> brace(A, "save", finished.revision(), legacyArchive))
+            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("409");
+        assertThat(service.familyBrace(USER_B, new BraceArchiveService.FamilyCommand("read", null,
+            null, null, null, null, null, null)).archive()).isNull();
+    }
+
+    @Test
+    void familyCastRejectsStaleUpdatesAndPreservesLegacyEntries() {
+        var original = entry(Instant.now().plusSeconds(20000));
+        consent(A);
+        service.access(new Command(A, "save", null, null, null, original));
+        var viewed = service.family(USER_A, command(null, "read"), null, false);
+        assertThat(viewed.journal().entries()).containsExactly(original);
+        var amended = entry(original.visitAt().plusSeconds(60));
+        var save = new Command(null, "save", null, null, null, amended);
+        var updated = service.family(USER_A, save, viewed.revision(), false);
+        assertThat(updated.journal().entries()).containsExactly(amended);
+        assertThat(service.family(USER_A, save, viewed.revision(), false)).isEqualTo(updated);
+        assertThatThrownBy(() -> service.family(USER_A, new Command(null, "save", null, null, null, original),
+            viewed.revision(), false)).isInstanceOf(ResponseStatusException.class).hasMessageContaining("409");
+        assertThatThrownBy(() -> service.access(command(A, "clear")))
+            .isInstanceOf(ResponseStatusException.class).hasMessageContaining("409");
     }
 
     private BraceArchiveService.State brace(String code, String action, String revision, String archive) {

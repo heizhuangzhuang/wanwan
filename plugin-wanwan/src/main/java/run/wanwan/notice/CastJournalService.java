@@ -30,14 +30,23 @@ public class CastJournalService {
     private final WechatNoticeClient wechat;
     private final CastJournalCipher cipher;
     private final BraceArchiveService braceArchive;
+    private final FamilyAccess familyAccess;
     private final ObjectMapper json = new ObjectMapper();
 
     CastJournalService(ExtensionClient client, CastJournalSettings settings, WechatNoticeClient wechat) {
+        this(client, settings, wechat, null);
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    CastJournalService(ExtensionClient client, CastJournalSettings settings, WechatNoticeClient wechat,
+                       FamilyAccess familyAccess) {
         this.client = client;
+        this.familyAccess = familyAccess;
         this.settings = settings;
         this.wechat = wechat;
         cipher = settings.enabled ? new CastJournalCipher(settings.key, settings.fallbackKeys) : null;
-        braceArchive = new BraceArchiveService(client, settings, wechat, cipher);
+        braceArchive = new BraceArchiveService(client, settings, wechat, cipher,
+            openId -> { if (familyAccess != null) familyAccess.verifyLegacy(openId); });
     }
 
     public BraceArchiveService.State accessBraceArchive(byte[] body) {
@@ -46,7 +55,7 @@ public class CastJournalService {
 
     public Configuration configuration() {
         return new Configuration(settings.enabled, CONSENT_VERSION, settings.enabled ? settings.contact : null,
-            settings.reminder == null ? null : settings.reminder.template());
+            settings.reminder == null ? null : settings.reminder.template(), familyAccess != null && familyAccess.enabled);
     }
 
     public View access(Command command) {
@@ -61,10 +70,11 @@ public class CastJournalService {
         } catch (WechatNoticeClient.Unavailable e) {
             throw status(HttpStatus.BAD_GATEWAY);
         }
-        String owner = cipher.name(settings.appId, openId);
+        if (familyAccess != null) familyAccess.verifyLegacy(openId);
+        String owner = owner(openId);
         for (int attempt = 0; attempt < 3; attempt++) {
             try {
-                return apply(owner, openId, command);
+                return apply(owner, openId, command, false, null).journal();
             } catch (OptimisticLockingFailureException e) {
                 // Read the latest version before applying the same record operation.
             }
@@ -72,15 +82,43 @@ public class CastJournalService {
         throw status(HttpStatus.CONFLICT);
     }
 
-    private View apply(String owner, String openId, Command request) {
+    private String owner(String openId) {
+        return CastJournalCipher.existingName(client, settings, cipher, settings.appId, openId);
+    }
+
+    FamilyView family(String openId, Command command, Long revision, boolean mini) {
+        if (!settings.enabled || command.action() == null) throw status(HttpStatus.BAD_REQUEST);
+        if (!mini && "schedule".equals(command.action())) throw status(HttpStatus.FORBIDDEN);
+        try {
+            return apply(owner(openId), openId, command, true, revision);
+        } catch (OptimisticLockingFailureException e) {
+            throw status(HttpStatus.CONFLICT);
+        }
+    }
+
+    BraceArchiveService.State familyBrace(String openId, BraceArchiveService.FamilyCommand command) {
+        return braceArchive.family(openId, command);
+    }
+
+    private FamilyView apply(String owner, String openId, Command request, boolean family, Long expected) {
         var stored = client.fetch(CastJournal.class, owner).orElse(null);
         if (stored != null && ExtensionOperator.isDeleted(stored)) throw status(HttpStatus.CONFLICT);
-        if ("clear".equals(request.action())) {
-            if (stored != null) persist(stored, Journal.empty());
-            return view(Journal.empty());
-        }
         var current = stored == null ? Journal.empty() : read(stored);
-        if ("read".equals(request.action())) return view(current);
+        Long revision = stored == null ? null : stored.getMetadata().getVersion();
+        if ("read".equals(request.action())) return new FamilyView(view(current), revision);
+        if (!family && stored != null && stored.isFamilyManaged()) throw status(HttpStatus.CONFLICT);
+        if (family && !Objects.equals(revision, expected)) {
+            if (CONSENT_VERSION.equals(current.consentVersion()) && "save".equals(request.action())
+                && current.entries().contains(validated(request.entry()))) return new FamilyView(view(current), revision);
+            throw status(HttpStatus.CONFLICT);
+        }
+        if ("clear".equals(request.action())) {
+            if (stored != null) {
+                if (family) stored.setFamilyManaged(true);
+                persist(stored, Journal.empty());
+            }
+            return family ? currentView(owner) : new FamilyView(view(Journal.empty()), null);
+        }
         if (!CONSENT_VERSION.equals(current.consentVersion()) && !"consent".equals(request.action())) {
             throw status(HttpStatus.FORBIDDEN);
         }
@@ -117,6 +155,7 @@ public class CastJournalService {
             var metadata = new Metadata();
             metadata.setName(owner);
             journal.setMetadata(metadata);
+            journal.setFamilyManaged(family);
             pack(journal, changed);
             try {
                 client.create(journal);
@@ -125,9 +164,16 @@ public class CastJournalService {
                 throw new OptimisticLockingFailureException("Cast journal was concurrently created");
             }
         } else {
+            if (family) stored.setFamilyManaged(true);
             persist(stored, changed);
         }
-        return view(changed);
+        return family ? currentView(owner) : new FamilyView(view(changed), null);
+    }
+
+    private FamilyView currentView(String owner) {
+        return client.fetch(CastJournal.class, owner)
+            .map(stored -> new FamilyView(view(read(stored)), stored.getMetadata().getVersion()))
+            .orElseGet(() -> new FamilyView(view(Journal.empty()), null));
     }
 
     private Reminder schedule(List<Entry> entries, Command request, String openId, Reminder existing) {
@@ -239,7 +285,8 @@ public class CastJournalService {
         return new ResponseStatusException(status);
     }
 
-    public record Configuration(boolean enabled, String consentVersion, String contact, String templateId) {}
+    public record Configuration(boolean enabled, String consentVersion, String contact, String templateId,
+                                boolean familyEnabled) {}
     public record Command(String code, String action, String consentVersion, String entryId,
                           String templateId, Entry entry) {
         @Override
@@ -253,6 +300,7 @@ public class CastJournalService {
             this(id, castDate, care, visitAt, null, null);
         }
     }
+    record FamilyView(View journal, Long revision) {}
     public record View(boolean consented, List<Entry> entries, ReminderView reminder) {}
     public record ReminderView(String entryId, @JsonFormat(shape = JsonFormat.Shape.STRING) Instant visitAt,
                                @JsonFormat(shape = JsonFormat.Shape.STRING) Instant sendAt, String state) {}

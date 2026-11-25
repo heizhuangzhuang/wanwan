@@ -13,7 +13,7 @@ const groups = [
     { title: '石膏记录与复诊提醒', caption: '记下石膏日期、医院交代和下次复诊', icon: 'calendar-clock', tone: 'gold', url: '/pages/cast/cast' },
   ] },
   { key: 'brace', title: '支具与随访', items: [
-    { title: '矫正鞋穿戴记录', caption: '穿上开始计时，脱下保存，查看每日累计', icon: 'footprints', tone: 'sage', url: '/pages/brace-wear/brace-wear' },
+    { title: '矫正鞋云端计时', caption: '用微信登录，电脑和手机连续计时', icon: 'footprints', tone: 'sage', url: '/pages/family/family' },
     { title: '穿戴趋势与复诊', caption: '查看每日记录、历史计划与复诊安排', icon: 'calendar-days', tone: 'blue', url: '/pages/brace-dashboard/brace-dashboard' },
     { title: '生成复诊摘要', caption: '整理穿戴记录与观察，方便和医生沟通', icon: 'clipboard-list', tone: 'sage', url: '/pages/followup/followup' },
   ] },

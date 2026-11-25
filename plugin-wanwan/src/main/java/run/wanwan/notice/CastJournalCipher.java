@@ -50,6 +50,17 @@ final class CastJournalCipher {
         return "cast-" + HexFormat.of().formatHex(mac(ownership, appId + ":" + openId));
     }
 
+    static String existingName(run.halo.app.extension.ExtensionClient client, CastJournalSettings settings,
+                               CastJournalCipher current, String scope, String openId) {
+        var currentName = current.name(scope, openId);
+        var names = new java.util.LinkedHashSet<String>();
+        names.add(currentName);
+        for (byte[] key : settings.fallbackKeys) names.add(new CastJournalCipher(key).name(scope, openId));
+        var found = names.stream().filter(name -> client.fetch(CastJournal.class, name).isPresent()).toList();
+        if (found.size() > 1) throw FamilyTimer.conflict();
+        return found.isEmpty() ? currentName : found.getFirst();
+    }
+
     String encrypt(String owner, byte[] content) {
         byte[] nonce = new byte[NONCE_BYTES];
         RANDOM.nextBytes(nonce);

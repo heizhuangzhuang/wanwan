@@ -1,0 +1,7 @@
+.family .card { margin-bottom: 24rpx; }
+.family .btn, .family .title, .family .text-link { margin-top: 18rpx; }
+.family input { padding: 20rpx; margin-top: 18rpx; border: 2rpx solid #c3cec2; border-radius: 18rpx; }
+.family-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 18rpx; margin: 18rpx 0; }
+.family-dates picker { background: #edf2ec; padding: 18rpx; border-radius: 14rpx; }
+.family-row { display: flex; align-items: center; flex-wrap: wrap; gap: 10rpx; padding: 18rpx 0; }
+.family-row button { margin: 0; }

@@ -28,6 +28,7 @@ export default defineNuxtConfig({
   css: ['~/assets/site.css'],
 
   runtimeConfig: {
+    familyLocalHttp: process.env.XIAOJIAOYA_FAMILY_LOCAL_HTTP || '0',
     backendApiBase: (process.env.BACKEND_API_BASE ?? 'http://127.0.0.1:8090/apis/api.xiaojiaoya.run/v1alpha1').replace(/\/+$/, ''),
     public: {
       siteTitle: process.env.SITE_TITLE || '小脚丫步步指南',

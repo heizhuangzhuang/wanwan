@@ -1,0 +1,58 @@
+<view class="container family">
+  <view class="card">
+    <view class="page-heading">{{mode === 'pair' ? '确认网页登录' : '矫正鞋云端计时'}}</view>
+    <view class="description">{{mode === 'pair' ? '请核对网页上的登录码。确认后，电脑可以打开你的家庭记录。' : '在小程序开始计时，换到电脑也能继续。'}}</view>
+  </view>
+
+  <view wx:if="{{message}}" class="card" aria-live="polite">{{message}}</view>
+
+  <view wx:if="{{mode === 'pair' && !approved}}" class="card">
+    <input aria-label="网页登录码" value="{{code}}" bindinput="changeCode" maxlength="12" placeholder="输入网页显示的 12 位登录码" />
+    <button class="btn" bindtap="approve" disabled="{{busy}}">确认这次网页登录</button>
+  </view>
+  <view wx:elif="{{mode === 'brace' && !account}}" class="card">
+    <button class="btn" bindtap="signIn" disabled="{{busy}}">用微信登录</button>
+  </view>
+  <view wx:elif="{{mode === 'brace'}}" class="card">
+    <button class="btn secondary" bindtap="refresh" disabled="{{busy}}">刷新记录</button>
+    <block wx:if="{{!consented}}">
+      <view class="description">请监护人确认后开启云端保存。可在本页撤回授权和清除记录。</view>
+      <button class="btn" bindtap="consent" disabled="{{busy}}">同意云端保存</button>
+    </block>
+    <block wx:else>
+      <view class="title">今日累计 {{minutes}} 分钟</view>
+      <view wx:if="{{active}}" class="description">{{started}} 开始（北京时间）</view>
+      <view wx:if="{{pending}}" class="description">{{pending}} 项操作仅保存在本机，等待同步。</view>
+      <button class="btn" bindtap="toggle" disabled="{{busy}}">{{active ? '结束并保存' : '开始计时'}}</button>
+      <button wx:if="{{pending}}" class="btn secondary" bindtap="discard" disabled="{{busy}}">放弃待同步计时</button>
+      <view class="title">{{editing ? '修改佩戴时段' : '补记佩戴时段'}}</view>
+      <view class="family-dates">
+        <picker mode="date" value="{{startDay}}" data-field="startDay" bindchange="changeTime">{{startDay || '开始日期'}}</picker>
+        <picker mode="time" value="{{startTime}}" data-field="startTime" bindchange="changeTime">{{startTime || '开始时间'}}</picker>
+        <picker mode="date" value="{{endDay}}" data-field="endDay" bindchange="changeTime">{{endDay || '结束日期'}}</picker>
+        <picker mode="time" value="{{endTime}}" data-field="endTime" bindchange="changeTime">{{endTime || '结束时间'}}</picker>
+      </view>
+      <button class="btn secondary" bindtap="saveTime" disabled="{{busy || pending}}">保存时段</button>
+      <view class="title">最近佩戴时段</view>
+      <view class="family-row" wx:for="{{rows}}" wx:key="id">
+        <text>{{item.label}}</text>
+        <button size="mini" data-id="{{item.id}}" bindtap="edit" disabled="{{busy || pending}}">修改</button>
+        <button size="mini" data-id="{{item.id}}" bindtap="remove" disabled="{{busy || pending}}">删除</button>
+      </view>
+      <button class="btn secondary" bindtap="previewLocal" disabled="{{busy || pending}}">预览本机旧记录</button>
+      <view wx:if="{{preview}}">
+        <view class="description">{{preview}}</view>
+        <button class="btn" bindtap="importLocal" disabled="{{busy || pending}}">确认导入我的档案</button>
+      </view>
+      <button class="btn secondary" bindtap="clear" disabled="{{busy || pending}}">撤回授权并清除云档</button>
+    </block>
+    <button class="btn secondary" bindtap="logout" disabled="{{busy}}">退出这台设备</button>
+  </view>
+
+  <view class="card">
+    <navigator wx:if="{{mode === 'brace'}}" class="text-link" url="/pages/family/family?mode=pair">确认网页登录 ›</navigator>
+    <navigator wx:if="{{mode === 'brace'}}" class="text-link" url="/pages/brace-wear/brace-wear">打开本机旧记录与备份 ›</navigator>
+    <navigator wx:if="{{mode === 'brace'}}" class="text-link" url="/pages/cast/cast">打开石膏记录 ›</navigator>
+    <navigator wx:if="{{mode === 'pair'}}" class="text-link" url="/pages/family/family">打开矫正鞋云端计时 ›</navigator>
+  </view>
+</view>

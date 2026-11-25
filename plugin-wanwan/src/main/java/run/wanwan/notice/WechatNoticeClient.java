@@ -62,6 +62,26 @@ class WechatNoticeClient {
         throw new Unavailable();
     }
 
+    String familyQr(String appId, String secret, String environment, String code) {
+        if (!java.util.Set.of("release", "trial", "develop").contains(environment)) throw new Unavailable();
+        var config = new NoticeSettings.Config(appId, secret, "", "", "", environment, Instant.EPOCH);
+        try {
+            var response = http.post().uri("/wxa/getwxacodeunlimit?access_token={token}", accessToken(config))
+                .body(Map.of("scene", code, "page", "pages/family/family", "width", 280,
+                    "env_version", environment, "check_path", environment.equals("release")))
+                .retrieve().toEntity(byte[].class);
+            var type = response.getHeaders().getContentType();
+            byte[] image = response.getBody();
+            if (type == null || image == null || image.length == 0 || image.length > 262144
+                || !("image/jpeg".equals(type.toString()) || "image/png".equals(type.toString()))) {
+                throw new Unavailable();
+            }
+            return "data:" + type + ";base64," + java.util.Base64.getEncoder().encodeToString(image);
+        } catch (RestClientException e) {
+            throw new Unavailable();
+        }
+    }
+
     synchronized String accessToken(NoticeSettings.Config config) {
         return fetchAccessToken(config, false);
     }

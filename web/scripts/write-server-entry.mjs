@@ -40,6 +40,10 @@ if (process.env.CAST_MINIPROGRAM_URL && !process.env.NUXT_PUBLIC_CAST_MINIPROGRA
   process.env.NUXT_PUBLIC_CAST_MINIPROGRAM_URL = process.env.CAST_MINIPROGRAM_URL
 }
 
+if (process.env.XIAOJIAOYA_FAMILY_LOCAL_HTTP && !process.env.NUXT_FAMILY_LOCAL_HTTP) {
+  process.env.NUXT_FAMILY_LOCAL_HTTP = process.env.XIAOJIAOYA_FAMILY_LOCAL_HTTP
+}
+
 await import('../.output/server/index.mjs')
 `,
   'utf8',

@@ -102,6 +102,12 @@ useHead({ title: `家庭工具 - ${config.public.siteTitle}` })
         </div>
       </article>
 
+      <article class="card">
+        <h2 class="card-title">我的家庭记录</h2>
+        <p>用微信登录，跨设备查看石膏记录和矫正鞋计时。</p>
+        <NuxtLink class="btn" to="/tools/family">打开家庭记录</NuxtLink>
+      </article>
+
       <article id="cast" class="card">
         <h2 class="card-title">石膏记录与微信提醒</h2>
         <p>在微信小程序记录每次打石膏的日期、医院交代事项和下次治疗时间。同一微信账户可换机恢复。</p>

@@ -15,4 +15,5 @@ public class CastJournal extends AbstractExtension {
     @ToString.Exclude
     private String encryptedPayload;
     private Instant pendingDispatchAt;
+    private boolean familyManaged;
 }

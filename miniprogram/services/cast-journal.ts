@@ -24,6 +24,7 @@ export interface JournalView {
 
 export interface CastConfig {
   enabled: boolean
+  familyEnabled?: boolean
   consentVersion: string
   contact: string | null
   templateId: string | null

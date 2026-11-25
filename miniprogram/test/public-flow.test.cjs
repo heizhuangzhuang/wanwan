@@ -1635,3 +1635,35 @@ test('自动触底不会在错误状态反复请求，点击重试仍可加载�
   assert.equal(requests.length, 1)
   assert.equal(page.data.moreError, false)
 })
+
+test('云端计时先由家长点击登录，网络故障时保留原计时编号和时间', async () => {
+  const storage = new Map()
+  let offline = false
+  const calls = []
+  const { page } = openPage('family', (url, request) => {
+    const action = url.pathname.split('/').pop()
+    calls.push({ action, body: request.data })
+    if (action === 'login') return { data: { account: 'family-a', token: 'fake-token', channel: 'mini' } }
+    if (offline) return undefined
+    return { data: { revision: 'v1', consented: true, consentVersion: 'brace-v1', archive: null } }
+  }, { storage, useCloudContainer: true, cloudEnv: 'fixture-env', cloudService: 'fixture-service' })
+  wx.login = ({ success }) => success({ code: 'fixture-code' })
+  wx.removeStorageSync = key => storage.delete(key)
+  page.onLoad({})
+  page.onShow()
+  assert.deepEqual(calls, [])
+  await page.signIn()
+  assert.deepEqual(calls.map(call => call.action), ['login', 'brace'])
+  offline = true
+  await page.toggle()
+  assert.equal(page.data.active, true)
+  assert.equal(page.data.pending, 1)
+  const stored = storage.get('xiaojiaoya-timer-queue:family-a')
+  assert.equal(stored.commands.length, 1)
+  assert.equal(stored.commands[0].operationId, calls.at(-1).body.operationId)
+  offline = false
+  await page.refresh()
+  assert.equal(page.data.pending, 0)
+  assert.deepEqual(calls.at(-1).body, { ...stored.commands[0], revision: 'v1' })
+  assert.equal(storage.has('xiaojiaoya-timer-queue:family-a'), false)
+})

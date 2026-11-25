@@ -77,6 +77,19 @@ describe('Nuxt 3 SSR server end-to-end', () => {
     mockApiServer = createServer((req, res) => {
       const url = new URL(req.url || '/', 'http://127.0.0.1')
       res.setHeader('Content-Type', 'application/json; charset=utf-8')
+      if (url.pathname.includes('/family.xiaojiaoya.run/')) {
+        if (url.pathname.endsWith('/pair')) {
+          res.end(JSON.stringify({ code: 'A1B2C3D4E5F6', expiresAt: new Date(Date.now() + 180000).toISOString(), image: null }))
+        } else if (url.pathname.endsWith('/exchange')) {
+          res.end(JSON.stringify({ token: 'private-web-token', account: 'family-a', channel: 'web', expiresAt: '2026-12-01' }))
+        } else if (req.headers['x-xiaojiaoya-session'] === 'private-web-token') {
+          res.end(JSON.stringify({ account: 'family-a', channel: 'web' }))
+        } else {
+          res.statusCode = 401
+          res.end(JSON.stringify({ status: 401 }))
+        }
+        return
+      }
       if (url.pathname.endsWith('/stages')) {
         res.end(JSON.stringify([
           { key: 'JUST_FOUND', label: '刚发现', order: 0 },
@@ -142,6 +155,7 @@ describe('Nuxt 3 SSR server end-to-end', () => {
         PORT: String(nuxtPort),
         SITE_BASE_PATH: '/xiaojiaoya',
         SITE_ORIGIN: 'https://example.com',
+        XIAOJIAOYA_FAMILY_LOCAL_HTTP: '1',
         BACKEND_API_BASE: `http://127.0.0.1:${mockApiPort}/apis/api.xiaojiaoya.run/v1alpha1`,
       },
       stdio: 'pipe',
@@ -210,4 +224,32 @@ describe('Nuxt 3 SSR server end-to-end', () => {
     assert.equal(brace.status, 200)
     assert.ok((await brace.text()).includes('矫正鞋穿戴记录'))
   })
+
+  test('family sign-in uses a browser-bound HttpOnly cookie and rejects other origins', async () => {
+    const origin = `http://127.0.0.1:${nuxtPort}`
+    const root = origin + '/xiaojiaoya'
+    const form = await fetch(root + '/tools/family')
+    assert.equal(form.status, 200)
+    assert.match(await form.text(), /用微信登录/)
+    const request = (action: string, sender = origin, cookie = '') => fetch(root + '/api/family/' + action, {
+      method: 'POST', headers: { origin: sender, cookie, 'Content-Type': 'application/json' }, body: '{}',
+    })
+    assert.equal((await request('pair', 'http://other.example')).status, 403)
+    assert.equal((await request('me')).status, 401)
+    assert.equal((await request('exchange')).status, 401)
+    const response = await request('pair')
+    assert.equal(response.status, 200)
+    assert.equal(response.headers.get('cache-control'), 'no-store')
+    const pairing = response.headers.get('set-cookie')!
+    assert.match(pairing, /HttpOnly/i)
+    assert.match(pairing, /SameSite=Strict/i)
+    const authorized = await request('exchange', origin, pairing.split(';')[0])
+    assert.equal(authorized.status, 200)
+    assert.doesNotMatch(await authorized.text(), /private-web-token/)
+    const session = authorized.headers.getSetCookie().find(value => value.startsWith('xiaojiaoya_family='))!
+    assert.match(session, /HttpOnly/i)
+    const me = await request('me', origin, session.split(';')[0])
+    assert.deepEqual(await me.json(), { account: 'family-a', channel: 'web' })
+  })
+
 })

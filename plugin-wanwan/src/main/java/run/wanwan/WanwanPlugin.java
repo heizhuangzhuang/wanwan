@@ -16,6 +16,7 @@ import run.wanwan.model.ResourceCard;
 import run.wanwan.model.Topic;
 import run.wanwan.model.Visibility;
 import run.wanwan.notice.CastJournal;
+import run.wanwan.notice.FamilyAccessRecord;
 import run.wanwan.notice.NoticePublication;
 import run.wanwan.notice.NoticeService;
 import run.wanwan.notice.NoticeSubscription;
@@ -55,6 +56,7 @@ public class WanwanPlugin extends BasePlugin {
         });
         schemeManager.register(NoticePublication.class);
         schemeManager.register(CastJournal.class);
+        schemeManager.register(FamilyAccessRecord.class);
         schemeManager.register(MiniProgramCheck.class);
         schemeManager.register(Feedback.class, specs ->
             specs.add(IndexSpecs.<Feedback, String>single(FeedbackService.STATUS_INDEX, String.class)
@@ -77,6 +79,7 @@ public class WanwanPlugin extends BasePlugin {
         unregister(Topic.class);
         unregister(NoticePublication.class);
         unregister(CastJournal.class);
+        unregister(FamilyAccessRecord.class);
         unregister(NoticeSubscription.class);
         unregister(MiniProgramCheck.class);
         unregister(Feedback.class);

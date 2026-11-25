@@ -61,6 +61,7 @@ declare const wx: {
   saveImageToPhotosAlbum?(options: { filePath: string; success?: () => void;
     fail?: (err: MiniProgramFailure) => void }): void
   getStorageSync(key: string): unknown
+  removeStorageSync(key: string): void
   setStorageSync(key: string, value: unknown): void
   stopPullDownRefresh(): void
   getAccountInfoSync(): { miniProgram: { appId: string; envVersion: string } }

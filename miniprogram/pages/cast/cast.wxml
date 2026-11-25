@@ -16,6 +16,10 @@
     <view class="description">公用沟通清单仍可使用。</view>
 
   </view>
+  <view wx:elif="{{family && !signedIn}}" class="card">
+    <view class="description">用微信登录后，手机和电脑可以查看同一份石膏记录。</view>
+    <button class="btn" bindtap="signIn" loading="{{busy}}" disabled="{{busy}}">用微信登录</button>
+  </view>
   <view wx:elif="{{!consented && !busy}}" class="card">
     <view class="title">由本人或孩子的监护人授权</view>
     <view class="description">日期、医院交代事项及下次治疗时间会加密保存在云端。同一微信账户换机可恢复；只填写必要信息。</view>
