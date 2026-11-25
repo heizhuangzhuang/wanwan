@@ -104,4 +104,6 @@ declare const wx: {
     success: (result: { tempFiles: { path: string; size: number }[] }) => void; fail?: () => void }): void
   showModal(options: { title: string; content: string; showCancel?: boolean; confirmText?: string;
     success?: (result: { confirm: boolean }) => void; fail?: () => void }): void
+  showActionSheet(options: { alertText?: string; itemList: string[]; itemColor?: string;
+    success?: (result: { tapIndex: number }) => void; fail?: (err: MiniProgramFailure) => void }): void
 }

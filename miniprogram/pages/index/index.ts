@@ -99,6 +99,16 @@ Page({
     selectTab(this, 'pages/index/index')
     this.refreshToday()
   },
+  openPhaseSheet() {
+    wx.showActionSheet({
+      alertText: '切换当前阶段',
+      itemList: phases,
+      success: ({ tapIndex }) => {
+        if (!saveHomePhase(tapIndex)) return
+        this.refreshToday()
+      },
+    })
+  },
   choosePhase(e: WechatMiniprogram.PickerChange) {
     const phase = Number(e.detail.value)
     if (!saveHomePhase(phase)) return

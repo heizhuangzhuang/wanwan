@@ -11,9 +11,9 @@
   <view class="home-task {{phase ? 'home-task-active' : 'home-task-onboard'}}">
     <view class="home-task-head">
       <text class="home-task-badge">{{phase ? '当前阶段 · ' + phases[phase] : '第一步 · 选当前阶段'}}</text>
-      <picker wx:if="{{phase}}" class="home-phase" range="{{phases}}" value="{{phase}}" bindchange="choosePhase" aria-label="切换当前阶段">
-        <view>{{phase ? '切换 ⌄' : '选择阶段 ⌄'}}</view>
-      </picker>
+      <view wx:if="{{phase}}" class="home-phase" role="button" bindtap="openPhaseSheet" aria-label="切换当前阶段">
+        <text>{{phase ? '切换 ⌄' : '选择阶段 ⌄'}}</text>
+      </view>
     </view>
 
     <block wx:if="{{phase === 0}}">
